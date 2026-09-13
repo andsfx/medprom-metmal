@@ -120,7 +120,11 @@ cd D:/Andy/medprom-metmal && npm ci && npm run build && vercel --prod
 
 ## 9. Operasional
 
-- Backup DB: mirror `backup.sh` app lama (cron pg_dump ke `/opt/medprom/backups`).
+- Backup DB **terpasang**: cron `30 3 * * *` (WIB) menjalankan
+  `/opt/medprom/deploy/vps/backup.sh` → `pg_dump` gzip ke
+  `/opt/medprom/backups`, retensi 14 hari, log di `/var/log/medprom-backup.log`.
+  Restore: `gunzip -c <file>.sql.gz | docker compose exec -T postgres psql -U medprom -d medprom`.
+  (03:30 — digeser dari backup app event 03:00 agar tidak berebut I/O.)
 - Log: `docker compose logs -f api`.
 - Akun baru/reset password: lihat perintah di `/admin` tab Pengguna, atau
   `create-admin.mjs --reset` (env `ADMIN_PASSWORD`, role via `ADMIN_ROLE`).
