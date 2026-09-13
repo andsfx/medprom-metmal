@@ -1,0 +1,103 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# medprom-metmal — VPS stack (API saja; frontend di Vercel)
+#
+# Topologi:
+#   Caddy host (443, metmal.andotherstori.my.id dsb.)
+#     └─ reverse_proxy <subdomain> → 127.0.0.1:3002
+#          └─ api (node:20-alpine, server/src/index.js)
+#               └─ postgres 16 (volume pgdata)
+#
+# Frontend: `npm ci && npm run build` di host → `vercel deploy` (VITE_API_URL =
+# https://<api-subdomain>). Frontend TIDAK di-serve dari VPS ini.
+#
+# Prasyarat:
+#   - Repo root di-bind-mount read-only + node_modules named volume.
+#   - cp deploy/vps/.env.example .env → isi → docker compose up -d
+# ─────────────────────────────────────────────────────────────────────────────
+
+name: medprom
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: medprom-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-medprom}
+      POSTGRES_USER: ${POSTGRES_USER:-medprom}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?isi POSTGRES_PASSWORD di .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-medprom} -d ${POSTGRES_DB:-medprom}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    # TANPA mapping port host — tooling via `docker compose exec postgres psql`.
+    networks:
+      - medprom
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+  api:
+    image: node:20-alpine
+    container_name: medprom-api
+    restart: unless-stopped
+    working_dir: /srv/app
+    command: >
+      sh -c 'if [ ! -d node_modules/pg ]; then
+        npm ci --omit=dev --no-audit --no-fund;
+      fi &&
+      exec node server/src/index.js'
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: "3002"
+      NODE_ENV: production
+      DATABASE_URL: ${DATABASE_URL:?isi DATABASE_URL di .env}
+      JWT_SECRET: ${JWT_SECRET:?isi JWT_SECRET di .env}
+      # Lintas-origin FE Vercel → API subdomain: cookie WAJIB SameSite=None + Secure.
+      COOKIE_SAMESITE: ${COOKIE_SAMESITE:-none}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      # Origin FE produksi (exact-match, dipisah koma bila lebih dari satu).
+      CORS_ORIGIN: ${CORS_ORIGIN:?isi CORS_ORIGIN di .env}
+      # MID tenant roster — opsional; kosong = pencarian gerai menolak dengan
+      # pesan konfigurasi (submit tetap jalan, gerai diketik manual tidak
+      # didukung; isi begitu Metland memberikan key).
+      MID_API_KEY: ${MID_API_KEY:-}
+      # Presign media — Cloudflare R2 (bucket terpisah dari metmal-gallery).
+      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?isi R2_ACCOUNT_ID di .env}
+      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?isi R2_ACCESS_KEY_ID di .env}
+      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?isi R2_SECRET_ACCESS_KEY di .env}
+      R2_BUCKET_NAME: ${R2_BUCKET_NAME:?isi R2_BUCKET_NAME di .env}
+      R2_PUBLIC_URL: ${R2_PUBLIC_URL:?isi R2_PUBLIC_URL di .env}
+    volumes:
+      # Repo root (server/ + schema) — read-only.
+      - ../../:/srv/app:ro
+      # node_modules terpisah (instalasi container alpine bersih).
+      - node_modules:/srv/app/node_modules
+    ports:
+      # Hanya loopback host — Caddy reverse_proxy 127.0.0.1:3002.
+      - "127.0.0.1:3002:3002"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3002/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - medprom
+    logging:
+      driver: json-file
+      options: { max-size: "10m", max-file: "3" }
+
+volumes:
+  pgdata:
+  node_modules:
+
+networks:
+  medprom:
+    driver: bridge

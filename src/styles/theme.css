@@ -1,0 +1,59 @@
+/*
+ * Design tokens — Metmal media promosi.
+ * Copy skala warna dari schedule-event-v2/src/styles/tokens.css + theme.css
+ * (tosca #00918e; CTA 600 #007a78 = AA 5.18:1 dengan putih).
+ */
+
+:root {
+  /* Brand tosca */
+  --brand-tosca: #00918e;
+  --brand-tosca-600: #007a78; /* solid CTA bg — white text 5.18:1 (AA) */
+  --brand-tosca-soft: #33a8a5;
+  --brand-tosca-dark: #00554c;
+
+  /* Warm paper surfaces */
+  --brand-paper: #f8f7f0;
+  --brand-card: #fdfcf6;
+  --brand-card-light: #fffdf9;
+
+  --focus-ring-color: var(--brand-tosca);
+  --focus-ring-offset-light: var(--brand-card-light);
+  --focus-ring-offset-dark: #16211b;
+
+  --radius-card: 1rem;
+  --radius-card-lg: 1.5rem;
+
+  --shadow-card-soft: 0 1px 3px rgba(22, 33, 27, 0.06);
+  --shadow-card-raised: 0 18px 45px rgba(22, 33, 27, 0.08);
+
+  --border-subtle: rgba(22, 33, 27, 0.06);
+}
+
+@theme {
+  /* Brand primary — tosca Metmal */
+  --color-brand-primary: #00918e;
+  --color-brand-primary-50: #e6f7f6;
+  --color-brand-primary-100: #ccefef;
+  --color-brand-primary-200: #99dfde;
+  --color-brand-primary-300: #66cfcd;
+  --color-brand-primary-400: #33bfbc;
+  --color-brand-primary-500: #00918e;
+  /* CTA surface = 600 (AA 5.18:1 with white); 500 stays decorative */
+  --color-brand-primary-600: #007a78;
+  --color-brand-primary-700: #006260;
+  --color-brand-primary-800: #004a48;
+  --color-brand-primary-900: #003230;
+  --color-brand-primary-950: #001a18;
+
+  --color-brand-secondary: #e24378;
+  --color-brand-secondary-50: #fdf2f6;
+  --color-brand-secondary-100: #fce7ef;
+  --color-brand-secondary-500: #e24378;
+  --color-brand-secondary-600: #c92d62;
+  --color-brand-secondary-700: #a82150;
+  --color-brand-secondary-900: #721a3a;
+
+  --color-brand-paper: #f8f7f0;
+  --color-brand-card: #fdfcf6;
+  --color-brand-card-light: #fffdf9;
+}

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Media Promosi — Metropolitan Mall Bekasi</title>
+    <meta name="description" content="Ajukan dan unggah materi media promosi gerai Anda ke Tim Tenant Relations Metropolitan Mall Bekasi. Spanduk, LED, videotron, hingga media sosial — tertata dalam satu platform." />
+
+    <!-- Theme color -->
+    <meta name="theme-color" content="#00918E" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Media Promosi — Metropolitan Mall Bekasi" />
+    <meta property="og:description" content="Ajukan dan unggah materi media promosi gerai Anda ke Tim Tenant Relations Metropolitan Mall Bekasi." />
+    <meta property="og:site_name" content="Metropolitan Mall Bekasi" />
+    <meta property="og:locale" content="id_ID" />
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300918E'/%3E%3Cpath d='M8 24V13l4-4 4 4 4-4 4 4v11z' fill='%23fff'/%3E%3C/svg%3E" />
+
+    <!-- Fonts — Geist (body) + Bricolage Grotesque (display) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&display=swap" /></noscript>
+
+    <style>
+      /* Critical CSS: skeleton sebelum JS mount (root.render menggantikan #root) */
+      #root > .app-skeleton { display: block; }
+      .app-skeleton { background: #f8f7f0; min-height: 100vh; color: #64748b; }
+      .app-skeleton .sk-nav { height: 56px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
+      .app-skeleton .sk-brand { width: 140px; height: 20px; border-radius: 6px; background: #e2e8f0; }
+      .app-skeleton .sk-hero { height: 240px; background: linear-gradient(180deg, #e6f7f6, #f8f7f0); display: flex; align-items: center; padding: 0 32px; }
+      .app-skeleton .sk-hero-inner { width: min(520px, 80%); display: flex; flex-direction: column; gap: 14px; }
+      .app-skeleton .sk-title { height: 28px; border-radius: 6px; background: #99dfde; }
+      .app-skeleton .sk-sub { height: 16px; width: 70%; border-radius: 6px; background: #e2e8f0; }
+      .app-skeleton .sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 24px 32px; }
+      .app-skeleton .sk-card { height: 140px; border-radius: 16px; background: #e2e8f0; }
+      @media (prefers-color-scheme: dark) {
+        .app-skeleton { background: #0e1612; }
+        .app-skeleton .sk-nav { border-bottom-color: #1e293b; }
+        .app-skeleton .sk-brand, .app-skeleton .sk-card, .app-skeleton .sk-sub { background: #1e293b; }
+        .app-skeleton .sk-hero { background: linear-gradient(135deg, #1e293b, #003230); }
+        .app-skeleton .sk-title { background: #003230; }
+      }
+      @media (prefers-reduced-motion: no-preference) {
+        .app-skeleton .sk-brand, .app-skeleton .sk-title, .app-skeleton .sk-sub, .app-skeleton .sk-card { animation: sk-pulse 1.6s ease-in-out infinite; }
+        @keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root">
+      <div class="app-skeleton" aria-hidden="true">
+        <div class="sk-nav"><div class="sk-brand"></div></div>
+        <div class="sk-hero"><div class="sk-hero-inner"><div class="sk-title"></div><div class="sk-sub"></div><div class="sk-sub" style="width:50%"></div></div></div>
+        <div class="sk-grid"><div class="sk-card"></div><div class="sk-card"></div><div class="sk-card"></div></div>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

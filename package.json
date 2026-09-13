@@ -1,0 +1,54 @@
+{
+  "name": "medprom-metmal",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Platform pengajuan materi media promosi tenant Metropolitan Mall Bekasi",
+  "license": "UNLICENSED",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "dev:api": "node --watch server/src/index.js",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "db:migrate": "node scripts/db-migrate.mjs",
+    "db:seed": "node server/scripts/seed-media-types.mjs"
+  },
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1035.0",
+    "@aws-sdk/s3-request-presigner": "^3.1035.0",
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^16.6.1",
+    "express": "^4.22.2",
+    "jose": "^5.10.0",
+    "lucide-react": "^0.471.0",
+    "pg": "^8.20.0",
+    "react": "19.0.0",
+    "react-dom": "19.0.0",
+    "react-router-dom": "^7.14.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
+    "@tailwindcss/vite": "^4.0.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "@vitest/coverage-v8": "^4.1.5",
+    "jsdom": "^29.0.2",
+    "playwright": "^1.63.0",
+    "tailwindcss": "^4.0.0",
+    "terser": "^5.51.2",
+    "typescript": "^5.9.3",
+    "vite": "^6.1.1",
+    "vitest": "^4.1.5"
+  },
+  "allowScripts": {
+    "esbuild@0.25.12": true
+  }
+}
