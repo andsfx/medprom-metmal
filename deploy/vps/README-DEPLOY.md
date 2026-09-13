@@ -84,11 +84,45 @@ vercel --prod
 Setelah deploy Vercel: isi `CORS_ORIGIN` di `.env` VPS dengan URL produksi
 Vercel, lalu `docker compose up -d` (restart api).
 
-## 8. Operasional
+## 8. Update ke rilis baru
+
+Urutan ini **wajib**: API dan skema harus lebih dulu, frontend terakhir.
+Frontend rilis 1.0.0 menampilkan opsi "Kirim Tautan", sementara API versi lama
+menolaknya dengan `file_url wajib diisi`. Mendahulukan frontend membuat tenant
+melihat tombol yang pasti gagal.
+
+```bash
+# 1. Kirim kode rilis ke VPS
+rsync -az --delete --exclude node_modules --exclude dist --exclude .env* \
+  /d/Andy/medprom-metmal/ root@100.69.24.32:/opt/medprom/
+
+# 2. Restart API + terapkan skema dan katalog (keduanya idempotent)
+ssh root@100.69.24.32
+cd /opt/medprom/deploy/vps && docker compose up -d
+docker compose exec api node scripts/db-migrate.mjs
+docker compose exec api node server/scripts/seed-media-types.mjs
+
+# 3. Pastikan API sudah versi baru — tautan valid TIDAK boleh ditolak
+curl -s -X POST https://promapi.andotherstori.my.id/api/v1/promo/submit \
+  -H 'Content-Type: application/json' \
+  -d '{"media_type_slug":"spanduk","tenant_name":"Cek Rilis","pic_name":"Cek",
+       "pic_phone":"081234567890","link_url":"https://drive.google.com/file/d/x/view"}'
+# Masih menyebut "file_url wajib diisi" → API belum ter-update, JANGAN lanjut.
+
+# 4. Katalog harus sudah memuat PNG
+curl -s https://promapi.andotherstori.my.id/api/v1/promo/media-types \
+  | grep -o '"accepted_formats":"[^"]*"' | head -3
+# Harapan: JPEG,PNG,PDF
+
+# 5. Baru deploy frontend
+cd D:/Andy/medprom-metmal && npm ci && npm run build && vercel --prod
+```
+
+## 9. Operasional
 
 - Backup DB: mirror `backup.sh` app lama (cron pg_dump ke `/opt/medprom/backups`).
 - Log: `docker compose logs -f api`.
 - Akun baru/reset password: lihat perintah di `/admin` tab Pengguna, atau
   `create-admin.mjs --reset` (env `ADMIN_PASSWORD`, role via `ADMIN_ROLE`).
 - MID_API_KEY: begitu Metland memberi key → isi di `.env`, `docker compose
-  up -d`; pencarian gerai aktif otomatis (tanpa perubahan kode).
+  up -d`; pencarian tenant aktif otomatis (tanpa perubahan kode).
