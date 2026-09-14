@@ -50,8 +50,9 @@ Rilis pertama platform media promosi tenant Metropolitan Mall Bekasi.
   materi.
 - Nama tenant dipilih dari API tenant, dengan peralihan otomatis ke isian
   manual bila API tidak dikonfigurasi atau tidak terjangkau.
-- Unggah file langsung dari browser ke Cloudflare R2 memakai presigned URL,
-  mendukung JPEG, PNG, PDF, dan MP4 hingga 50MB.
+- Unggah file langsung dari browser ke Cloudflare R2 memakai presigned URL
+  (pra-1.1.0; digantikan Google Drive — lihat 1.1.0), mendukung JPEG, PNG,
+  PDF, dan MP4 hingga 50MB.
 - Kirim tautan sebagai alternatif unggah, untuk materi berukuran besar maupun
   folder berisi banyak file di Google Drive, Dropbox, atau WeTransfer. Hanya
   URL berskema `http` dan `https` yang diterima.
@@ -74,15 +75,16 @@ Rilis pertama platform media promosi tenant Metropolitan Mall Bekasi.
 
 - Batas 10 pengajuan per jam per IP dan 5 pengajuan per perangkat dalam
   24 jam.
-- `file_url` wajib berada di prefix bucket sendiri, sehingga file dari luar
-  tidak bisa diklaim.
-- Pemeriksaan `HEAD` untuk memastikan objek benar-benar ada dan memverifikasi
-  ulang ukuran setelah unggahan selesai.
+- `file_url` wajib berada di prefix bucket R2 sendiri, sehingga file dari
+  luar tidak bisa diklaim.
+- Pemeriksaan `HEAD` memastikan objek benar-benar ada dan memverifikasi ulang
+  ukuran setelah unggahan selesai.
 - Pemeriksaan signature byte terhadap tipe file yang diklaim. Objek yang tidak
   cocok langsung dihapus dari R2.
 - Penghapusan pengajuan menghapus objek R2 lebih dulu dan berhenti aman bila
   gagal, sehingga baris data tetap ada dan proses dapat diulang. Pengajuan
   bertautan dilewati karena tidak memiliki objek di penyimpanan.
+  (Semua mekanisme di atas pra-1.1.0; pengganti Drive-nya lihat 1.1.0.)
 
 ### Operasional
 

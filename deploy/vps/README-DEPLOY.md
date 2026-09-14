@@ -8,12 +8,13 @@ TLS dan mem-proxy subdomain baru ke `127.0.0.1:3002`.
 
 - VPS: Docker + Caddy aktif (sudah ada; app event lama jalan di 127.0.0.1:8080).
 - Google Cloud: buat project, aktifkan Google Drive API, buat OAuth 2.0 client ID
-  (Application type: "Web application"). Tambahkan URI redirect:
-  `http://localhost:3000/oauth2callback`. Unduh credential JSON dan simpan
-  sebagai `server/secrets/drive-credentials.json`. Jalankan `node server/scripts/drive-auth.mjs`
-  untuk mendapatkan refresh token — isi `GOOGLE_DRIVE_REFRESH_TOKEN` di `.env`.
-  Buat folder di Drive untuk penyimpanan media, catat folder ID-nya sebagai
-  `GOOGLE_DRIVE_FOLDER_ID`.
+  (Application type: "Web application"). Tambahkan redirect URI persis:
+  `http://localhost:3715/callback`. Di **OAuth consent screen → Test users**,
+  daftarkan `mediapromosi.metmalbekasi@gmail.com` (status Testing cukup untuk
+  scope `drive.file`). Unduh JSON kredensial, lalu dari mesin lokal:
+  `GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... node scripts/drive-auth.mjs`
+  → buka URL, login akun mediapromosi, izinkan → isi `GOOGLE_REFRESH_TOKEN`
+  di `.env` VPS. `DRIVE_ROOT_FOLDER_ID` opsional (kosong = root My Drive).
 - Domain: satu subdomain baru di `andotherstori.my.id` (mis.
   `promapi.andotherstori.my.id`) — DNS A record → IP publik VPS.
 
@@ -53,10 +54,10 @@ ADMIN_PASSWORD='Password-Kuat-Min-8' docker compose exec -e ADMIN_PASSWORD \
 ```
 
 Kedua perintah idempotent — aman dijalankan ulang setelah update kode.
-`db-migrate.mjs` menambah kolom `source_type` + `link_url` di
-`promo_submissions` (mode kirim tautan), `seed-media-types.mjs`
-menyinkronkan `accepted_formats` (mis. PNG menyusul JPEG) tanpa menimpa
-harga/aturan yang sudah diedit admin.
+`db-migrate.mjs` menerapkan `server/schema.sql` (termasuk kolom `source_type`,
+`link_url`, dan `drive_file_id` untuk penyimpanan Drive),
+`seed-media-types.mjs` menyinkronkan `accepted_formats` (mis. PNG menyusul
+JPEG) tanpa menimpa harga/aturan yang sudah diedit admin.
 
 ## 5. Caddy subdomain
 
@@ -89,12 +90,9 @@ vercel --prod
 Setelah deploy Vercel: isi `CORS_ORIGIN` di `.env` VPS dengan URL produksi
 Vercel, lalu `docker compose up -d` (restart api).
 
-## 8. Update ke rilis baru
-
 Urutan ini **wajib**: API dan skema harus lebih dulu, frontend terakhir.
-Frontend rilis 1.0.0 menampilkan opsi "Kirim Tautan", sementara API versi lama
-menolaknya dengan `file_url wajib diisi`. Mendahulukan frontend membuat tenant
-melihat tombol yang pasti gagal.
+Mendahulukan frontend membuat tenant melihat tombol yang pasti gagal
+(mis. opsi baru ditolak API lama).
 
 ```bash
 # 1. Kirim kode rilis ke VPS
@@ -111,8 +109,8 @@ docker compose exec api node server/scripts/seed-media-types.mjs
 curl -s -X POST https://promapi.andotherstori.my.id/api/v1/promo/submit \
   -H 'Content-Type: application/json' \
   -d '{"media_type_slug":"spanduk","tenant_name":"Cek Rilis","pic_name":"Cek",
-       "pic_phone":"081234567890","link_url":"https://drive.google.com/file/d/x/view"}'
-# Masih menyebut "file_url wajib diisi" → API belum ter-update, JANGAN lanjut.
+# Masih menyebut "file_url wajib diisi" (rilis pra-Drive) atau `drive_file_id`
+# (v1.1.0+) → API belum ter-update, JANGAN lanjut.
 
 # 4. Katalog harus sudah memuat PNG
 curl -s https://promapi.andotherstori.my.id/api/v1/promo/media-types \
@@ -134,8 +132,9 @@ cd D:/Andy/medprom-metmal && npm ci && npm run build && vercel --prod
 - Akun baru/reset password: lihat perintah di `/admin` tab Pengguna, atau
   `create-admin.mjs --reset` (env `ADMIN_PASSWORD`, role via `ADMIN_ROLE`).
 - MID_API_KEY: begitu Metland memberi key → isi di `.env`, `docker compose
-  up -d`; pencarian tenant aktif otomatis (tanpa perubahan kode).
-- Sweep file expired: cron `0 4 * * *` (WIB) menjalankan
-  `docker compose exec api node server/scripts/drive-sweep.mjs` → menghapus file
-  Drive lebih tua dari 30 hari yang tidak lagi dirujuk oleh pengajuan aktif.
-  Log di `/var/log/medprom-sweep.log`.
+- Sweep file yatim (opsional): cron `0 4 * * *` (WIB) menjalankan
+  `node scripts/drive-sweep.mjs --apply >> /var/log/medprom-sweep.log 2>&1`
+  dari host yang punya env `GOOGLE_*` + `DATABASE_URL` → tanpa `--apply`
+  hanya melapor; dengan `--apply` menghapus file yatim > 24 jam (diupload
+  tapi tak pernah jadi pengajuan). Bukan `docker compose exec` (skrip butuh
+  kredensial host, path-nya `scripts/` bukan `server/scripts/`).

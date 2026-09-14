@@ -97,7 +97,7 @@ server/
   src/drive.js            Upload, verifikasi, delete, metadata — Google Drive REST v3
   src/auth.js             JWT, bcrypt, kontrol role
   scripts/                seed-media-types, create-admin
-scripts/                  db-migrate, drive-auth, verifikasi produksi (Playwright)
+scripts/                  db-migrate, drive-auth, drive-sweep, verifikasi produksi (Playwright)
 __tests__/api/            Test route server
 deploy/vps/               docker-compose, .env.example, panduan deploy
 ```
