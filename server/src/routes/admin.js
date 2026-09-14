@@ -3,7 +3,7 @@
  *
  *   GET  /admin/submissions?status=&media_type=&page=   — daftar paginasi (read roles)
  *   POST /admin/submissions/:id/status                  — review status (staff)
- *   POST /admin/submissions/:id/delete                  — hapus + bersihkan R2 (staff)
+ *   POST /admin/submissions/:id/delete                  — hapus + bersihkan Drive (staff)
  *   GET  /admin/media-types                             — semua katalog (read roles)
  *   POST /admin/media-types                              — create (staff)
  *   POST /admin/media-types/:id                          — update (staff)
@@ -19,7 +19,7 @@ import bcrypt from 'bcryptjs';
 
 import { db } from '../db.js';
 import { requireRole, logActivity, READ_ROLES, STAFF_ROLES } from '../auth.js';
-import { deleteR2FileOrThrow } from '../r2.js';
+import { deleteDriveFileOrThrow } from '../drive.js';
 
 const router = Router();
 
@@ -130,19 +130,19 @@ router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res
     if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
 
     const { rows } = await db.query(
-      'SELECT id, source_type, file_url FROM promo_submissions WHERE id = $1 LIMIT 1',
+      'SELECT id, source_type, drive_file_id FROM promo_submissions WHERE id = $1 LIMIT 1',
       [id],
     );
     const existing = rows[0] || null;
     if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
 
-    // Pengajuan bertautan tidak menyimpan file di R2 — tak ada yang dihapus.
-    if (existing.source_type !== 'link' && existing.file_url) {
-      // Hapus R2 DULU dengan kepastian (throw) — gagal → row tetap, retry aman.
+    // Pengajuan bertautan tidak menyimpan file di Drive kami — tak ada yang dihapus.
+    if (existing.source_type !== 'link' && existing.drive_file_id) {
+      // Hapus Drive DULU dengan kepastian (throw) — gagal → row tetap, retry aman.
       try {
-        await deleteR2FileOrThrow(existing.file_url);
+        await deleteDriveFileOrThrow(existing.drive_file_id);
       } catch (delErr) {
-        console.error('[admin/deleteSubmission] R2 delete failed:', existing.file_url, delErr.message);
+        console.error('[admin/deleteSubmission] Drive delete failed:', existing.drive_file_id, delErr.message);
         return res.status(400).json({ success: false, error: 'Gagal menghapus file dari storage. Coba lagi.' });
       }
     }

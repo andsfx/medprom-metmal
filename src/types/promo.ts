@@ -26,8 +26,9 @@ export interface TenantOption {
 
 /**
  * Payload pengajuan. Dua mode sumber materi:
- *   'upload' → file_url/file_name/mime_type/file_size_bytes terisi (objek R2)
- *   'link'   → link_url terisi (Google Drive/Dropbox/WeTransfer)
+ *   'upload' → drive_file_id terisi (file di Google Drive kami; nama/mime/size
+ *              diambil server dari metadata Drive, bukan klaim klien)
+ *   'link'   → link_url terisi (Google Drive/Dropbox/WeTransfer milik tenant)
  */
 export interface PromoSubmissionPayload {
   media_type_slug: string;
@@ -37,7 +38,7 @@ export interface PromoSubmissionPayload {
   pic_phone: string;
   installation_date: string;
   notes: string;
-  file_url: string;
+  drive_file_id: string;
   file_name: string;
   mime_type: string;
   file_size_bytes: number;
@@ -71,6 +72,7 @@ export interface AdminSubmissionRow {
   file_name: string;
   mime_type: string;
   file_size_bytes: number;
+  drive_file_id: string;
   link_url: string;
   status: string;
   review_notes: string;

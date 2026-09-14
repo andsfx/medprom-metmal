@@ -12,7 +12,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { enforceRateLimit, clientIp } from '../lib/rateLimit.js';
-import { headR2File, verifyMimeMagicBytes, deleteR2File, MAX_UPLOAD_BYTES, R2_PUBLIC_URL } from '../r2.js';
+import { getDriveFile, MAX_UPLOAD_BYTES } from '../drive.js';
 
 const router = Router();
 
@@ -120,14 +120,14 @@ router.post('/submit', async (req, res, next) => {
   const picPhone = sanitize(body.pic_phone || '', 20);
   const installationDate = sanitize(body.installation_date || '', 10);
   const notes = sanitize(body.notes || '', 1000);
-  const fileUrl = sanitize(body.file_url || '', 500);
+  const driveFileId = sanitize(body.drive_file_id || '', 128);
   const fileName = sanitize(body.file_name || '', 200);
   const mimeType = sanitize(body.mime_type || '', 100);
   const fileSizeBytes = Number(body.file_size_bytes || 0);
   const fingerprint = sanitize(body.device_fingerprint || '', 100);
   const linkUrl = sanitize(body.link_url || '', 500);
-  // Mode sumber: unggah file ke R2, atau kirim tautan (Drive/Dropbox/dll).
-  const sourceType = linkUrl && !fileUrl ? 'link' : 'upload';
+  // Mode sumber: unggah file ke Drive kami, atau kirim tautan (Drive/Dropbox/dll).
+  const sourceType = linkUrl && !driveFileId ? 'link' : 'upload';
 
   if (!mediaTypeSlug) errors.push('media_type_slug wajib diisi');
   if (!tenantName) errors.push('Nama gerai wajib diisi');
@@ -139,8 +139,7 @@ router.post('/submit', async (req, res, next) => {
   if (sourceType === 'link') {
     if (!LINK_RE.test(linkUrl)) errors.push('Tautan materi harus berupa URL http/https yang valid');
   } else {
-    if (!fileUrl) errors.push('file_url wajib diisi');
-    if (!mimeType) errors.push('mime_type wajib diisi');
+    if (!driveFileId) errors.push('drive_file_id wajib diisi');
   }
 
   if (errors.length > 0) {
@@ -157,31 +156,33 @@ router.post('/submit', async (req, res, next) => {
       return res.status(400).json({ success: false, error: 'Jenis media promosi tidak dikenal atau tidak aktif.' });
     }
 
-    // Jalur unggah: file harus dari bucket kita, ukuran & magic bytes dicek.
+    // Jalur unggah: file harus ada di Drive kami, ukuran dicek dari metadata
+    // (bukan klaim klien), dan tidak boleh sudah dipakai pengajuan lain.
     let verifiedSize = 0;
+    let verifiedMime = '';
+    let verifiedName = '';
+    let verifiedLink = '';
     if (sourceType === 'upload') {
-      // File harus berasal dari bucket/prefix kita — anti claim file luar.
-      if (!R2_PUBLIC_URL || !fileUrl.startsWith(`${R2_PUBLIC_URL}/promo/`)) {
-        return res.status(400).json({ success: false, error: 'File URL tidak valid.' });
+      // Anti klaim duplikat: satu objek Drive = satu pengajuan.
+      const { rows: dupeRows } = await db.query(
+        'SELECT id FROM promo_submissions WHERE drive_file_id = $1 LIMIT 1',
+        [driveFileId],
+      );
+      if (dupeRows[0]) {
+        return res.status(400).json({ success: false, error: 'File sudah dipakai pengajuan lain.' });
       }
 
-      // HEAD: keberadaan + cap ukuran post-upload (ContentLength tak tertandatangani).
-      const head = await headR2File(fileUrl);
-      if (!head.ok) {
-        return res.status(400).json({ success: false, error: head.error });
+      const file = await getDriveFile(driveFileId);
+      if (!file.ok) {
+        return res.status(400).json({ success: false, error: file.error });
       }
-      if (head.contentLength > MAX_UPLOAD_BYTES) {
-        await deleteR2File(fileUrl); // bersihkan object terlalu besar.
+      if (file.size > MAX_UPLOAD_BYTES) {
         return res.status(400).json({ success: false, error: 'File melebihi 50MB' });
       }
-      verifiedSize = head.contentLength;
-
-      // Magic bytes: isi harus cocok tipe yang diklaim.
-      const magic = await verifyMimeMagicBytes(fileUrl, mimeType);
-      if (!magic.ok) {
-        await deleteR2File(fileUrl);
-        return res.status(400).json({ success: false, error: magic.error });
-      }
+      verifiedSize = file.size;
+      verifiedMime = file.mimeType;
+      verifiedName = file.name;
+      verifiedLink = file.webViewLink;
     }
 
     // Anti-spam per perangkat: maks 5 pengajuan / 24 jam.
@@ -200,8 +201,8 @@ router.post('/submit', async (req, res, next) => {
       `INSERT INTO promo_submissions
         (media_type_slug, tenant_id, tenant_name, pic_name, pic_phone,
          installation_date, notes, source_type, file_url, file_name, mime_type,
-         link_url, file_size_bytes, status, device_fingerprint, ip_address, user_agent)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,'pending',$14,$15,$16)
+         link_url, file_size_bytes, drive_file_id, status, device_fingerprint, ip_address, user_agent)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,'pending',$15,$16,$17)
        RETURNING id, created_at`,
       [
         mediaTypeSlug,
@@ -212,11 +213,12 @@ router.post('/submit', async (req, res, next) => {
         installationDate,
         notes,
         sourceType,
-        fileUrl,
-        fileName,
-        mimeType,
+        sourceType === 'upload' ? verifiedLink : '',
+        sourceType === 'upload' ? verifiedName : fileName,
+        sourceType === 'upload' ? verifiedMime : mimeType,
         sourceType === 'link' ? linkUrl : '',
-        Number.isFinite(fileSizeBytes) && fileSizeBytes > 0 ? Math.round(fileSizeBytes) : verifiedSize,
+        sourceType === 'upload' ? verifiedSize : 0,
+        sourceType === 'upload' ? driveFileId : '',
         fingerprint,
         clientIp(req),
         sanitize(req.headers['user-agent'] || '', 500),

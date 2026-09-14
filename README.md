@@ -50,9 +50,8 @@ antaranya aktif (Parapet belum tersedia).
 flowchart LR
   T[Tenant / Browser] -->|HTTPS| V["Frontend — Vercel<br/>React 19 + Vite"]
   V -->|"REST /api/v1"| A["API — VPS<br/>Express 4"]
-  T -->|"PUT presigned URL"| R[("Cloudflare R2")]
   A --> P[("Postgres 16")]
-  A -->|"presign / HEAD / delete"| R
+  A -->|"upload / delete / verify"| D[("Google Drive<br/>5TB akun media promosi")]
   A -->|"lookup tenant"| M["API tenant"]
 ```
 
@@ -60,28 +59,29 @@ flowchart LR
   `index.html`.
 - API dan Postgres berjalan di VPS melalui Docker Compose, diproksi Caddy ke
   `127.0.0.1:3002`.
-- File materi disimpan di Cloudflare R2. Unggahan memakai presigned URL
-  sehingga file berukuran besar tidak melewati API.
+- File materi disimpan di Google Drive akun khusus
+  `mediapromosi.metmalbekasi@gmail.com` (Google One 5TB). Unggahan diverifikasi
+  di server (signature byte + ukuran) SEBELUM ditulis ke Drive sehingga file
+  tidak valid tidak pernah memenuhi storage.
 - Sesi staf memakai JWT pada cookie lintas origin (`SameSite=None; Secure`).
 
 ### Validasi pengajuan
 
-Untuk mode unggah, server memeriksa berurutan:
+Untuk mode unggah, server memeriksa
 
-1. Batas 10 pengajuan per jam per IP.
-2. Kelengkapan field, format nomor telepon, dan format tanggal.
-3. Jenis media harus terdaftar dan berstatus aktif.
-4. `file_url` harus berada di prefix bucket sendiri, sehingga file dari luar
-   tidak bisa diklaim.
-5. Permintaan `HEAD` ke objek untuk memastikan file benar-benar ada dan
-   memeriksa ulang ukurannya (maksimal 50MB), karena ukuran yang dikirim klien
-   tidak ditandatangani.
-6. Kecocokan signature byte dengan tipe file yang diklaim. Bila tidak cocok,
-   objek langsung dihapus dari R2.
-7. Batas 5 pengajuan per perangkat dalam 24 jam.
+1. rate limit 10 pengajuan per jam per IP
+2. field wajib (+ telepon, format tanggal, media aktif)
+3. drive_file_id benar-benar ada di Drive (milik akun app, bukan tenant lain —
+   scope OAuth `drive.file`)
+4. metadata Drive: ukuran ≤ 50MB
+5. file belum dipakai pengajuan lain (unique constraint DB)
+6. rate limit 5 pengajuan per perangkat dalam 24 jam (fingerprint)
 
-Mode tautan melewati langkah 4 sampai 6 karena tidak ada objek milik sendiri
-yang perlu diperiksa, dan hanya menerima URL berskema `http` atau `https`.
+Semua klaim klien (nama file, MIME, ukuran) diverifikasi ulang oleh server
+dari metadata Drive. Magic bytes diverifikasi saat upload — file tidak valid
+ditolak tanpa ditulis ke Drive.
+
+Mode tautan hanya menerima URL berskema `http` atau `https`.
 
 ## Struktur
 
@@ -94,22 +94,23 @@ src/                      Frontend React (Vite + Tailwind v4)
 server/
   schema.sql              Skema database
   src/routes/             promo (publik), admin (staf), auth
-  src/r2.js               Presign, HEAD, delete, verifikasi signature byte
+  src/drive.js            Upload, verifikasi, delete, metadata — Google Drive REST v3
   src/auth.js             JWT, bcrypt, kontrol role
   scripts/                seed-media-types, create-admin
-scripts/                  db-migrate, verifikasi produksi (Playwright)
+scripts/                  db-migrate, drive-auth, verifikasi produksi (Playwright)
 __tests__/api/            Test route server
 deploy/vps/               docker-compose, .env.example, panduan deploy
 ```
 
 ## Menjalankan di lokal
 
-Prasyarat: Node 20 atau lebih baru, Postgres 16, dan bucket R2 bila ingin
+Prasyarat: Node 20 atau lebih baru, Postgres 16, dan akun Google
+dengan akses Drive API (refresh token dari `scripts/drive-auth.mjs`) bila ingin
 menguji unggahan file.
 
 ```bash
 npm ci
-cp .env.example .env          # isi DATABASE_URL, JWT_SECRET, R2_*
+cp .env.example .env          # isi DATABASE_URL, JWT_SECRET, GOOGLE_*
 npm run db:migrate            # buat atau perbarui skema
 npm run db:seed               # isi katalog media
 

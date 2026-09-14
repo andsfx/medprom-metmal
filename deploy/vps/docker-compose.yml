@@ -68,12 +68,12 @@ services:
       # pesan konfigurasi (submit tetap jalan, gerai diketik manual tidak
       # didukung; isi begitu Metland memberikan key).
       MID_API_KEY: ${MID_API_KEY:-}
-      # Presign media — Cloudflare R2 (bucket terpisah dari metmal-gallery).
-      R2_ACCOUNT_ID: ${R2_ACCOUNT_ID:?isi R2_ACCOUNT_ID di .env}
-      R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:?isi R2_ACCESS_KEY_ID di .env}
-      R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:?isi R2_SECRET_ACCESS_KEY di .env}
-      R2_BUCKET_NAME: ${R2_BUCKET_NAME:?isi R2_BUCKET_NAME di .env}
-      R2_PUBLIC_URL: ${R2_PUBLIC_URL:?isi R2_PUBLIC_URL di .env}
+      # Storage media — Google Drive (akun mediapromosi.metmalbekasi@gmail.com).
+      # Refresh token diproduksi scripts/drive-auth.mjs dari mesin lokal.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?isi GOOGLE_CLIENT_ID di .env}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?isi GOOGLE_CLIENT_SECRET di .env}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:?isi GOOGLE_REFRESH_TOKEN di .env}
+      DRIVE_ROOT_FOLDER_ID: ${DRIVE_ROOT_FOLDER_ID:-}
     volumes:
       # Repo root (server/ + schema) — read-only.
       - ../../:/srv/app:ro

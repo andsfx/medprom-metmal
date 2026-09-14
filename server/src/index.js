@@ -5,15 +5,14 @@
  * DB merespons 503 bersih. Envelope respons:
  *   { success: boolean, error?: string, data?: unknown }
  *
- * Routes:
  *   POST /api/v1/auth/login|logout     — login staf (bcrypt + JWT cookie)
  *   GET  /api/v1/auth/me               — sesi aktif
  *   GET  /api/v1/promo/media-types      — katalog aktif (publik)
  *   GET  /api/v1/promo/tenants?q=       — cari tenant MID (publik)
  *   POST /api/v1/promo/submit           — kirim pengajuan (publik)
  *   GET  /api/v1/promo/submissions/mine — riwayat per perangkat (publik)
- *   POST /api/v1/r2/presign-public     — presigned PUT (publik, rate-limited)
- *   POST /api/v1/r2/delete             — hapus object (staff)
+ *   POST /api/v1/drive/upload           — upload file (publik, rate-limited)
+ *   POST /api/v1/drive/delete           — hapus file (staff)
  *   GET|POST /api/v1/admin/*           — dashboard staf (requireRole)
  *   GET  /healthz                      — health check (tanpa DB)
  *
@@ -23,6 +22,7 @@
  *   JWT_SECRET     tanda tangan JWT (wajib utk auth; boot tanpa ini aman)
  *   CORS_ORIGIN    daftar origin dipisah koma; tanpa ini → default-deny
  *                  lintas-origin browser (same-origin tidak lewat CORS)
+ *   GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN — storage Google Drive (lihat drive.js)
  *   COOKIE_SAMESITE / COOKIE_SECURE / COOKIE_DOMAIN — lihat auth.js
  */
 import 'dotenv/config';
@@ -34,7 +34,7 @@ import { db, isDbReady } from './db.js';
 import authRouter from './routes/auth.js';
 import promoRouter from './routes/promo.js';
 import adminRouter from './routes/admin.js';
-import r2Router from './r2.js';
+import driveRouter from './drive.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -62,7 +62,7 @@ app.use(cookieParser());
 app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/promo', promoRouter);
 app.use('/api/v1/admin', adminRouter);
-app.use('/api/v1/r2', r2Router);
+app.use('/api/v1/drive', driveRouter);
 
 // Health check tanpa DB.
 app.get('/healthz', (_req, res) => {

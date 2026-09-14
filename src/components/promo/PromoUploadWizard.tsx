@@ -2,7 +2,7 @@
  * Wizard pengajuan media promosi — 3 langkah:
  *   1. Pilih media (spesifikasi + rules)
  *   2. Data tenant (pemilih dari API tenant) + PIC + tanggal pasang + catatan
- *   3. Kirim materi — unggah file (presign R2 → PUT → submit DB) ATAU
+ *   3. Kirim materi — unggah file (upload API → verifikasi → Drive) ATAU
  *      kirim tautan (Google Drive/Dropbox/WeTransfer) untuk file besar.
  *
  * Status: idle → uploading → success | error. Pesan error server verbatim.
@@ -10,10 +10,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, ArrowRight, Building2, CheckCircle2, ChevronDown, FileText, Film,
-  ImageIcon, Link2, Loader2, ShieldCheck, Store, Upload, X,
+  ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, FileText, Film,
+  ImageIcon, Link2, Loader2, ShieldCheck, Upload, X,
 } from 'lucide-react';
-import { fetchMediaTypes, presignUpload, putFile, submitPromo } from '../../utils/promoApi';
+import { fetchMediaTypes, uploadFile, submitPromo } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
 import { MAX_FILE_BYTES, MIME_LABELS, CATEGORY_LABELS } from '../../constants/promo';
 import { TenantSearchSelect } from './TenantSearchSelect';
@@ -21,7 +21,7 @@ import type { PromoMediaType, TenantOption } from '../../types/promo';
 
 type Step = 1 | 2 | 3;
 type SubmitState = 'idle' | 'uploading' | 'success' | 'error';
-/** Sumber materi: unggah langsung ke R2, atau tautan penyimpanan tenant. */
+/** Sumber materi: unggah ke Drive kami, atau tautan penyimpanan tenant. */
 type SourceMode = 'upload' | 'link';
 
 /** Format diterima ('JPEG,MP4') → mime map FE. */
@@ -91,6 +91,7 @@ export default function PromoUploadWizard() {
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [submitError, setSubmitError] = useState('');
   const [ticketId, setTicketId] = useState('');
+  const [uploadPct, setUploadPct] = useState(0);
 
   const selectedMedia = useMemo(
     () => mediaTypes.find((m) => m.slug === selectedSlug) ?? null,
@@ -172,13 +173,14 @@ export default function PromoUploadWizard() {
     }
     setSubmitState('uploading');
     setSubmitError('');
+    setUploadPct(0);
     try {
-      // Mode unggah: presign → PUT ke R2 → insert row. Mode tautan: insert saja.
-      let fileUrl = '';
+      // Mode unggah: kirim file ke API (server verifikasi magic bytes lalu
+      // simpan ke Google Drive) → insert row. Mode tautan: insert saja.
+      let driveFileId = '';
       if (sourceMode === 'upload' && file) {
-        const { uploadUrl, publicUrl } = await presignUpload(file);
-        await putFile(uploadUrl, file);
-        fileUrl = publicUrl;
+        const uploaded = await uploadFile(file, setUploadPct);
+        driveFileId = uploaded.file_id;
       }
       const result = await submitPromo({
         media_type_slug: selectedMedia.slug,
@@ -188,7 +190,7 @@ export default function PromoUploadWizard() {
         pic_phone: picPhone.trim(),
         installation_date: installationDate,
         notes: notes.trim(),
-        file_url: fileUrl,
+        drive_file_id: driveFileId,
         file_name: sourceMode === 'upload' && file ? file.name : '',
         mime_type: sourceMode === 'upload' && file ? file.type : '',
         file_size_bytes: sourceMode === 'upload' && file ? file.size : 0,
@@ -597,7 +599,12 @@ export default function PromoUploadWizard() {
                       type="file"
                       accept={mimes.join(',')}
                       className="sr-only"
-                      onChange={(e) => onFileChange(e.target.files?.[0] ?? null)}
+                      onChange={(e) => {
+                        onFileChange(e.target.files?.[0] ?? null);
+                        // Reset value supaya memilih file yang sama lagi tetap
+                        // memicu onChange (input value tidak menahan pilihan lama).
+                        e.target.value = '';
+                      }}
                     />
                   </label>
 
@@ -636,7 +643,6 @@ export default function PromoUploadWizard() {
                     <p className="mt-1 text-xs text-red-700 dark:text-red-300">{submitError}</p>
                   </div>
                 )}
-
                 <button
                   type="button"
                   onClick={handleSubmit}
@@ -646,7 +652,9 @@ export default function PromoUploadWizard() {
                   {submitState === 'uploading' ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                      {sourceMode === 'upload' ? 'Mengunggah & Mengirim…' : 'Mengirim…'}
+                      {sourceMode === 'upload'
+                        ? `Mengunggah & Mengirim… ${uploadPct > 0 ? `${uploadPct}%` : ''}`
+                        : 'Mengirim…'}
                     </>
                   ) : (
                     <>

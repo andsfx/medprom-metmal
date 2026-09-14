@@ -3,7 +3,7 @@
  * (ApiError → degradasi list kosong sesuai konteks; error diteruskan bila
  * UI butuh menampilkan pesan/tombol coba lagi).
  */
-import { apiGet, apiPost, ApiError } from '../lib/rest';
+import { apiGet, apiPost, apiUrl, ApiError } from '../lib/rest';
 import type {
   PromoMediaType, TenantOption, PromoSubmissionPayload, MySubmissionRow,
 } from '../types/promo';
@@ -37,31 +37,58 @@ export async function searchTenants(query: string): Promise<TenantSearchResult> 
   }
 }
 
-// ─── Upload R2 (publik) ─────────────────────────────────────────
+// ─── Upload file (publik) ───────────────────────────────────────
 
-export interface PresignResult {
-  uploadUrl: string;
-  publicUrl: string;
-  fileName: string;
+export interface UploadResult {
+  /** ID file di Google Drive (dipakai submit). */
+  file_id: string;
+  web_view_link: string;
+  file_name: string;
+  mime_type: string;
+  file_size_bytes: number;
 }
 
-export async function presignUpload(file: File): Promise<PresignResult> {
-  const result = await apiPost<{
-    success: boolean; error?: string; uploadUrl?: string; publicUrl?: string; fileName?: string;
-  }>('/r2/presign-public', { originalName: file.name, contentType: file.type });
+/** Upload satu file ke API (streaming multipart) — server verifikasi magic
+ *  bytes sebelum menyimpan ke Drive, lalu mengembalikan metadata terverifikasi. */
+export async function uploadFile(file: File, onProgress?: (pct: number) => void): Promise<UploadResult> {
+  const { promise, resolve, reject } = Promise.withResolvers<UploadResult>();
 
-  if (!result.success) throw new ApiError(result.error || 'Gagal menyiapkan upload', 'APP');
-  if (!result.uploadUrl || !result.publicUrl) throw new ApiError('Gagal menyiapkan upload', 'APP');
-  return { uploadUrl: result.uploadUrl, publicUrl: result.publicUrl, fileName: result.fileName || '' };
-}
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', apiUrl('/drive/upload'));
+  xhr.withCredentials = true;
 
-export async function putFile(uploadUrl: string, file: File): Promise<void> {
-  const uploadRes = await fetch(uploadUrl, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type },
-    body: file,
-  });
-  if (!uploadRes.ok) throw new ApiError('Gagal mengunggah file', 'UPLOAD');
+  if (onProgress) {
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+  }
+
+  xhr.onload = () => {
+    let parsed: {
+      success?: boolean; error?: string;
+      file_id?: string; web_view_link?: string; file_name?: string; mime_type?: string; file_size_bytes?: number;
+    } = {};
+    try { parsed = JSON.parse(xhr.responseText); } catch { /* body non-JSON */ }
+    if (xhr.status >= 200 && xhr.status < 300 && parsed.success && parsed.file_id) {
+      resolve({
+        file_id: parsed.file_id,
+        web_view_link: parsed.web_view_link || '',
+        file_name: parsed.file_name || file.name,
+        mime_type: parsed.mime_type || file.type,
+        file_size_bytes: parsed.file_size_bytes || file.size,
+      });
+    } else {
+      reject(new ApiError(parsed.error || `Gagal mengunggah file (HTTP ${xhr.status})`, 'UPLOAD'));
+    }
+  };
+  xhr.onerror = () => reject(new ApiError('Gagal terhubung ke server', 'NETWORK'));
+  xhr.onabort = () => reject(new ApiError('Unggahan dibatalkan', 'ABORT'));
+
+  const form = new FormData();
+  form.append('file', file);
+  xhr.send(form);
+
+  return promise;
 }
 
 // ─── Submit pengajuan (publik) ──────────────────────────────────

@@ -7,8 +7,13 @@ TLS dan mem-proxy subdomain baru ke `127.0.0.1:3002`.
 ## 1. Prasyarat
 
 - VPS: Docker + Caddy aktif (sudah ada; app event lama jalan di 127.0.0.1:8080).
-- Cloudflare R2: buat bucket **`medprom-media`** + token access key (Account →
-  R2 → Manage API Tokens). Catat `R2_PUBLIC_URL` (tab Settings → Public access).
+- Google Cloud: buat project, aktifkan Google Drive API, buat OAuth 2.0 client ID
+  (Application type: "Web application"). Tambahkan URI redirect:
+  `http://localhost:3000/oauth2callback`. Unduh credential JSON dan simpan
+  sebagai `server/secrets/drive-credentials.json`. Jalankan `node server/scripts/drive-auth.mjs`
+  untuk mendapatkan refresh token — isi `GOOGLE_DRIVE_REFRESH_TOKEN` di `.env`.
+  Buat folder di Drive untuk penyimpanan media, catat folder ID-nya sebagai
+  `GOOGLE_DRIVE_FOLDER_ID`.
 - Domain: satu subdomain baru di `andotherstori.my.id` (mis.
   `promapi.andotherstori.my.id`) — DNS A record → IP publik VPS.
 
@@ -130,3 +135,7 @@ cd D:/Andy/medprom-metmal && npm ci && npm run build && vercel --prod
   `create-admin.mjs --reset` (env `ADMIN_PASSWORD`, role via `ADMIN_ROLE`).
 - MID_API_KEY: begitu Metland memberi key → isi di `.env`, `docker compose
   up -d`; pencarian tenant aktif otomatis (tanpa perubahan kode).
+- Sweep file expired: cron `0 4 * * *` (WIB) menjalankan
+  `docker compose exec api node server/scripts/drive-sweep.mjs` → menghapus file
+  Drive lebih tua dari 30 hari yang tidak lagi dirujuk oleh pengajuan aktif.
+  Log di `/var/log/medprom-sweep.log`.

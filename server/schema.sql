@@ -28,8 +28,8 @@ CREATE TABLE IF NOT EXISTS promo_media_types (
 -- Pengajuan media promosi oleh tenant (publik, tanpa login).
 -- media_type_slug = snapshot teks TANPA FK: media type bisa dinonaktifkan
 -- tanpa memutus jejak historis submission (hapus ditolak bila masih dipakai).
--- source_type: 'upload' = file di R2 kita; 'link' = tautan eksternal
--- (Google Drive/Dropbox/WeTransfer) — file_url/file_name/mime_type kosong.
+-- source_type: 'upload' = file di Google Drive kami (drive_file_id terisi);
+-- 'link' = tautan eksternal (Drive/Dropbox/WeTransfer) — file_url/file_name/mime_type kosong.
 CREATE TABLE IF NOT EXISTS promo_submissions (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   media_type_slug TEXT NOT NULL,
@@ -45,6 +45,7 @@ CREATE TABLE IF NOT EXISTS promo_submissions (
   mime_type TEXT DEFAULT '',
   link_url TEXT DEFAULT '',
   file_size_bytes BIGINT NOT NULL DEFAULT 0,
+  drive_file_id TEXT DEFAULT '',
   status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','rejected','installed')),
   review_notes TEXT DEFAULT '',
   reviewed_by UUID,
@@ -59,6 +60,7 @@ CREATE TABLE IF NOT EXISTS promo_submissions (
 -- Migrasi idempotent untuk DB yang sudah jalan sebelum kolom ini ada.
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'upload';
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS link_url TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS drive_file_id TEXT DEFAULT '';
 ALTER TABLE promo_submissions ALTER COLUMN file_url DROP NOT NULL;
 ALTER TABLE promo_submissions ALTER COLUMN mime_type DROP NOT NULL;
 
@@ -89,6 +91,9 @@ CREATE INDEX IF NOT EXISTS idx_ps_status_created ON promo_submissions (status, c
 CREATE INDEX IF NOT EXISTS idx_ps_media_type ON promo_submissions (media_type_slug);
 CREATE INDEX IF NOT EXISTS idx_ps_created ON promo_submissions (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_ps_fingerprint ON promo_submissions (device_fingerprint) WHERE device_fingerprint != '';
+-- Satu objek Drive = satu pengajuan: file tidak bisa diklaim duplikat lintas
+-- pengajuan (hapus pengajuan tak akan menghapus file yang masih dipakai baris lain).
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ps_drive_file ON promo_submissions (drive_file_id) WHERE drive_file_id != '';
 CREATE INDEX IF NOT EXISTS idx_amt_sort ON promo_media_types (sort_order);
 CREATE INDEX IF NOT EXISTS idx_amt_category ON promo_media_types (category);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users (role);

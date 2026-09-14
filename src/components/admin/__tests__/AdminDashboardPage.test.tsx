@@ -30,7 +30,7 @@ const ROWS: AdminSubmissionRow[] = [
     id: 'sub-1', media_type_slug: 'spanduk', tenant_id: 'T1', tenant_name: 'Optik Melawai',
     pic_name: 'Andi', pic_phone: '08123456789', installation_date: '', notes: '',
     source_type: 'upload',
-    file_url: 'https://r2.example/promo/1.jpg', file_name: 'spanduk.jpg',
+    file_url: 'https://drive.google.com/file/d/file-1/view', file_name: 'spanduk.jpg',
     mime_type: 'image/jpeg', file_size_bytes: 1024, link_url: '', status: 'pending',
     review_notes: '', reviewed_by: null, reviewed_at: null, reviewed_by_name: null,
     device_fingerprint: 'fp1', ip_address: '127.0.0.1', created_at: '2026-09-12T01:00:00Z',
@@ -39,7 +39,7 @@ const ROWS: AdminSubmissionRow[] = [
     id: 'sub-2', media_type_slug: 'videotron', tenant_id: 'T2', tenant_name: 'Momoiro',
     pic_name: 'Budi', pic_phone: '08987654321', installation_date: '2026-09-20', notes: '',
     source_type: 'upload',
-    file_url: 'https://r2.example/promo/2.mp4', file_name: 'video.mp4',
+    file_url: 'https://drive.google.com/file/d/file-2/view', file_name: 'video.mp4',
     mime_type: 'video/mp4', file_size_bytes: 2048, link_url: '', status: 'approved',
     review_notes: 'OK', reviewed_by: 'u1', reviewed_at: '2026-09-12T02:00:00Z', reviewed_by_name: 'Admin Test',
     device_fingerprint: 'fp2', ip_address: '127.0.0.1', created_at: '2026-09-11T01:00:00Z',
@@ -97,7 +97,7 @@ describe('AdminDashboardPage', () => {
     expect(screen.getAllByRole('button', { name: /Hapus pengajuan/i }).length).toBe(3);
   });
 
-  it('pengajuan bertautan: tabel menaut ke URL eksternal, bukan file R2', async () => {
+  it('pengajuan bertautan: tabel menaut ke URL eksternal, bukan file Drive', async () => {
     renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
     await screen.findByText('Kopi Kenangan');
 

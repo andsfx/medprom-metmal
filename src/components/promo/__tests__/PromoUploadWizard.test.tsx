@@ -12,20 +12,18 @@ vi.mock('../../../utils/promoApi', async (importOriginal) => {
     ...actual,
     fetchMediaTypes: vi.fn(),
     searchTenants: vi.fn(),
-    presignUpload: vi.fn(),
-    putFile: vi.fn(),
+    uploadFile: vi.fn(),
     submitPromo: vi.fn(),
   };
 });
 
 import {
-  fetchMediaTypes, searchTenants, submitPromo, presignUpload, putFile,
+  fetchMediaTypes, searchTenants, submitPromo, uploadFile,
 } from '../../../utils/promoApi';
 
 const mockedFetchMediaTypes = vi.mocked(fetchMediaTypes);
 const mockedSearchTenants = vi.mocked(searchTenants);
-const mockedPresignUpload = vi.mocked(presignUpload);
-const mockedPutFile = vi.mocked(putFile);
+const mockedUploadFile = vi.mocked(uploadFile);
 const mockedSubmitPromo = vi.mocked(submitPromo);
 
 // Fingerprint localStorage-stable di jsdom.
@@ -111,11 +109,10 @@ describe('PromoUploadWizard', () => {
     expect(await screen.findByText(/Format file tidak didukung. Gunakan JPEG,MP4/i)).toBeInTheDocument();
   });
 
-  it('alur sukses: presign → put → submit menampilkan layar tiket', async () => {
-    mockedPresignUpload.mockResolvedValue({
-      uploadUrl: 'https://r2.example/upload', publicUrl: 'https://r2.example/promo/1.jpg', fileName: 'promo/1.jpg',
+  it('alur sukses: upload → submit menampilkan layar tiket', async () => {
+    mockedUploadFile.mockResolvedValue({
+      file_id: 'f1', web_view_link: '', file_name: 'materi.jpg', mime_type: 'image/jpeg', file_size_bytes: 1024,
     });
-    mockedPutFile.mockResolvedValue(undefined);
     mockedSubmitPromo.mockResolvedValue({ id: 'abcdefgh-1234', created_at: '2026-09-12T00:00:00Z' });
     await wizardToStep3();
 
@@ -157,23 +154,22 @@ describe('PromoUploadWizard', () => {
     fireEvent.click(submitBtn);
 
     expect(await screen.findByText('Pengajuan Terkirim!')).toBeInTheDocument();
-    // Tanpa presign/PUT R2 — materi tetap di penyimpanan tenant.
-    expect(mockedPresignUpload).not.toHaveBeenCalled();
-    expect(mockedPutFile).not.toHaveBeenCalled();
+    // Tanpa upload API — materi tetap di penyimpanan tenant.
+    expect(mockedUploadFile).not.toHaveBeenCalled();
+    expect(mockedUploadFile).not.toHaveBeenCalled();
     expect(mockedSubmitPromo).toHaveBeenCalledWith(expect.objectContaining({
       media_type_slug: 'videotron',
       link_url: 'https://drive.google.com/file/d/xyz/view',
-      file_url: '',
+      drive_file_id: '',
       mime_type: '',
       file_size_bytes: 0,
     }));
   });
 
   it('menampilkan pesan error server verbatim saat submit gagal', async () => {
-    mockedPresignUpload.mockResolvedValue({
-      uploadUrl: 'https://r2.example/upload', publicUrl: 'https://r2.example/promo/1.jpg', fileName: 'promo/1.jpg',
+    mockedUploadFile.mockResolvedValue({
+      file_id: 'f1', web_view_link: '', file_name: 'materi.jpg', mime_type: 'image/jpeg', file_size_bytes: 1024,
     });
-    mockedPutFile.mockResolvedValue(undefined);
     mockedSubmitPromo.mockRejectedValue(new Error('Isi file tidak sesuai dengan tipe yang dipilih.'));
     await wizardToStep3();
 

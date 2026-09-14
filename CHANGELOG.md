@@ -3,6 +3,40 @@
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
+## [1.1.0] — 2026-09-14
+
+Penyempurnaan infrastruktur: migrasi penyimpanan dan perbaikan kritis.
+
+### Perubahan
+
+- Migrasi penyimpanan media dari Cloudflare R2 ke Google Drive (REST v3 via
+  fetch, tanpa SDK; autentikasi OAuth refresh token akun storage). Dependensi
+  `@aws-sdk/client-s3` dan `@aws-sdk/s3-request-presigner` dihapus.
+- Alur unggah baru: browser → `POST /api/v1/drive/upload` (streaming
+  multipart, verifikasi magic bytes SEBELUM tulis ke Drive) → `POST
+  /api/v1/promo/submit` dengan `drive_file_id`. Metadata nama/mime/ukuran
+  diambil dari Drive, bukan klaim klien.
+- Anti-klaim duplikat: satu objek Drive = satu pengajuan (guard
+  `drive_file_id` + unique index). File diverifikasi ada via `getDriveFile`.
+- Perbaikan deteksi magic bytes untuk MP4 (box `ftyp` di offset 4).
+- Skrip operasional: `drive-auth.mjs` (produksi refresh token, sekali),
+  `drive-sweep.mjs` (bersihkan file yatim + laporan kuota, cron-able).
+
+### Catatan migrasi
+
+Untuk instance yang sudah berjalan sebelum rilis ini:
+
+```bash
+# Terapkan skema (kolom drive_file_id), isi env Drive, deploy API + frontend.
+node scripts/db-migrate.mjs
+```
+
+- Isi `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN` di
+  `.env` (refresh token via `node scripts/drive-auth.mjs`), lalu
+  `docker compose up -d`. `DRIVE_ROOT_FOLDER_ID` opsional (default root).
+- File yang sebelumnya ada di R2 tidak dipindahkan secara otomatis; pengajuan
+  lama tetap merujuk ke URL R2 hingga kedaluwarsa.
+
 ## [1.0.0] — 2026-09-13
 
 Rilis pertama platform media promosi tenant Metropolitan Mall Bekasi.

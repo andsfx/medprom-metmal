@@ -1,7 +1,7 @@
 {
   "name": "medprom-metmal",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Platform pengajuan materi media promosi tenant Metropolitan Mall Bekasi",
   "license": "UNLICENSED",
   "type": "module",
@@ -15,8 +15,6 @@
     "db:seed": "node server/scripts/seed-media-types.mjs"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1035.0",
-    "@aws-sdk/s3-request-presigner": "^3.1035.0",
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",

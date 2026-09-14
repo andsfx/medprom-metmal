@@ -12,3 +12,8 @@ dist/
 # Tooling lokal
 .vercel
 *.log
+# Kredensial Google OAuth — JANGAN commit
+client_secret*.json
+*-token.json
+scripts/drive-auth.mjs
+scripts/drive-sweep.mjs
