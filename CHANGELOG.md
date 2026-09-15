@@ -3,6 +3,63 @@
 Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
+## [Unreleased]
+
+## [1.2.0] — 2026-09-15
+
+Penyelarasan katalog dengan deck "MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026",
+penegakan lead time, dan kanal notifikasi tenant.
+
+### Ditambahkan
+
+- Penegakan lead time materi: tanggal pasang divalidasi terhadap ketentuan tiap
+  media di deck ("2 hari sebelum pemasangan" / "3 hari kerja sebelum
+  pemasangan"), baik di wizard maupun di server. Pengajuan yang masuk lebih
+  lambat dari lead time ditandai di dashboard staf.
+- Kanal email materi social media (`marketing@malmetropolitan.com`) sesuai deck
+  2026, ditampilkan di langkah kirim materi.
+- Tombol kirim pesan WhatsApp di modal detail pengajuan, dengan normalisasi
+  nomor ke format `wa.me` (mis. `0812-3456-7890` → `6281234567890`).
+- Mode kirim tautan menjadi kanal **kanonis** pada wizard pengajuan. Mode unggah
+  file ke Drive mall menjadi jalur legacy di balik flag `VITE_PROMO_UPLOAD_MODE`.
+
+### Diperbaiki
+
+- Keselarasan katalog dengan deck 2026: Digital Poster dibatasi JPEG (deck:
+  "tidak menerima materi lain selain JPEG"), dan ketentuan email social media
+  yang sebelumnya tidak ikut ter-seed.
+- `README` menyebut media yang belum tersedia secara keliru (tertulis Parapet,
+  seharusnya Vertical Banner), dan jumlah media dijelaskan: deck memuat 13
+  slide media, platform memecah slide social media menjadi dua entri (14 slug).
+- Seed kini menyinkronkan kolom `rules`, bukan hanya `accepted_formats`,
+  sehingga koreksi ketentuan deck sampai ke instance yang sudah berjalan.
+- Pesan validasi server (`errors[]`) kini sampai ke kolom form yang tepat,
+  bukan sebagai "Permintaan gagal (HTTP 400)" generik.
+
+### Keamanan
+
+- Perintah `rsync` pada panduan deploy kini mengecualikan `client_secret*.json`
+  dan `*-token.json`. Sebelumnya `.gitignore` sudah menutup sisi repo, tetapi
+  rsync memakai daftar exclude sendiri sehingga kredensial Google OAuth ikut
+  tersalin ke VPS.
+
+### Catatan rilis
+
+Tidak ada perubahan skema. Namun **`db:seed` wajib dijalankan** setelah update:
+penegakan lead time dan kanal email membaca kolom `rules`, dan versi seed lama
+tidak menyinkronkan kolom itu. Urutan deploy tetap: API dulu, frontend terakhir.
+
+```bash
+docker compose exec api node server/scripts/seed-media-types.mjs
+```
+
+Verifikasi cepat bahwa katalog sudah tersinkron:
+
+```bash
+curl -s https://<api-domain>/api/v1/promo/media-types \
+  | grep -c 'marketing@malmetropolitan.com'   # harapan: 2
+```
+
 ## [1.1.0] — 2026-09-14
 
 Penyempurnaan infrastruktur: migrasi penyimpanan dan perbaikan kritis.

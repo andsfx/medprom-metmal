@@ -5,8 +5,10 @@ Bekasi**. Tenant mengisi form pengajuan materi promosi, tim **Tenant
 Relations** mengecek dan memproses materi promosinya.
 
 Katalog media beserta ukuran, material, harga, dan ketentuannya bersumber dari
-deck *"MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026"*: 14 jenis media, 13 di
-antaranya aktif (Parapet belum tersedia).
+deck *"MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026"* — 13 slide media. Platform
+memecah satu slide social media ("Instagram, Fanpage, dan Tiktok") menjadi dua
+entri (feed dan story), sehingga totalnya 14 jenis media; 13 aktif, dan
+**Vertical Banner** belum tersedia (masih digunakan Mall).
 
 ## Kemampuan
 
@@ -19,11 +21,15 @@ antaranya aktif (Parapet belum tersedia).
 - Nama tenant dipilih dari API tenant. Bila API tidak tersedia, form beralih ke
   isian nama manual.
 - Dua cara mengirim materi:
-  - **Unggah file** — file dikirim langsung dari browser ke penyimpanan objek,
-    lalu diverifikasi server.
-  - **Kirim tautan** — Google Drive, Dropbox, atau WeTransfer untuk materi
-    berukuran besar maupun folder berisi banyak file. Tidak ada file yang
-    tersimpan di server.
+  - **Kirim tautan** (kanonis) — Google Drive, Dropbox, atau WeTransfer untuk
+    materi berukuran besar maupun folder berisi banyak file. Tidak ada file yang
+    tersimpan di server. Materi diverifikasi manual oleh tim Tenant Relations.
+  - **Unggah file** (legacy) — file dikirim langsung dari browser ke
+    penyimpanan objek, lalu diverifikasi server. Jalur ini hanya aktif bila
+    `VITE_PROMO_UPLOAD_MODE='1'`; lihat [Mode unggah legacy](#mode-unggah-legacy).
+- Ketentuan lead time tiap media ditegakkan: tanggal pemasangan ditolak bila
+  kurang dari ketentuan deck ("2 hari sebelum pemasangan" atau "3 hari kerja
+  sebelum pemasangan"), baik di form maupun di server.
 - Nomor tiket setelah pengajuan terkirim, plus halaman Riwayat yang menampilkan
   status dan catatan tim tanpa perlu akun.
 
@@ -51,18 +57,23 @@ flowchart LR
   T[Tenant / Browser] -->|HTTPS| V["Frontend — Vercel<br/>React 19 + Vite"]
   V -->|"REST /api/v1"| A["API — VPS<br/>Express 4"]
   A --> P[("Postgres 16")]
-  A -->|"upload / delete / verify"| D[("Google Drive<br/>5TB akun media promosi")]
+  A -.->|"unggah/verifikasi/hapus<br/>(legacy, di balik flag)"| D[("Google Drive<br/>5TB akun media promosi")]
   A -->|"lookup tenant"| M["API tenant"]
+  T -.->|"tautan materi (kanonis)<br/>Drive/Dropbox/WeTransfer"| A
 ```
 
 - Frontend berjalan di Vercel sebagai SPA; seluruh path di-rewrite ke
   `index.html`.
 - API dan Postgres berjalan di VPS melalui Docker Compose, diproksi Caddy ke
   `127.0.0.1:3002`.
-- File materi disimpan di Google Drive akun khusus
-  `mediapromosi.metmalbekasi@gmail.com` (Google One 5TB). Unggahan diverifikasi
-  di server (signature byte + ukuran) SEBELUM ditulis ke Drive sehingga file
-  tidak valid tidak pernah memenuhi storage.
+- **Kanal kanonis** adalah tautan: tenant menyimpan materinya di penyimpanan
+  sendiri dan mengirim URL; tim Tenant Relations memverifikasi manual. Tidak ada
+  berkas tenant yang masuk ke storage mall pada jalur ini.
+- Jalur unggah (garis putus-putus) masih tersedia untuk memproses data lama dan
+  penyimpanan Drive akun `mediapromosi.metmalbekasi@gmail.com` (Google One 5TB)
+  tetap dipakai selama transisi. Unggahan diverifikasi di server (signature byte
+  + ukuran) SEBELUM ditulis ke Drive sehingga file tidak valid tidak pernah
+  memenuhi storage.
 - Sesi staf memakai JWT pada cookie lintas origin (`SameSite=None; Secure`).
 
 ### Validasi pengajuan
@@ -77,11 +88,18 @@ Untuk mode unggah, server memeriksa
 5. file belum dipakai pengajuan lain (unique constraint DB)
 6. rate limit 5 pengajuan per perangkat dalam 24 jam (fingerprint)
 
-Semua klaim klien (nama file, MIME, ukuran) diverifikasi ulang oleh server
-dari metadata Drive. Magic bytes diverifikasi saat upload — file tidak valid
-ditolak tanpa ditulis ke Drive.
-
 Mode tautan hanya menerima URL berskema `http` atau `https`.
+
+Kedua mode memeriksa **lead time** setelah media diketahui: tanggal pemasangan
+harus menyisakan cukup waktu menurut ketentuan media tersebut. Aturan diturunkan
+dari teks `rules` katalog — bukan dari kategori — karena ketentuannya tidak
+seragam (boom gate tergolong outdoor tetapi memakai hari kerja). Pengajuan yang
+masuk lebih lambat dari lead time ditolak `400` dengan pesan yang menyebut
+jumlah hari; dashboard staf menandainya sebagai berisiko.
+
+Perhitungan hari kerja hanya mengecualikan Sabtu dan Minggu — tabel hari libur
+nasional belum tersedia, sehingga tanggal pasang yang jatuh pada hari libur
+nasional belum ditolak.
 
 ## Struktur
 
@@ -89,18 +107,24 @@ Mode tautan hanya menerima URL berskema `http` atau `https`.
 src/                      Frontend React (Vite + Tailwind v4)
   components/promo/       Katalog, form pengajuan, riwayat, pemilih tenant
   components/admin/       Login dan dashboard staf
-  utils/                  promoApi, adminApi, fingerprint
+  utils/                  promoApi, adminApi, fingerprint, leadTime, whatsapp
   lib/rest.ts             Klien REST
 server/
   schema.sql              Skema database
   src/routes/             promo (publik), admin (staf), auth
   src/drive.js            Upload, verifikasi, delete, metadata — Google Drive REST v3
+  src/lib/leadTime.js     Lead time (cermin src/utils/leadTime.ts)
   src/auth.js             JWT, bcrypt, kontrol role
   scripts/                seed-media-types, create-admin
 scripts/                  db-migrate, drive-auth, drive-sweep, verifikasi produksi (Playwright)
 __tests__/api/            Test route server
 deploy/vps/               docker-compose, .env.example, panduan deploy
 ```
+
+`src/utils/leadTime.ts` dan `server/src/lib/leadTime.js` adalah **cermin yang
+disengaja** (proyek ini belum punya paket bersama). Keduanya dikunci oleh test
+kontrak `__tests__/api/lead-time.test.js`, sehingga perubahannya harus selalu
+berpasangan.
 
 ## Menjalankan di lokal
 
@@ -122,9 +146,10 @@ npm run dev:api               # API      → http://localhost:3001
 npm run dev                   # Frontend → http://localhost:5173
 ```
 
-`db:migrate` dan `db:seed` aman dijalankan berulang. Seed hanya menyelaraskan
-daftar format yang diterima; harga dan ketentuan hasil penyuntingan admin tidak
-ditimpa.
+`db:migrate` dan `db:seed` aman dijalankan berulang. Seed menyelaraskan dua
+kolom yang bersumber langsung dari deck — `accepted_formats` dan `rules` —
+sehingga koreksi ketentuan ikut tersebar ke instance yang sudah jalan. Harga,
+lokasi, dan kolom lain hasil penyuntingan admin tidak ditimpa.
 
 ## Perintah
 
@@ -153,10 +178,39 @@ dipakai baik oleh pemilih file di frontend maupun daftar izin MIME di server.
 | Kelompok media | Format |
 |---|---|
 | Cetak: spanduk, big banner, umbul-umbul, boom gate, sticker, vertical banner | JPEG, PNG, PDF |
-| LED Banner, Digital Poster | JPEG, PNG |
+| LED Banner, Digital Poster | JPEG |
 | Videotron, Integrasia, Media Sosial | JPEG, PNG, MP4 |
 
+Deck hanya menetapkan format file untuk media digital (LED Banner, Digital
+Poster: JPEG; Videotron/Integrasia/Media Sosial: JPEG/MP4) dan menyebut
+substrat fisik untuk media cetak (Flexi, sticker vinyl) — bukan format file.
+Format cetak di atas adalah kebijakan operasional platform, bukan klaim deck.
+
 Batas unggahan 50MB. Untuk materi yang lebih besar, gunakan mode kirim tautan.
+Materi media sosial juga dapat dikirim via email ke `marketing@malmetropolitan.com`
+(lihat ketentuan tiap media).
+
+## Mode unggah legacy
+
+Kanal kanonis platform adalah **kirim tautan**; mode unggah dipertahankan hanya
+untuk masa transisi dan memproses pengajuan lama. Secara default tenant melihat
+antarmuka tautan saja — pengalih mode unggah dan area unggah tidak dirender.
+
+Untuk menyalakannya (hanya bila benar-benar diperlukan):
+
+```bash
+# .env — nilai '1' mengaktifkan jalur unggah
+VITE_PROMO_UPLOAD_MODE=1
+```
+
+Flag ini sengaja **tidak** dicantumkan di `.env.example` agar tidak ikut
+tersalin saat deploy baru. Perlu diketahui: kode unggah tetap ikut ter-bundle
+karena mode sumber adalah state React — flag hanya menggerbangi perenderan UI,
+bukan menghapus kode dari bundel.
+
+Rencana pensiun bertahap: server menolak `drive_file_id` → `POST /drive/upload`
+mengembalikan `410 Gone` → arsip berkas legacy dibuat → baru kolom Drive
+dihapus.
 
 ## Deploy
 

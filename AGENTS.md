@@ -23,7 +23,7 @@ Prasyarat: Node 20+, Postgres 16.
 npm ci
 cp .env.example .env          # isi DATABASE_URL, JWT_SECRET, GOOGLE_*
 npm run db:migrate            # idempotent — aman diulang
-npm run db:seed               # idempotent — tidak menimpa harga/ketentuan admin
+npm run db:seed               # idempotent — sinkron accepted_formats + rules dari deck
 ADMIN_PASSWORD='...' node server/scripts/create-admin.mjs admin@metmal.co.id '' 'Admin Medprom'
 npm run dev:api               # → http://localhost:3001
 npm run dev                   # → http://localhost:5173
@@ -43,7 +43,7 @@ npm run dev                   # → http://localhost:5173
 | `node scripts/drive-auth.mjs` | Produksi `GOOGLE_REFRESH_TOKEN` (sekali, mesin lokal) |
 | `node scripts/drive-sweep.mjs [--apply]` | Laporan file Drive yatim; `--apply` hapus yang > 24 jam |
 
-Gate verifikasi: `npm run build` + `npx vitest run` (44/44) + `node --check` file server yang diubah.
+Gate verifikasi: `npm run build` + `npx vitest run` (semua hijau) + `node --check` file server yang diubah.
 
 ## Standar kode
 
@@ -57,6 +57,7 @@ Gate verifikasi: `npm run build` + `npx vitest run` (44/44) + `node --check` fil
 - Input selalu `sanitize` (batas panjang, strip NUL). Rate limit: submit 10/60 mnt/IP, upload 5/15 mnt/IP, fingerprint 5/24 jam.
 - Klaim klien tidak dipercaya: nama/MIME/ukuran diambil dari metadata Drive; magic bytes dicek SEBELUM tulis ke Drive.
 - Konstanta sinkron FE↔BE: batas 50MB di `src/constants/promo.ts` dan `server/src/drive.js`.
+- Aturan lead time diturunkan dengan **mem-parse teks `rules`**, bukan dari `category` — ketentuan deck tidak seragam (boom gate outdoor tetapi memakai hari kerja). `src/utils/leadTime.ts` ≡ `server/src/lib/leadTime.js`; ubah berpasangan, test kontrak `__tests__/api/lead-time.test.js` akan gagal bila menyimpang. Hari kerja = minus Sabtu/Minggu saja (libur nasional belum ada tabelnya).
 - Satu objek Drive = satu pengajuan (`drive_file_id` guard + unique index).
 
 ## Testing
@@ -78,11 +79,12 @@ Gate verifikasi: `npm run build` + `npx vitest run` (44/44) + `node --check` fil
 - Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`, opsional `DRIVE_ROOT_FOLDER_ID`. Hanya template (`*.example`) yang ikut git.
 - Produksi token: `GOOGLE_CLIENT_ID/SECRET=... node scripts/drive-auth.mjs`, buka URL, login akun mediapromosi, izinkan. Syarat GCP: akun mediapromosi terdaftar di **OAuth consent screen → Test users** (status Testing) + Drive API enabled. Redirect URI persis `http://localhost:3715/callback`.
 - `.env` dan `scripts/client_secret_*.json` git-ignore — tidak pernah commit. `deploy/vps/.env` tidak ada di repo; salin manual 3 var `GOOGLE_*` dari `.env` lokal saat deploy.
-- Alur upload: browser → `POST /api/v1/drive/upload` (multipart streaming) → `POST /api/v1/promo/submit` dengan `drive_file_id`. Mode tautan: URL http(s) saja, tanpa file.
+- Alur upload (legacy, di balik flag): browser → `POST /api/v1/drive/upload` (multipart streaming) → `POST /api/v1/promo/submit` dengan `drive_file_id`. Mode tautan (KANONIS): URL http(s) saja, tanpa file; admin verifikasi manual.
+- `VITE_PROMO_UPLOAD_MODE='1'` menyalakan UI unggah. Jangan tambahkan ke `.env.example`; jangan klaim kode unggah ter-tree-shake (mode sumber = state React, hanya render yang digerbangi).
 
 ## Deploy & operasional
 
-Panduan penuh: `deploy/vps/README-DEPLOY.md`. Ringkasnya: rsync repo (tanpa `node_modules/dist/.env*`) → `cp .env.example .env` → `docker compose up -d` → `db-migrate` + `seed` (dari container api) → Caddy subdomain → smoke `GET /healthz` → Vercel (`VITE_API_URL`) → isi `CORS_ORIGIN` → restart api.
+Panduan penuh: `deploy/vps/README-DEPLOY.md`. Ringkasnya: rsync repo (WAJIB `--exclude 'client_secret*.json' --exclude '*-token.json'` di samping `node_modules/dist/.env*` — `.gitignore` tidak berlaku untuk rsync, tanpa ini kredensial Google ikut tersalin ke VPS) → `cp .env.example .env` → `docker compose up -d` → `db-migrate` + `seed` (dari container api) → Caddy subdomain → smoke `GET /healthz` → Vercel (`VITE_API_URL`) → isi `CORS_ORIGIN` → restart api.
 
 - Backup DB: cron 03:30 WIB, `pg_dump` gzip, retensi 14 hari.
 - Sweep Drive yatim: cron opsional setelah backup.
