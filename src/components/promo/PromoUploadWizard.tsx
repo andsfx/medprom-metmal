@@ -2,20 +2,23 @@
  * Wizard pengajuan media promosi — 3 langkah:
  *   1. Pilih media (spesifikasi + rules)
  *   2. Data tenant (pemilih dari API tenant) + PIC + tanggal pasang + catatan
- *   3. Kirim materi — unggah file (upload API → verifikasi → Drive) ATAU
- *      kirim tautan (Google Drive/Dropbox/WeTransfer) untuk file besar.
+ *   3. Kirim materi — KANONIS: kirim tautan penyimpanan tenant (Google Drive/
+ *      Dropbox/WeTransfer); admin verifikasi manual. Mode unggah ke Drive mall
+ *      adalah jalur legacy di balik isUploadModeEnabled() (VITE_PROMO_UPLOAD_MODE).
  *
- * Status: idle → uploading → success | error. Pesan error server verbatim.
+ * Status: idle → uploading → success | error. Pesan validasi server dipetakan
+ * ke field terkait; sisanya ditampilkan verbatim.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, FileText, Film,
   ImageIcon, Link2, Loader2, ShieldCheck, Upload, X,
 } from 'lucide-react';
-import { fetchMediaTypes, uploadFile, submitPromo } from '../../utils/promoApi';
+import { fetchMediaTypes, uploadFile, submitPromo, errorsFromApiError, mapSubmitErrors } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
-import { MAX_FILE_BYTES, MIME_LABELS, CATEGORY_LABELS } from '../../constants/promo';
+import { MAX_FILE_BYTES, MIME_LABELS, CATEGORY_LABELS, isUploadModeEnabled } from '../../constants/promo';
+import { checkInstallationDate, toIsoDate, describeLeadTime, parseLeadTime, parseMaterialEmail } from '../../utils/leadTime';
 import { TenantSearchSelect } from './TenantSearchSelect';
 import type { PromoMediaType, TenantOption } from '../../types/promo';
 
@@ -50,6 +53,9 @@ const STEPS: Array<{ label: string }> = [
   { label: 'Kirim Materi' },
 ];
 
+/** Kunci sessionStorage draf pengajuan (link-only). */
+const DRAFT_KEY = 'metmal_promo_draft';
+
 /** Tautan materi harus http(s) — cerminan LINK_RE di server. */
 function isValidLink(url: string): boolean {
   return /^https?:\/\/[^\s]+$/i.test(url.trim());
@@ -81,7 +87,7 @@ export default function PromoUploadWizard() {
   const [installationDate, setInstallationDate] = useState('');
   const [notes, setNotes] = useState('');
 
-  const [sourceMode, setSourceMode] = useState<SourceMode>('upload');
+  const [sourceMode, setSourceMode] = useState<SourceMode>(() => (isUploadModeEnabled() ? 'upload' : 'link'));
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -99,6 +105,74 @@ export default function PromoUploadWizard() {
   );
   const mimes = useMemo(() => acceptedMimes(selectedMedia), [selectedMedia]);
   const formatsLabel = selectedMedia?.accepted_formats || '';
+
+  // Lead time media terpilih (diturunkan dari teks `rules` katalog).
+  const leadInfo = useMemo(() => {
+    const rules = selectedMedia?.rules || '';
+    const lead = parseLeadTime(rules);
+    return {
+      lead,
+      earliest: checkInstallationDate('', rules, toIsoDate()).earliest,
+      label: lead ? describeLeadTime(lead) : '',
+    };
+  }, [selectedMedia]);
+
+  // Kanal email materi (deck mengarahkan social media ke email marketing).
+  const materialEmail = useMemo(
+    () => parseMaterialEmail(selectedMedia?.rules || ''),
+    [selectedMedia],
+  );
+
+  // ─── Draf link-only (sessionStorage) ───
+  // Reload tak boleh memaksa tenant mengulang dari nol: hanya field teks yang
+  // dipulihkan (bukan File — objek itu tak bisa diserialisasi).
+  function clearDraft() {
+    try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* storage diblokir */ }
+  }
+
+  function persistDraft() {
+    try {
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
+        selectedSlug, tenantName: tenant?.name ?? '', tenantId: tenant?.id ?? '',
+        picName, picPhone, installationDate, notes, linkUrl,
+      }));
+    } catch { /* storage penuh / diblokir — draf opsional, jangan gagalkan submit */ }
+  }
+
+  // Pulihkan draf saat katalog siap (sekali, setelah mediaTypes termuat).
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current || mediaTypes.length === 0) return;
+    draftRestoredRef.current = true;
+    let draft: {
+      selectedSlug?: string; tenantName?: string; tenantId?: string;
+      picName?: string; picPhone?: string; installationDate?: string; notes?: string; linkUrl?: string;
+    } | null = null;
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) draft = JSON.parse(raw);
+    } catch { draft = null; }
+    if (!draft) return;
+    if (draft.selectedSlug && mediaTypes.some((m) => m.slug === draft!.selectedSlug)) {
+      setSelectedSlug(draft.selectedSlug);
+      setStep(2);
+    }
+    if (draft.tenantName) {
+      setTenant({ id: draft.tenantId ?? '', name: draft.tenantName, floor: '', lot: '', category: '' });
+    }
+    if (draft.picName) setPicName(draft.picName);
+    if (draft.picPhone) setPicPhone(draft.picPhone);
+    if (draft.installationDate) setInstallationDate(draft.installationDate);
+    if (draft.notes) setNotes(draft.notes);
+    if (draft.linkUrl) setLinkUrl(draft.linkUrl);
+  }, [mediaTypes]);
+
+  // Simpan draf saat field berubah (hanya setelah katalog termuat).
+  useEffect(() => {
+    if (mediaTypes.length === 0) return;
+    persistDraft();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mediaTypes, selectedSlug, tenant, picName, picPhone, installationDate, notes, linkUrl]);
 
   // Load katalog aktif; pre-select dari query param.
   useEffect(() => {
@@ -154,6 +228,11 @@ export default function PromoUploadWizard() {
     if (!picName.trim()) errs.pic_name = 'Nama PIC wajib diisi.';
     if (!picPhone.trim()) errs.pic_phone = 'Nomor telepon PIC wajib diisi.';
     else if (!/^[+0-9][0-9\s-]{7,19}$/.test(picPhone.trim())) errs.pic_phone = 'Format nomor telepon tidak valid.';
+    // Lead time media: cegah tanggal pasang yang mustahil dipenuhi Mall.
+    const leadCheck = checkInstallationDate(
+      installationDate, selectedMedia?.rules || '', toIsoDate(),
+    );
+    if (!leadCheck.ok) errs.installation_date = leadCheck.message;
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
       return;
@@ -175,8 +254,8 @@ export default function PromoUploadWizard() {
     setSubmitError('');
     setUploadPct(0);
     try {
-      // Mode unggah: kirim file ke API (server verifikasi magic bytes lalu
-      // simpan ke Google Drive) → insert row. Mode tautan: insert saja.
+      // Mode unggah (legacy): kirim file ke API → insert row.
+      // Mode tautan (kanonis): insert saja.
       let driveFileId = '';
       if (sourceMode === 'upload' && file) {
         const uploaded = await uploadFile(file, setUploadPct);
@@ -199,9 +278,25 @@ export default function PromoUploadWizard() {
       });
       setTicketId(result.id.replace(/-/g, '').slice(0, 8).toUpperCase() || '—');
       setSubmitState('success');
+      clearDraft();
     } catch (err) {
       setSubmitState('error');
-      setSubmitError(err instanceof Error ? err.message : 'Gagal mengirim pengajuan. Coba lagi.');
+      // Validasi server datang sebagai errors[] tanpa nama field — petakan agar
+      // tenant melihat masalahnya di kolom yang tepat, bukan satu alert generik.
+      const mapped = mapSubmitErrors(errorsFromApiError(err));
+      if (Object.keys(mapped.fields).length > 0) {
+        setFieldErrors((prev) => ({ ...prev, ...mapped.fields }));
+        const stepForField: Record<string, Step> = {
+          media: 1, tenant: 2, pic_name: 2, pic_phone: 2, installation_date: 2, link_url: 3,
+        };
+        const target = Object.keys(mapped.fields).map((f) => stepForField[f]).filter(Boolean)[0];
+        if (target && target !== 3) setStep(target);
+      }
+      setSubmitError(mapped.general.length > 0 ? mapped.general.join('; ') : '');
+      if (mapped.general.length === 0 && Object.keys(mapped.fields).length === 0) {
+        // Tak ada yang bisa dipetakan (mis. error jaringan) — tampilkan pesannya.
+        setSubmitError(err instanceof Error ? err.message : 'Gagal mengirim pengajuan. Coba lagi.');
+      }
     }
   }
 
@@ -223,7 +318,12 @@ export default function PromoUploadWizard() {
               <span className="font-mono text-sm font-bold tracking-widest text-brand-primary-700 dark:text-brand-primary-300">{ticketId}</span>
             </div>
             <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-              Simpan nomor tiket ini. Status pengajuan dapat dipantau di halaman Riwayat dari perangkat ini.
+              Simpan nomor tiket ini. Jangan hapus atau ubah akses tautan materi sampai status
+              berubah menjadi <span className="font-semibold">Terpasang</span> — tim Tenant Relations
+              membuka tautan tersebut untuk verifikasi.
+            </p>
+            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+              Status dapat dipantau di halaman Riwayat dari perangkat ini.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link to="/riwayat" className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition">
@@ -446,12 +546,19 @@ export default function PromoUploadWizard() {
                       id="installation-date"
                       type="date"
                       value={installationDate}
-                      onChange={(e) => setInstallationDate(e.target.value)}
+                      min={leadInfo.earliest || undefined}
+                      onChange={(e) => { setInstallationDate(e.target.value); setFieldErrors((er) => ({ ...er, installation_date: '' })); }}
                       className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
                     />
                     <p className="mt-1 text-xs ui-text-muted">
                       Permintaan tanggal bersifat harapan — jadwal final ditentukan Mall (lihat ketentuan media).
                     </p>
+                    {leadInfo.lead && (
+                      <p className="mt-1 text-xs font-medium text-brand-primary-700 dark:text-brand-primary-300">
+                        Materi harus diterima paling lambat {leadInfo.label} — tanggal paling awal {leadInfo.earliest}.
+                      </p>
+                    )}
+                    {fieldErrors.installation_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.installation_date}</p>}
                   </div>
 
                   <div>
@@ -481,6 +588,9 @@ export default function PromoUploadWizard() {
                   Lanjut — Kirim Materi
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
+                {submitError && (
+                  <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{submitError}</p>
+                )}
               </div>
             )}
 
@@ -489,8 +599,9 @@ export default function PromoUploadWizard() {
               <div className="p-5 sm:p-6">
                 <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Kirim Materi</h1>
                 <p className="ui-text-muted mt-1 text-sm">
-                  {selectedMedia.name} menerima <span className="font-semibold">{formatsLabel}</span>
-                  {selectedMedia.size_spec && <> — ukuran {selectedMedia.size_spec}</>}.
+                  Kirim <span className="font-semibold">tautan</span> materi untuk {selectedMedia.name}
+                  {formatsLabel && <> (format {formatsLabel}{selectedMedia.size_spec ? ` · ukuran ${selectedMedia.size_spec}` : ''})</>}.
+                  Materi tetap di penyimpanan Anda — kami hanya menyimpan tautannya.
                 </p>
 
                 {/* Ringkasan */}
@@ -515,7 +626,9 @@ export default function PromoUploadWizard() {
                   )}
                 </dl>
 
-                {/* Pemilih sumber materi */}
+                {/* Pemilih sumber materi — hanya saat mode unggah legacy aktif.
+                    Kanonis link-only: satu cara kirim, tanpa toggle. */}
+                {isUploadModeEnabled() && (
                 <div className="mt-5 flex gap-2" role="group" aria-label="Cara mengirim materi">
                   <button
                     type="button"
@@ -544,6 +657,7 @@ export default function PromoUploadWizard() {
                     Kirim Tautan
                   </button>
                 </div>
+                )}
 
                 {/* Tautan materi — untuk file besar / folder Drive */}
                 {sourceMode === 'link' && (
@@ -552,8 +666,9 @@ export default function PromoUploadWizard() {
                       Tautan Materi <span aria-hidden="true" className="text-red-500">*</span>
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
-                      Tempel tautan Google Drive, Dropbox, atau WeTransfer. Pastikan aksesnya
-                      terbuka untuk tim Tenant Relations (bukan “restricted”).
+                      Tempel tautan Google Drive, Dropbox, atau WeTransfer. Buka menu <span className="font-medium">Share</span> →
+                      <span className="font-medium"> Anyone with the link can view</span>. Tautan yang masih
+                      <span className="font-medium"> restricted</span> akan ditolak saat verifikasi.
                     </p>
                     <input
                       id="link-input"
@@ -562,14 +677,14 @@ export default function PromoUploadWizard() {
                       value={linkUrl}
                       maxLength={500}
                       placeholder="https://drive.google.com/…"
-                      onChange={(e) => { setLinkUrl(e.target.value); setLinkError(''); }}
-                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${linkError ? 'border-red-300 dark:border-red-700' : ''}`}
-                      aria-invalid={linkError ? true : undefined}
+                      onChange={(e) => { setLinkUrl(e.target.value); setLinkError(''); setFieldErrors((er) => ({ ...er, link_url: '' })); }}
+                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${linkError || fieldErrors.link_url ? 'border-red-300 dark:border-red-700' : ''}`}
+                      aria-invalid={linkError || fieldErrors.link_url ? true : undefined}
                     />
-                    {linkError && (
+                    {(linkError || fieldErrors.link_url) && (
                       <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
                         <X className="h-3.5 w-3.5" aria-hidden="true" />
-                        {linkError}
+                        {linkError || fieldErrors.link_url}
                       </p>
                     )}
                   </div>
@@ -637,6 +752,26 @@ export default function PromoUploadWizard() {
                 </div>
                 )}
 
+                {/* Kanal email — deck mengarahkan materi social media ke email
+                    marketing; tautan pengajuan tetap dipakai untuk verifikasi. */}
+                {materialEmail && (
+                  <div className="ui-dashboard-control mt-4 rounded-xl p-4">
+                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                      Materi social media juga dapat dikirim via email
+                    </p>
+                    <p className="mt-1 text-xs ui-text-muted">
+                      Kirim berkas materi ke{' '}
+                      <a
+                        href={`mailto:${materialEmail}?subject=${encodeURIComponent(`Materi Promosi ${selectedMedia.name} — ${tenant?.name ?? ''}`)}`}
+                        className="font-medium text-brand-primary-700 underline dark:text-brand-primary-300"
+                      >
+                        {materialEmail}
+                      </a>
+                      . Tetap isi tautan di atas agar tim Tenant Relations dapat memverifikasi materinya.
+                    </p>
+                  </div>
+                )}
+
                 {submitState === 'error' && (
                   <div className="ui-alert-panel mt-4 p-4" role="alert">
                     <p className="text-sm font-semibold text-red-800 dark:text-red-200">Pengajuan gagal.</p>
@@ -667,7 +802,7 @@ export default function PromoUploadWizard() {
                   <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                   {sourceMode === 'upload'
                     ? 'File tersimpan aman dan hanya dilihat tim Tenant Relations.'
-                    : 'Tautan hanya dilihat tim Tenant Relations.'}
+                    : 'Tautan milik Anda. Tim Tenant Relations membukanya untuk verifikasi manual; berkas tidak disalin ke server kami.'}
                 </p>
               </div>
             )}

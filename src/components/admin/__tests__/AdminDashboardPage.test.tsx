@@ -113,6 +113,59 @@ describe('AdminDashboardPage', () => {
     expect(await screen.findByText(/tidak tersimpan di server kami/i)).toBeInTheDocument();
   });
 
+  it('modal detail: tombol buka materi + pesan WA dengan nomor ternormalisasi', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[0]!);
+    await screen.findByText(/Set status/i);
+
+    // Aksi verifikasi manual: tautan materi sebagai tombol primer.
+    expect(screen.getByRole('link', { name: /Buka tautan materi/i }))
+      .toHaveAttribute('href', 'https://drive.google.com/file/d/file-1/view');
+
+    // wa.me menerima digit + kode negara: 08123456789 → 628123456789.
+    const wa = screen.getByRole('link', { name: /Kirim pesan WA/i });
+    expect(wa.getAttribute('href')).toContain('https://wa.me/628123456789?text=');
+  });
+
+  it('menandai pengajuan yang masuk lebih lambat dari lead time media', async () => {
+    mockedFetchMediaTypes.mockResolvedValue([{
+      slug: 'videotron', category: 'indoor', name: 'Videotron',
+      size_spec: '', material_spec: '', accepted_formats: 'JPEG',
+      price_note: '', location_note: '',
+      rules: 'Materi promosi akan diberikan oleh Tenant kepada Mall 3 hari kerja sebelum pemasangan.',
+      sort_order: 10,
+    }]);
+    // sub-2: dibuat 2026-09-11, pasang 2026-09-20 → jauh dari lead time (aman).
+    // Ganti fixture agar tanggal pasang lebih dekat dari 3 hari kerja.
+    mockedFetchSubmissions.mockResolvedValue({
+      ...PAGE,
+      data: [{ ...ROWS[1]!, installation_date: '2026-09-12' }],
+    });
+
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Momoiro');
+
+    // 2026-09-11 (Jumat) + 3 hari kerja → 2026-09-16; pasang 09-12 terlalu dekat.
+    expect(await screen.findByText(/< lead time/i)).toBeInTheDocument();
+  });
+
+  it('tidak menandai pengajuan yang tanggalnya sudah aman', async () => {
+    mockedFetchMediaTypes.mockResolvedValue([{
+      slug: 'videotron', category: 'indoor', name: 'Videotron',
+      size_spec: '', material_spec: '', accepted_formats: 'JPEG',
+      price_note: '', location_note: '',
+      rules: 'Materi promosi akan diberikan oleh Tenant kepada Mall 3 hari kerja sebelum pemasangan.',
+      sort_order: 10,
+    }]);
+    // Fixture asli: pasang 2026-09-20, jauh melewati lead time.
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Momoiro');
+
+    expect(screen.queryByText(/< lead time/i)).not.toBeInTheDocument();
+  });
+
   it('role tenant_relation: read-only — tanpa tombol hapus/status', async () => {
     renderDashboard({ id: 'u2', email: 'tr@test', display_name: 'TR Test', role: 'tenant_relation' });
 

@@ -6,13 +6,15 @@
 import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  AlertTriangle, ChevronLeft, ChevronRight, Download, ExternalLink, FileText, Film,
-  ImageIcon, Link2, Loader2, LogOut, Megaphone, Plus, Save, Trash2, Users as UsersIcon, X,
+  AlertTriangle, ChevronLeft, ChevronRight, Copy, Download, ExternalLink, FileText, Film,
+  ImageIcon, Link2, Loader2, LogOut, Megaphone, MessageCircle, Plus, Save, Trash2, Users as UsersIcon, X,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useConfirmDialog } from '../ConfirmDialog';
 import { STATUS_LABELS, CATEGORY_LABELS } from '../../constants/promo';
+import { submissionWaLink } from '../../utils/whatsapp';
+import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
 import {
   fetchAdminSubmissions, updateSubmissionStatus, deleteSubmission,
   fetchAdminMediaTypes, createMediaType, updateMediaType, deleteMediaType,
@@ -96,6 +98,29 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       .then((rows) => setMediaTypes(rows))
       .catch(() => setMediaTypes([]));
   }, []);
+
+  const mediaRulesBySlug = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const m of mediaTypes) map[m.slug] = m.rules;
+    return map;
+  }, [mediaTypes]);
+
+  /**
+   * Apakah materi masuk lebih lambat dari lead time medianya?
+   * Diukur dari tanggal pengajuan dibuat (`created_at`), bukan hari ini —
+   * jadi pengajuan lama yang sudah telat tetap ditandai, bukan hilang.
+   */
+  function leadTimeRisk(row: AdminSubmissionRow): string {
+    if (!row.installation_date) return '';
+    const submittedAt = new Date(row.created_at);
+    if (Number.isNaN(submittedAt.getTime())) return '';
+    const check = checkInstallationDate(
+      row.installation_date,
+      mediaRulesBySlug[row.media_type_slug] || '',
+      toIsoDate(submittedAt),
+    );
+    return check.ok ? '' : check.message;
+  }
 
   function openDetail(row: AdminSubmissionRow) {
     setDetail(row);
@@ -220,6 +245,15 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 <td className="px-3 py-3">
                   <p className="text-slate-800 dark:text-slate-200">{r.media_type_slug}</p>
                   {r.installation_date && <p className="text-xs ui-text-muted">pasang: {r.installation_date}</p>}
+                  {leadTimeRisk(r) && (
+                    <span
+                      className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                      title={leadTimeRisk(r)}
+                    >
+                      <AlertTriangle className="h-3 w-3" aria-hidden="true" />
+                      &lt; lead time
+                    </span>
+                  )}
                 </td>
                 <td className="px-3 py-3">
                   <a
@@ -329,6 +363,15 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 </dd>
               </div>
               {detail.installation_date && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Tgl pasang</dt><dd className="text-slate-900 dark:text-white">{detail.installation_date}</dd></div>}
+              {leadTimeRisk(detail) && (
+                <div className="flex gap-2">
+                  <dt className="w-32 shrink-0 font-semibold text-amber-700 dark:text-amber-400">Lead time</dt>
+                  <dd className="flex items-start gap-1.5 text-amber-800 dark:text-amber-300">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+                    <span>{leadTimeRisk(detail)}</span>
+                  </dd>
+                </div>
+              )}
               <div className="flex gap-2">
                 <dt className="w-32 shrink-0 font-semibold ui-text-muted">
                   {detail.source_type === 'link' ? 'Tautan' : 'File'}
@@ -353,6 +396,55 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               {detail.notes && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Catatan tenant</dt><dd className="text-slate-900 dark:text-white">{detail.notes}</dd></div>}
               {detail.reviewed_by_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Direview oleh</dt><dd className="text-slate-900 dark:text-white">{detail.reviewed_by_name}</dd></div>}
             </dl>
+
+            {/* Aksi cepat: buka materi (verifikasi manual) + teruskan status via WA.
+                wa.me butuh digit + kode negara; normalizer menangani format
+                "08xx xxxx xxxx" yang diajarkan form. */}
+            <div className="mt-4 flex flex-wrap gap-2">
+              <a
+                href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ui-btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+              >
+                <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                Buka tautan materi
+              </a>
+              {(() => {
+                // Pakai status TERSIMPAN (bukan newStatus yang belum disimpan) —
+                // view TR read-only pun takkan salah menyebut "Disetujui" untuk
+                // baris yang masih Menunggu.
+                const wa = submissionWaLink({
+                  pic_phone: detail.pic_phone,
+                  tenant_name: detail.tenant_name,
+                  media_type_slug: detail.media_type_slug,
+                  status: detail.status,
+                  review_notes: detail.review_notes,
+                });
+                if (!wa) return null;
+                return (
+                  <a
+                    href={wa}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ui-dashboard-control inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                  >
+                    <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                    Kirim pesan WA
+                  </a>
+                );
+              })()}
+              <button
+                type="button"
+                onClick={() => { void navigator.clipboard?.writeText(
+                  `${detail.tenant_name} — ${detail.media_type_slug}\nTautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`,
+                ); }}
+                className="ui-dashboard-control inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+              >
+                <Copy className="h-4 w-4" aria-hidden="true" />
+                Salin tautan
+              </button>
+            </div>
 
             {canManage ? (
               <div className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-700">

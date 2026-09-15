@@ -93,10 +93,69 @@ export async function uploadFile(file: File, onProgress?: (pct: number) => void)
 
 // ─── Submit pengajuan (publik) ──────────────────────────────────
 
+/**
+ * Ambil daftar pesan validasi dari ApiError.
+ *
+ * Server membalas 400 `{ success: false, errors: [...] }`; `request()` melempar
+ * ApiError pada HTTP non-2xx dan menyisakan `errors` di `payload`. Tanpa helper
+ * ini pemanggil hanya melihat pesan generik "Permintaan gagal (HTTP 400)".
+ */
+export function errorsFromApiError(err: unknown): string[] {
+  if (err instanceof ApiError && err.payload) {
+    const raw = err.payload.errors;
+    if (Array.isArray(raw)) return raw.filter((e): e is string => typeof e === 'string' && e.trim() !== '');
+  }
+  return [];
+}
+
+/**
+ * Petakan pesan validasi server ke field form wizard.
+ *
+ * Server mengembalikan `errors[]` sebagai teks tanpa nama field, jadi
+ * pencocokan berbasis kata kunci. Urutan penting: 'telepon' dicek sebelum
+ * 'pic' karena "Nomor telepon PIC wajib diisi" memuat keduanya.
+ */
+export function mapSubmitErrors(errors: string[]): { fields: Record<string, string>; general: string[] } {
+  const fields: Record<string, string> = {};
+  const general: string[] = [];
+
+  for (const raw of errors) {
+    const msg = String(raw || '').trim();
+    if (!msg) continue;
+    const low = msg.toLowerCase();
+
+    let field: string | null = null;
+    if (low.includes('telepon')) field = 'pic_phone';
+    else if (low.includes('tautan')) field = 'link_url';
+    else if (low.includes('installation_date') || low.includes('tanggal')) field = 'installation_date';
+    else if (low.includes('pic')) field = 'pic_name';
+    else if (low.includes('gerai') || low.includes('tenant')) field = 'tenant';
+    else if (low.includes('media')) field = 'media';
+
+    if (field && !fields[field]) fields[field] = msg;
+    else general.push(msg);
+  }
+
+  return { fields, general };
+}
+
 export async function submitPromo(payload: PromoSubmissionPayload): Promise<{ id: string; created_at: string }> {
-  const result = await apiPost<{
+  interface SubmitResponse {
     success: boolean; error?: string; id?: string; created_at?: string; errors?: string[];
-  }>('/promo/submit', payload);
+  }
+  let result: SubmitResponse;
+  try {
+    result = await apiPost<SubmitResponse>('/promo/submit', payload);
+  } catch (err) {
+    // HTTP 400 → errors[] tersimpan di ApiError.payload; angkat ke pesan agar
+    // UI bisa menampilkan sebabnya (dan memetakan ke field), bukan 400 generik.
+    if (err instanceof ApiError) {
+      const errors = errorsFromApiError(err);
+      const message = errors.length > 0 ? errors.join('; ') : err.message;
+      throw new ApiError(message, err.code, { ...(err.payload || {}), errors });
+    }
+    throw err;
+  }
 
   if (!result.success) {
     const message = Array.isArray(result.errors) && result.errors.length > 0

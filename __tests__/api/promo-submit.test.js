@@ -255,3 +255,77 @@ describe('POST /promo/submit — mode tautan eksternal', () => {
     expect(res.body.errors).toContain('Tautan materi harus berupa URL http/https yang valid');
   });
 });
+
+describe('POST /promo/submit — lead time materi', () => {
+  const RULES_2D = 'Media promosi diterima pengelola paling lambat 2 hari sebelum pemasangan.';
+  const RULES_3BD = 'Materi promosi akan diberikan oleh Tenant kepada Mall 3 hari kerja sebelum pemasangan.';
+
+  function isoFromNow(days) {
+    const d = new Date();
+    d.setDate(d.getDate() + days);
+    return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+  }
+
+  function mockMedia(rules) {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM promo_media_types')) {
+        return Promise.resolve({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PDF', rules }] });
+      }
+      if (text.includes('INSERT INTO promo_submissions')) {
+        return Promise.resolve({ rows: [{ id: 'uuid-9', created_at: '2026-09-13T00:00:00Z' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+  }
+
+  const LINK_BODY = {
+    media_type_slug: 'spanduk',
+    tenant_name: 'Optik Melawai',
+    pic_name: 'Andi',
+    pic_phone: '081234567890',
+    link_url: 'https://drive.google.com/file/d/xyz/view',
+    device_fingerprint: 'fp123',
+  };
+
+  it('menolak tanggal pasang yang lebih dekat dari lead time media', async () => {
+    mockMedia(RULES_2D);
+    const { res } = await callSubmit({ ...LINK_BODY, installation_date: isoFromNow(0) });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.errors[0]).toMatch(/terlalu dekat/);
+    // Ditolak sebelum INSERT.
+    expect(mockedQuery.mock.calls.every((c) => !String(c[0]).includes('INSERT INTO promo_submissions'))).toBe(true);
+  });
+
+  it('menerima tanggal pasang yang sudah melewati lead time', async () => {
+    mockMedia(RULES_2D);
+    const { res } = await callSubmit({ ...LINK_BODY, installation_date: isoFromNow(10) });
+    expect([200, 201]).toContain(res.statusCode);
+    expect(res.body.success).toBe(true);
+  });
+
+  it('media tanpa aturan lead time: tanggal dekat tetap diterima', async () => {
+    mockMedia('Mengirimkan materi promosi diluar hari dan jam kerja akan di respon sesuai ketersediaan admin.');
+    const { res } = await callSubmit({ ...LINK_BODY, installation_date: isoFromNow(0) });
+    expect([200, 201]).toContain(res.statusCode);
+  });
+
+  it('tanggal kosong (opsional) tidak diblokir lead time', async () => {
+    mockMedia(RULES_3BD);
+    const { res } = await callSubmit({ ...LINK_BODY, installation_date: '' });
+    expect([200, 201]).toContain(res.statusCode);
+  });
+
+  it('aturan hari kerja: batasnya lebih longgar dari hari kalender', async () => {
+    // Acuan hari ini; 3 hari kerja selalu >= 3 hari kalender.
+    mockMedia(RULES_3BD);
+    const { res } = await callSubmit({ ...LINK_BODY, installation_date: isoFromNow(3) });
+    // 3 hari kalender dari hari ini belum tentu 3 hari kerja → boleh ditolak,
+    // tapi bila ditolak pesannya harus menyebut "hari kerja".
+    if (res.statusCode === 400) {
+      expect(res.body.errors[0]).toMatch(/hari kerja/);
+    } else {
+      expect([200, 201]).toContain(res.statusCode);
+    }
+  });
+});

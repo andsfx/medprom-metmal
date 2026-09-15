@@ -1,12 +1,16 @@
 /**
  * seed-media-types.mjs — seed katalog media promosi dari deck
- * "MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026" (14 media).
+ * "MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026".
  *
  *   node server/scripts/seed-media-types.mjs
  *
- * Idempotent. Baris yang sudah ada HANYA disinkronkan pada kolom
- * accepted_formats (daftar format yang diterima platform); harga, lokasi,
- * dan aturan yang sudah diedit admin TIDAK ditimpa. Env: DATABASE_URL.
+ * Deck memuat 13 slide media; platform memecah satu slide social media
+ * ("Instagram, Fanpage, dan Tiktok") menjadi dua entri: sosmed-feed dan
+ * sosmed-story — total 14 slug.
+ *
+ * Idempotent. Baris yang sudah ada disinkronkan pada kolom `accepted_formats`
+ * dan `rules` (dua kolom yang bersumber langsung dari deck); harga, lokasi,
+ * dan penyesuaian lain hasil penyuntingan admin TIDAK ditimpa. Env: DATABASE_URL.
  */
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -83,7 +87,7 @@ const MEDIA_TYPES = [
   {
     slug: 'led-banner', category: 'outdoor', name: 'LED Banner',
     size_spec: '600 x 1350 pixel', material_spec: 'JPEG',
-    accepted_formats: 'JPEG,PNG', price_note: 'Gratis (syarat tenant baru/join promo)',
+    accepted_formats: 'JPEG', price_note: 'Gratis (syarat tenant baru/join promo)',
     location_note: 'Area depan mall, Jl. AH Yani', sort_order: 5,
     rules: [
       'Fasilitas hanya diberikan kepada Tenant Baru atau tenant yang sedang join promo/join program dengan Mall.',
@@ -96,7 +100,7 @@ const MEDIA_TYPES = [
   {
     slug: 'digital-poster', category: 'indoor', name: 'Digital Poster',
     size_spec: '1920 x 1080 Pixel (Portrait)', material_spec: 'JPEG',
-    accepted_formats: 'JPEG,PNG', price_note: 'Free',
+    accepted_formats: 'JPEG', price_note: 'Free',
     location_note: 'Atrium 1 (dekat tenant Optik Melawai), Pintu Utara 1 (hadap pintu masuk), Koridor Lantai Dasar (samping Momoiro), Lantai 1 (depan OB Fit), Lantai 1, 2, & 3 (samping eskalator Atrium 2)',
     sort_order: 6,
     rules: [
@@ -200,6 +204,7 @@ const MEDIA_TYPES = [
     location_note: '', sort_order: 13,
     rules: [
       'Materi promosi harus clean image dan image promo, dilengkapi dengan caption (tulis di catatan pengajuan).',
+      'Materi juga dapat dikirim via email ke marketing@malmetropolitan.com.',
       'Semua materi akan di posting juga di Fanpage dan Twitter.',
       'Materi dengan format IG Reels akan di posting juga di Tiktok.',
       'Tidak diperkenankan ada logo atau nama mall lain dalam image atau caption.',
@@ -218,6 +223,7 @@ const MEDIA_TYPES = [
     location_note: '', sort_order: 14,
     rules: [
       'Materi promosi harus clean image dan image promo, dilengkapi dengan caption (tulis di catatan pengajuan).',
+      'Materi juga dapat dikirim via email ke marketing@malmetropolitan.com.',
       'Semua materi akan di posting juga di Fanpage dan Twitter.',
       'Materi dengan format IG Reels akan di posting juga di Tiktok.',
       'Tidak diperkenankan ada logo atau nama mall lain dalam image atau caption.',
@@ -248,8 +254,11 @@ try {
          price_note, location_note, rules, is_active, sort_order)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT (slug) DO UPDATE
-         SET accepted_formats = EXCLUDED.accepted_formats, updated_at = now()
+         SET accepted_formats = EXCLUDED.accepted_formats,
+             rules = EXCLUDED.rules,
+             updated_at = now()
          WHERE promo_media_types.accepted_formats IS DISTINCT FROM EXCLUDED.accepted_formats
+            OR promo_media_types.rules IS DISTINCT FROM EXCLUDED.rules
        RETURNING id, (xmax = 0) AS is_insert`,
       [
         m.slug, m.category, m.name, m.size_spec, m.material_spec,

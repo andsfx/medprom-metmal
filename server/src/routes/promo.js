@@ -12,6 +12,7 @@
 import { Router } from 'express';
 import { db } from '../db.js';
 import { enforceRateLimit, clientIp } from '../lib/rateLimit.js';
+import { checkInstallationDate, toIsoDate } from '../lib/leadTime.js';
 import { getDriveFile, MAX_UPLOAD_BYTES } from '../drive.js';
 
 const router = Router();
@@ -149,11 +150,20 @@ router.post('/submit', async (req, res, next) => {
   try {
     // Media type harus ada & aktif.
     const { rows: mtRows } = await db.query(
-      'SELECT slug, accepted_formats FROM promo_media_types WHERE slug = $1 AND is_active = true LIMIT 1',
+      'SELECT slug, accepted_formats, rules FROM promo_media_types WHERE slug = $1 AND is_active = true LIMIT 1',
       [mediaTypeSlug],
     );
     if (!mtRows[0]) {
       return res.status(400).json({ success: false, error: 'Jenis media promosi tidak dikenal atau tidak aktif.' });
+    }
+
+    // Lead time: materi harus diterima N hari sebelum pasang (aturan per media
+    // diturunkan dari teks `rules` — kalender atau hari kerja, lihat lib/leadTime.js).
+    const leadCheck = checkInstallationDate(
+      installationDate, mtRows[0].rules || '', toIsoDate(),
+    );
+    if (!leadCheck.ok) {
+      return res.status(400).json({ success: false, errors: [leadCheck.message] });
     }
 
     // Jalur unggah: file harus ada di Drive kami, ukuran dicek dari metadata
