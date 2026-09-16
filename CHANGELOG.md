@@ -64,6 +64,20 @@ verifikasi rilis 1.3.0 di produksi.
 
 ### Diperbaiki
 
+- **Tombol kembali wizard keluar dari alur pengajuan.** `AppShell` hanya
+  menerima `backTo`, sehingga langkah 2 dan 3 jatuh ke `navigate(-1)` — yaitu
+  kembali di riwayat peramban (meninggalkan wizard), bukan memundurkan langkah.
+  Ditambah prop `onBack` pada `TopAppBar`/`AppShell`; wizard memakai
+  `setStep(s === 3 ? 2 : 1)` dan hanya keluar ke beranda dari langkah 1.
+  Terverifikasi di produksi: langkah 2 → Kembali → tetap `/ajukan`, langkah 1.
+- **Atribut `data-tabbar` tidak dibaca CSS.** `AppShell` menandai `.app-scroll`
+  dengan `data-tabbar="off"` saat `hideTabBar`, tetapi tidak ada aturan yang
+  memakainya, sehingga wizard tetap menyisakan ruang setinggi tab bar di bawah.
+  Kini diikat: `[data-tabbar='off']` hanya menyisakan safe area. Terverifikasi:
+  wizard padding `0px`, katalog `60px`.
+- 3 test regresi ditambahkan (184 → 187) karena `tsc` tidak dapat menangkap
+  kedua regresi di atas.
+
 - **Dua kelas CSS dipakai tetapi tidak pernah didefinisikan** — residu migrasi
   `sed` pada redesign Editorial Kontras. `ui-alert-panel` (dipakai
   `AdminDashboardPage` ×3 dan `PromoUploadWizard` ×1) dan `ui-empty-panel`
