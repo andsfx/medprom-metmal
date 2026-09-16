@@ -308,7 +308,15 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     menggagalkan apa pun — tetapi `R2_*` di `.env` sudah mati dan aman dihapus.
     Sebaliknya `GOOGLE_*` sengaja opsional (`:-`) karena kanal unggah
     fail-closed; instance tanpa kredensial Drive tetap boot dengan kanal tautan.
-12. **Klaim di komentar/docs harus cocok dengan kode.** Docs basi wajib
+12. **Line ending: repo dipaksa LF lewat `.gitattributes`.** Mesin dev memakai
+    `core.autocrlf=true` (default Git for Windows), jadi **jangan hapus
+    `.gitattributes`**. Deploy mengirim *working tree* apa adanya lewat rsync ke
+    VPS Linux, bukan hasil `git archive` — skrip shell ber-CRLF
+    (`deploy/vps/backup.sh`, dipanggil cron) gagal dieksekusi dengan
+    `bad interpreter`/`\r` liar, dan berkas ber-CRLF yang disunting ulang
+    menghasilkan diff se-berkas (pernah terjadi: AGENTS.md tampak berubah 427
+    baris padahal suntingannya kecil). Setiap berkas baru wajib LF.
+13. **Klaim di komentar/docs harus cocok dengan kode.** Docs basi wajib
     diperbaiki saat menyentuh area itu.
 
 ## Commit & Rilis

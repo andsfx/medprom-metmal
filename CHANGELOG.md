@@ -35,6 +35,13 @@ verifikasi rilis 1.3.0 di produksi.
   naik bersamaan** — terbukti `violates check constraint` saat API versi lama
   menulis status lama sementara `/healthz` tetap `ok`), #11 (`R2_*` sudah mati di
   `.env` VPS; `GOOGLE_*` sengaja opsional), #12 (klaim docs wajib cocok kode).
+- **Line ending dipaksa LF lewat `.gitattributes`** (`* text=auto eol=lf` +
+  `*.sh text eol=lf`). Tanpa itu, `core.autocrlf=true` (default Git for Windows)
+  membuat checkout menulis CRLF, sementara deploy mengirim working tree apa
+  adanya lewat rsync ke VPS Linux — `deploy/vps/backup.sh` ber-CRLF akan gagal
+  dieksekusi saat dipanggil cron (`bad interpreter`). Tidak ada berkas yang
+  direnormalisasi: seluruh 80 berkas sudah LF, jadi dampaknya hanya mencegah
+  masalah di masa depan. Verifikasi: clone bersih menghasilkan 81/81 berkas LF.
 
 ## [1.3.0] — 2026-09-16
 
