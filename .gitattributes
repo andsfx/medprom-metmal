@@ -1,0 +1,27 @@
+# Normalisasi line ending — paksa LF di repo DAN di working tree.
+#
+# Tanpa berkas ini, `core.autocrlf=true` (setelan default Git for Windows di
+# mesin ini) membuat checkout menulis CRLF ke working tree. Itu berbahaya untuk
+# proyek ini karena deploy mengirim working tree apa adanya lewat rsync ke VPS
+# Linux: skrip shell ber-CRLF gagal dieksekusi (`bad interpreter`, `\r` liar),
+# dan setiap penyuntingan ulang berkas ber-CRLF menghasilkan diff se-berkas.
+* text=auto eol=lf
+
+# Skrip shell yang dijalankan di VPS — LF mutlak (dipanggil cron di host).
+*.sh text eol=lf
+
+# Berkas biner — jangan pernah dinormalisasi.
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.webp binary
+*.ico  binary
+*.pdf  binary
+*.woff binary
+*.woff2 binary
+*.ttf  binary
+*.eot  binary
+*.mp4  binary
+*.zip  binary
+*.gz   binary
