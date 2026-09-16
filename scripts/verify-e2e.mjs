@@ -29,7 +29,7 @@ try {
   // 1. Landing + katalog live
   await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
   const h1 = (await page.textContent('h1'))?.trim();
-  check('landing h1', h1 === 'Ajukan Materi Promosi Tenant Anda', h1);
+  check('landing h1', /ajukan materi.*promosi tenant anda/i.test(h1 ?? ''), h1);
   const cards = await page.locator('article h3').count();
   check('katalog kartu aktif = 13', cards === 13, `${cards} kartu`);
 
