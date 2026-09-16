@@ -17,7 +17,7 @@ verifikasi rilis 1.3.0 di produksi.
   tulis tangan: shell + aset di-cache, **permintaan `/api/` tidak pernah
   di-cache** agar status pengajuan tidak pernah basi. Registrasi hanya di
   produksi (`src/main.tsx`). Terverifikasi: SW `activated`, cache
-  `medprom-shell-v1` + `medprom-aset-v1` terisi, halaman tetap terbuka saat
+  `medprom-shell-v2` + `medprom-aset-v2` terisi, halaman tetap terbuka saat
   offline, dan nol respons API tersimpan di cache.
 - **Kerangka aplikasi (app shell) untuk seluruh layar tenant.**
   `src/components/layout/AppShell.tsx`, `TopAppBar.tsx` (judul kontekstual,
@@ -63,6 +63,37 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Kerangka aplikasi tidak benar-benar mengunci gulir** — dokumen ikut
+  menggulir dan app bar bergeser saat konten digulir (inti klaim "seperti
+  aplikasi"). Akar masalahnya bukan `min-height`, melainkan keturunan
+  `position: absolute` (`.sr-only` pada `<dt>` kartu media) yang mengambil
+  containing block dari dokumen karena `.app-scroll` tidak terposisi, sehingga
+  menambah tinggi gulir dokumen. `.app-shell` kini `height: 100dvh` +
+  `overflow: hidden`, `.app-scroll` mendapat `min-height: 0` **dan**
+  `position: relative`. Terverifikasi: dokumen tetap 844px, hanya area konten
+  yang menggulir, app bar tidak bergeser dan kini benar-benar terangkat.
+- **Tiga dialog konsol staf kehilangan perilaku modal.** Detail/review, form
+  katalog, dan form pengguna adalah salinan `.app-scrim` + `.app-sheet`
+  langsung di JSX, bukan komponen `Sheet` — sehingga tidak mengunci gulir
+  latar, tidak menutup dengan `Escape`, dan tidak menjebak fokus. Ketiganya
+  kini memakai `Sheet` (bottom sheet di mobile, dialog terpusat di desktop).
+- **`ConfirmDialog` mengalami masalah yang sama** — tidak menutup dengan
+  `Escape` dan tidak mengunci gulir. Kini memakai `Sheet` juga.
+- **Form login terpotong di layar pendek.** `.app-shell` memusatkan konten
+  tanpa area gulir; pada viewport 360×420 tombol Login tidak terjangkau. Layar
+  tanpa bar/tab bar kini memakai `.app-canvas` (terpusat, tetap dapat
+  menggulir). Terverifikasi: tombol Login terjangkau pada 420px.
+- **Belasan kontrol interaktif di bawah 44px.** CTA kartu (40px), tombol
+  "Ketentuan pemasangan" (20px), tautan "Login Staf" (36px), tombol
+  tampilkan-password (24px), tautan WhatsApp (30px), dan seluruh input
+  (42px). `--tap-min` kini ditegakkan pada `.ui-control` (satu aturan untuk
+  semua input/tombol sekunder) dan tombol-tombol terkait dinaikkan. Kini 0
+  kontrol di bawah 44px di halaman publik.
+- **Radius tombol tidak seragam.** CTA kartu katalog tertinggal di 6px
+  sementara kontrol lain 10px, karena radius bergantung pada kelas utilitas
+  per pemakaian. `.ui-btn-primary`/`.ui-btn-secondary` kini mengambil radius
+  dari `var(--radius-control)`.
+
 
 - **Tombol kembali wizard keluar dari alur pengajuan.** `AppShell` hanya
   menerima `backTo`, sehingga langkah 2 dan 3 jatuh ke `navigate(-1)` — yaitu
@@ -110,6 +141,16 @@ verifikasi rilis 1.3.0 di produksi.
   tersisa hanya backup `.env.bak-*`). API restart, healthz OK.
 
 ### Diubah
+- **`DESIGN.md` diselaraskan dengan kode** setelah audit UI/UX: bagian mode
+  gelap (kini konsol staf saja, belum ada saklar publik), CTA primer/sekunder
+  dan kartu (radius dari token, bukan kelas utilitas), tabel admin, wizard
+  (indikator progres bersegmen, bukan angka besar), serta tiga invarian CSS
+  yang wajib dipertahankan agar hanya area konten yang menggulir. Checklist QA
+  ditambah tujuh butir: penguncian gulir, `--tap-min`, dialog wajib `Sheet`,
+  dan keseragaman radius.
+- `CACHE_VERSION` service worker dinaikkan `v1` → `v2` karena aset shell
+  berubah pada rilis ini.
+
 
 - **Arah desain bergeser dari Editorial Kontras ke App Produk** (keputusan
   pengguna). Geist memimpin tipografi antarmuka; Fraunces dipertahankan sebagai

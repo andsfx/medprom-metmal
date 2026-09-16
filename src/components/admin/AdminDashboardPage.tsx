@@ -12,6 +12,7 @@ import {
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useConfirmDialog } from '../ConfirmDialog';
+import Sheet from '../ui/Sheet';
 import { STATUS_LABELS, STATUS_ORDER, CATEGORY_LABELS } from '../../constants/promo';
 import { submissionWaLink } from '../../utils/whatsapp';
 import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
@@ -481,38 +482,21 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       )}
 
       {/* Modal detail/review */}
-      {detail && (
-        <div
-          className="app-scrim"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="detail-title"
-          onClick={(e) => { if (e.target === e.currentTarget) setDetail(null); }}
-        >
-          <div className="app-sheet overflow-auto p-6">
-            <div className="mb-4 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
-                  {detail.submission_number || '—'}
-                </p>
-                <h2 id="detail-title" className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">
-                  {detail.material_title || detail.tenant_name}
-                </h2>
-                <p className="mt-0.5 text-xs ui-text-muted">
-                  {detail.tenant_name} · {detail.media_type_slug} · {detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <StatusBadge status={detail.status} />
-                <button
-                  type="button"
-                  onClick={() => setDetail(null)}
-                  aria-label="Tutup"
-                  className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
+      <Sheet
+        open={detail !== null}
+        onClose={() => setDetail(null)}
+        title={detail ? detail.material_title || detail.tenant_name || 'Detail Pengajuan' : ''}
+      >
+        {detail && (
+          <>
+            <div className="mb-4">
+              <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
+                {detail.submission_number || '—'}
+              </p>
+              <p className="mt-1 text-xs ui-text-muted">
+                {detail.tenant_name} · {detail.media_type_slug} · {detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+              </p>
+              <div className="mt-2"><StatusBadge status={detail.status} /></div>
             </div>
 
             <dl className="space-y-2.5 text-sm">
@@ -863,9 +847,9 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 Akun Tenant Relations hanya dapat melihat dan mengunduh — perubahan status oleh Admin.
               </p>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+      </Sheet>
     </div>
   );
 }
@@ -1041,23 +1025,13 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
       )}
 
       {/* Form create/edit */}
-      {form && (
-        <div
-          className="app-scrim"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="catalog-form-title"
-          onClick={(e) => { if (e.target === e.currentTarget) setForm(null); }}
-        >
-          <form onSubmit={saveCatalog} className="app-sheet overflow-auto p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 id="catalog-form-title" className="text-lg font-bold text-slate-900 dark:text-white">
-                {form.id ? 'Edit Media' : 'Tambah Media'}
-              </h2>
-              <button type="button" onClick={() => setForm(null)} aria-label="Tutup" className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      <Sheet
+        open={form !== null}
+        onClose={() => setForm(null)}
+        title={form ? (form.id ? 'Edit Media' : 'Tambah Media') : ''}
+      >
+        {form && (
+          <form onSubmit={saveCatalog}>
 
             <div className="grid gap-3 sm:grid-cols-2">
               {textInput('Slug (unik, huruf kecil)', 'slug', 'spanduk')}
@@ -1123,8 +1097,8 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               </button>
             </div>
           </form>
-        </div>
-      )}
+        )}
+      </Sheet>
     </div>
   );
 }
@@ -1279,23 +1253,13 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
         </div>
       )}
 
-      {form && (
-        <div
-          className="app-scrim"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="user-form-title"
-          onClick={(e) => { if (e.target === e.currentTarget) setForm(null); }}
-        >
-          <form onSubmit={saveUser} className="app-sheet p-6">
-            <div className="mb-4 flex items-center justify-between">
-              <h2 id="user-form-title" className="text-lg font-bold text-slate-900 dark:text-white">
-                {form.id ? 'Edit User' : 'Tambah User'}
-              </h2>
-              <button type="button" onClick={() => setForm(null)} aria-label="Tutup" className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+      <Sheet
+        open={form !== null}
+        onClose={() => setForm(null)}
+        title={form ? (form.id ? 'Edit User' : 'Tambah User') : ''}
+      >
+        {form && (
+          <form onSubmit={saveUser}>
 
             <div className="space-y-3">
               {!form.id && (
@@ -1370,8 +1334,8 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
               </button>
             </div>
           </form>
-        </div>
-      )}
+        )}
+      </Sheet>
     </div>
   );
 }

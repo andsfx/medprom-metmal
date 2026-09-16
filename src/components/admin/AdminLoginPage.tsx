@@ -41,8 +41,9 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="app-shell items-center justify-center px-4">
-      <div className="w-full max-w-sm">
+    <div className="app-shell">
+      <div className="app-canvas">
+        <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] bg-brand-primary-600">
             <Megaphone className="h-6 w-6 text-white" aria-hidden="true" />
@@ -79,14 +80,14 @@ export default function AdminLoginPage() {
                   autoComplete="current-password"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
-                  className="ui-control w-full rounded-md px-3 py-2.5 pr-10 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2.5 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
                   aria-label={showPw ? 'Sembunyikan password' : 'Tampilkan password'}
-                  className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+                  className="app-pressable ui-focus-ring absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
                 >
                   {showPw ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                 </button>
@@ -137,7 +138,7 @@ export default function AdminLoginPage() {
                       setPw(DEV_LOGIN_PASSWORD);
                       setError('');
                     }}
-                    className="ui-control w-full rounded-md px-2.5 py-2 text-left transition hover:border-brand-primary-400 focus:outline-none focus:ring-2 focus:ring-[#007a78]"
+                    className="ui-control app-pressable ui-focus-ring w-full rounded-md px-2.5 py-2 text-left transition hover:border-brand-primary-400"
                   >
                     <span className="block font-mono text-[11px] font-medium text-slate-800 dark:text-slate-100">
                       {acc.email}
@@ -152,9 +153,15 @@ export default function AdminLoginPage() {
           </div>
         )}
 
-        <p className="mt-6 text-center text-xs text-slate-500 dark:text-slate-400">
-          <Link to="/" className="font-medium text-brand-primary-700 hover:text-brand-primary-800 dark:text-brand-primary-300">← Kembali ke halaman publik</Link>
+        <p className="mt-4 text-center text-xs text-slate-500 dark:text-slate-400">
+          <Link
+            to="/"
+            className="ui-focus-ring inline-flex min-h-11 items-center justify-center rounded-[var(--radius-control)] px-3 font-medium text-brand-primary-700 hover:text-brand-primary-800 dark:text-brand-primary-300"
+          >
+            ← Kembali ke halaman publik
+          </Link>
         </p>
+        </div>
       </div>
     </div>
   );

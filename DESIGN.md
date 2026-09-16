@@ -135,10 +135,16 @@ Untuk gradasi abu-abu: `slate-50` sampai `slate-950`. Slate dipilih karena
 nuansa biru netral yang tidak hangat (berbeda dari stone/warm-gray project
 event), memperkuat kesan presisi.
 
-### Tidak ada dark mode di v1
+### Mode gelap — konsol staf saja
 
-Desain editorial mengandalkan tinta di atas kertas putih — inversinya kehilangan
-kontras serif/tinta. Dark mode ditunda sampai fondasi terang mantap.
+Sisi tenant (katalog, wizard, riwayat, status) selalu terang: arah "tinta di
+atas kertas" kehilangan kontras serif/tinta bila dibalik. Konsol staf
+(`/login`, `/admin`) menyediakan varian gelap melalui kelas `.dark` pada
+`<html>` (dipasang manual, bukan mengikuti `prefers-color-scheme`), karena
+staf bekerja lama di depan layar.
+
+Mode gelap **belum diaktifkan secara publik** — saklar pemilih tema belum
+ada. Varian gelap hanya boleh dipakai setelah audit kontras tersendiri.
 
 ## Permukaan & Elevasi
 
@@ -257,12 +263,23 @@ atau pembungkus `min-h-screen` sendiri — itu sumber duplikasi dan inkonsistens
 **Aturan:**
 
 - Hanya `.app-scroll` yang menggulir; bar tidak pernah bergeser. Ini yang
-  membedakan aplikasi dari dokumen.
+  membedakan aplikasi dari dokumen. Tiga deklarasi CSS wajib untuk itu —
+  menghapus salah satunya akan membuat seluruh dokumen menggulir lagi dan
+  bar ikut bergeser:
+  1. `.app-shell { height: 100dvh; overflow: hidden }` — mengunci kanvas.
+  2. `.app-scroll { min-height: 0 }` — anak flex menolak menyusut tanpa ini.
+  3. `.app-scroll { position: relative }` — keturunan `position: absolute`
+     (mis. `.sr-only`) harus mengambil containing block dari area gulir.
+     Tanpa ini, elemen tersebut menambah tinggi gulir **dokumen** dan
+     membatalkan penguncian di atas.
 - Top app bar **wajib** punya judul. Layar tanpa judul membingungkan saat
   dibuka sebagai PWA standalone (tidak ada title bar browser).
 - Tombol kembali hanya muncul bila layar memang punya induk (`back`).
   Alur wizard memakai `back` yang memundurkan langkah, bukan riwayat browser.
 - Tab bar **hanya mobile** (`< 640px`). Di desktop navigasi ada di app bar.
+- Layar tanpa bar dan tanpa tab bar (mis. `/login`) memakai `.app-canvas`:
+  terpusat, tetapi tetap dapat menggulir bila konten lebih tinggi daripada
+  viewport — form login tidak boleh terpotong di layar pendek.
 - Konten menyisakan ruang bawah `calc(var(--app-tabbar-h) + var(--safe-bottom))`
   agar aksi terakhir tidak tertutup tab bar atau home indicator.
 
@@ -277,6 +294,12 @@ Di mobile, dialog terpusat terasa asing. Satu kelas `.app-sheet` beradaptasi:
 
 Komponen `src/components/ui/Sheet.tsx` menangani kunci gulir latar, tutup dengan
 `Escape`/scrim, jebakan fokus, dan pemulihan fokus ke pemicu.
+
+**Semua dialog wajib memakai komponen ini** — termasuk dialog konfirmasi
+(`ConfirmDialog`) dan tiga dialog konsol staf. Menyalin `.app-scrim` +
+`.app-sheet` langsung di JSX menghasilkan dialog yang tampak benar tetapi
+kehilangan kunci gulir, tutup `Escape`, dan jebakan fokus; itu pernah terjadi
+dan baru ketahuan lewat uji peramban, bukan `tsc`.
 
 ### Target sentuh
 
@@ -297,16 +320,23 @@ karena `:hover` tidak ada di layar sentuh.
 ### CTA Button — Primer
 
 ```
-bg-[#007a78]  text-white  rounded-md  px-6 py-3  font-semibold
+.ui-btn-primary  →  bg #007a78, teks putih, radius var(--radius-control)
+                    px-6 py-3, Geist 600
 ```
 
 Solid tosca-600, Geist 600. Tidak pakai rounded-full, tidak ada gradien.
 Hanya satu CTA primer per viewport.
 
+Radius diambil dari token di CSS (`.ui-btn-primary`), bukan dari kelas
+utilitas di tiap pemakaian — dengan begitu tombol yang lupa membawa kelas
+radius tetap seragam dengan kontrol lain (pernah terjadi: CTA kartu katalog
+tertinggal di 6px saat kontrol lain 10px).
+
 ### CTA Button — Sekunder
 
 ```
-border border-stone-300  text-slate-800  rounded-md  px-6 py-3  font-medium
+.ui-btn-secondary  →  border 1px var(--rule-color), teks var(--ink-secondary),
+                      radius var(--radius-control), px-6 py-3, Geist 500
 ```
 
 Outline netral, kontras rendah — penunjang, bukan saingan CTA primer.
@@ -314,7 +344,8 @@ Outline netral, kontras rendah — penunjang, bukan saingan CTA primer.
 ### Kartu Media (Landing)
 
 ```
-surface-card  border border-stone-200  rounded-lg  p-6
+.ui-card  →  background var(--surface-card), border 1px var(--rule-color),
+             radius var(--radius-card), p-6
 ```
 
 - Judul: Fraunces 600, `text-xl`
@@ -334,19 +365,21 @@ focus: ring-2 ring-[#00918e] ring-offset-0 (tosca, bukan blue)
 error: border-red-400, text-xs red-600 di bawah input
 ```
 
-Form wizard memakai langkah bernomor besar (`01`, `02`, `03`) sebagai navigasi
-visual — bukan stepper linear dengan garis.
+Form wizard memakai **indikator progres bersegmen** (tiga batang tipis yang
+terisi seiring langkah) plus teks "Langkah N dari 3" — bukan angka besar
+`01/02/03` maupun stepper bergaris.
 
 ### Tabel (Admin)
 
 ```
-border-collapse, lebar penuh
-header: Geist 600, text-xs, UPPER, slate-500, border-b hairline stone-200
-row: border-b hairline stone-100, hover bg-stone-50
-cell: Geist 400, text-sm, px-4 py-3
+border-collapse, lebar penuh, dibungkus .overflow-x-auto
+header: Geist 600, text-xs, UPPER, slate-500, border-b hairline
+row: border-b hairline, hover latar
+cell: Geist 400, text-sm, px-3 py-3
 ```
 
-Sticky header, horizontal scroll bila overflow. Tidak ada zebra striping.
+Horizontal scroll bila overflow (tabel memakai `min-w-[640px]`) — teks tidak
+dikecilkan. Tidak ada zebra striping, tidak ada header lengket di dashboard.
 
 ### Status Badge
 
@@ -371,7 +404,8 @@ Sisanya netral.
 
 ### `/` — Landing Katalog
 
-- Hero editorial (tipografi saja)
+- Dirender di dalam `AppShell` (app bar + tab bar), bukan header sendiri
+- Hero ringkas (tipografi saja)
 - Angka statistik: `13 media · 3 kategori · spesifikasi lengkap`
 - Katalog: 3 section per kategori (Outdoor, Indoor, Digital)
 - Masing-masing section: judul section (Fraunces) + grid kartu
@@ -380,10 +414,11 @@ Sisanya netral.
 
 ### `/ajukan` — Wizard
 
-- 3 langkah bernomor: `01 Pilih Media` · `02 Isi Detail` · `03 Kirim`
-- Angka langkah besar, warna tosca hanya di langkah aktif
+- 3 langkah: `Pilih Media` · `Data Tenant & PIC` · `Kirim`
+- Indikator progres bersegmen di atas + teks "Langkah N dari 3"
 - Form bersih, satu kolom, whitespace di antara field group
-- Tidak ada progress bar — angka + label sebagai pengganti
+- Tab bar disembunyikan (`hideTabBar`) agar alur fokus
+- Tombol kembali memundurkan langkah (`onBack`), bukan riwayat peramban
 - Submit: CTA primer solid tosca
 
 ### `/admin` — Dashboard
@@ -423,9 +458,14 @@ Sebelum mengirim perubahan UI publik:
 - [ ] Tidak ada `brand-secondary`/`brand-pink` di komponen medprom
 - [ ] Tidak ada `--brand-paper` (cream) — semua latar `white`/`stone-50`
 - [ ] Tosca hanya muncul sebagai aksen (maks 2 sentuhan/viewport non-admin)
-- [ ] Form wizard langkah bernomor tampil di mobile dan desktop
+- [ ] Indikator progres wizard tampil di mobile dan desktop
 - [ ] Tabel admin scroll horizontal, bukan mengecilkan teks
 - [ ] Tab navigasi admin berfungsi di mobile
+- [ ] Dokumen tidak menggulir: `documentElement.scrollHeight === innerHeight`
+- [ ] Hanya `.app-scroll` yang menggulir dan app bar tidak bergeser
+- [ ] Setiap kontrol interaktif minimal 44px tingginya (`--tap-min`)
+- [ ] Setiap dialog memakai komponen `Sheet` (Escape, kunci gulir, jebakan fokus)
+- [ ] Radius seragam: kontrol 10px, kartu 14px
 - [ ] `ui-dashboard-*` class dari project event TIDAK dipakai di komponen publik baru
 
 ## Migrasi dari Pola Event

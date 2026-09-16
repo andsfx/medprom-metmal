@@ -32,6 +32,9 @@ body {
   border: 1px solid var(--rule-color);
   border-radius: var(--radius-control);
   background: var(--surface-card);
+  /* Target sentuh: satu aturan untuk seluruh kontrol (input, select, tombol
+   * sekunder) agar tidak ada kontrol yang jatuh di bawah ambang. */
+  min-height: var(--tap-min);
 }
 
 .ui-empty {
@@ -67,6 +70,9 @@ body {
 /* ─── Buttons ─── */
 
 .ui-btn-primary {
+  /* Radius dari token, bukan utilitas: tombol yang lupa membawa kelas radius
+   * tetap seragam dengan kontrol lain. */
+  border-radius: var(--radius-control);
   background: var(--brand-tosca-600);
   color: #fff;
 }
@@ -87,6 +93,7 @@ body {
 
 .ui-btn-secondary {
   border: 1px solid var(--rule-color);
+  border-radius: var(--radius-control);
   color: var(--ink-secondary);
 }
 
@@ -202,18 +209,41 @@ body {
 .app-shell {
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
   background: var(--surface-page);
 }
 
-/* Area konten yang menggulir; menyisakan ruang untuk tab bar + safe area. */
+/* Area konten yang menggulir; menyisakan ruang untuk tab bar + safe area.
+ * `min-height: 0` wajib: tanpa itu anak flex menolak menyusut dan justru
+ * memaksa seluruh dokumen menggulir, sehingga bar ikut bergeser.
+ * `position: relative` wajib juga: tanpanya keturunan `position: absolute`
+ * (mis. `.sr-only`) mengambil containing block dari dokumen, sehingga
+ * menambah tinggi gulir dokumen dan bar ikut bergeser. */
 .app-scroll {
+  position: relative;
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
   padding-bottom: calc(var(--app-tabbar-h) + var(--safe-bottom));
+}
+
+/* Layar tanpa bar maupun tab bar (mis. login): tetap terpusat, tetap dapat
+ * menggulir bila konten lebih tinggi dari viewport. */
+.app-canvas {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: calc(1.5rem + var(--safe-top)) 1rem calc(1.5rem + var(--safe-bottom));
 }
 
 @media (min-width: 640px) {

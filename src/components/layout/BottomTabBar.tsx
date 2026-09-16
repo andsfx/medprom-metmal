@@ -1,8 +1,10 @@
 /**
  * Bottom tab bar — navigasi utama sisi tenant, hanya di mobile.
  *
- * Di layar lebar tab bar bawah terasa asing, jadi disembunyikan (`sm:hidden`)
- * dan navigasi dikembalikan ke app bar.
+ * Di layar lebar tab bar bawah terasa asing, jadi disembunyikan. Aturan
+ * penyembunyian ada di `base.css` (`@media (min-width: 640px)`) — bukan
+ * utilitas `sm:hidden` di sini, karena `display: grid` pada `.app-tabbar`
+ * mengalahkan utilitas Tailwind tersebut.
  */
 import { Link, useLocation } from 'react-router-dom';
 import { LayoutGrid, FilePlus2, ClipboardList } from 'lucide-react';

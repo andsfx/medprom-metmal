@@ -47,7 +47,7 @@
   /* ─── Metrik app shell ─── */
   --app-bar-h: 3.5rem;
   --app-tabbar-h: 3.75rem;
-  --tap-min: 44px; /* target sentuh minimum (WCAG 2.2 AA 2.5.8) */
+  --tap-min: 44px; /* target sentuh nyaman (di atas ambang AA 24px, WCAG 2.2 2.5.8) */
 
   /* ─── Safe area (PWA standalone di perangkat berlekuk) ─── */
   --safe-top: env(safe-area-inset-top, 0px);

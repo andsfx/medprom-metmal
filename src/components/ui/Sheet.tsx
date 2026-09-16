@@ -84,7 +84,7 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
           <button
             type="button"
             onClick={onClose}
-            className="app-pressable ui-focus-ring -mr-1 inline-flex h-10 w-10 items-center justify-center rounded-full text-slate-500 hover:bg-[var(--surface-hover)] dark:text-slate-400"
+            className="app-pressable ui-focus-ring -mr-1 inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-[var(--surface-hover)] dark:text-slate-400"
             aria-label="Tutup"
           >
             <X className="h-5 w-5" aria-hidden="true" />

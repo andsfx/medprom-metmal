@@ -68,7 +68,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
             type="button"
             onClick={() => setRulesOpen((v) => !v)}
             aria-expanded={rulesOpen}
-            className="flex w-full items-center justify-between gap-2 text-left text-sm font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300 dark:hover:text-brand-primary-200"
+            className="app-pressable ui-focus-ring flex min-h-11 w-full items-center justify-between gap-2 rounded-[var(--radius-control)] text-left text-sm font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300 dark:hover:text-brand-primary-200"
           >
             Ketentuan pemasangan
             <ChevronDown className={`h-4 w-4 shrink-0 transition-transform ${rulesOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
@@ -89,7 +89,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
       <div className="mt-5 flex-1" />
       <Link
         to={`/ajukan?media=${encodeURIComponent(media.slug)}`}
-        className="ui-btn-primary inline-flex items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+        className="ui-btn-primary app-pressable ui-focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
       >
         Ajukan Materi
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -117,7 +117,7 @@ export default function PromoLandingPage() {
       actions={
         <Link
           to="/login"
-          className="app-pressable ui-focus-ring rounded-full px-3 py-2 text-sm font-medium text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300"
+          className="app-pressable ui-focus-ring inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300"
         >
           Login Staf
         </Link>
@@ -206,7 +206,7 @@ export default function PromoLandingPage() {
                       href={wa}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ui-control inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                      className="ui-control app-pressable ui-focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
                     >
                       WhatsApp
                       <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
