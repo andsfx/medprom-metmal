@@ -357,7 +357,7 @@ router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res
     const existing = rows[0] || null;
     if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
 
-    // Pengajuan bertautan tidak menyimpan file di Drive kami — tak ada yang dihapus.
+    // Pengajuan bertautan atau legacy R2 (tanpa drive_file_id) — tak ada yang dihapus dari Drive.
     if (existing.source_type !== 'link' && existing.drive_file_id) {
       // Hapus Drive DULU dengan kepastian (throw) — gagal → row tetap, retry aman.
       try {

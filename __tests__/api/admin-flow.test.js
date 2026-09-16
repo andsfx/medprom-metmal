@@ -24,6 +24,7 @@ vi.mock('../../server/src/auth.js', () => ({
 
 import adminRouter from '../../server/src/routes/admin.js';
 import { db } from '../../server/src/db.js';
+import { deleteDriveFileOrThrow } from '../../server/src/drive.js';
 
 const mockedQuery = vi.mocked(db.query);
 
@@ -267,5 +268,43 @@ describe('GET /admin/submissions — filter & pencarian', () => {
       .map((c) => String(c[0]))
       .find((sql) => sql.includes('FROM promo_submissions s'));
     expect(selectSql).not.toMatch(/created_at >=/);
+  });
+});
+
+describe('POST /admin/submissions/:id/delete', () => {
+  it('tautan — hapus tanpa menyentuh Drive (FR-045)', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      if (String(sql).includes('SELECT id, source_type, drive_file_id')) {
+        return Promise.resolve({ rows: [{ id: 's1', source_type: 'link', drive_file_id: null }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    const res = await call('/submissions/:id/delete', 'post', { params: { id: 's1' } });
+    expect(res.statusCode).toBe(200);
+    expect(deleteDriveFileOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('legacy R2 (upload tanpa drive_file_id) — hapus tanpa error Drive', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      if (String(sql).includes('SELECT id, source_type, drive_file_id')) {
+        return Promise.resolve({ rows: [{ id: 's2', source_type: 'upload', drive_file_id: '' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    const res = await call('/submissions/:id/delete', 'post', { params: { id: 's2' } });
+    expect(res.statusCode).toBe(200);
+    expect(deleteDriveFileOrThrow).not.toHaveBeenCalled();
+  });
+
+  it('unggah dengan drive_file_id — hapus Drive dulu, lalu hapus row', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      if (String(sql).includes('SELECT id, source_type, drive_file_id')) {
+        return Promise.resolve({ rows: [{ id: 's3', source_type: 'upload', drive_file_id: 'drv_abc' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    const res = await call('/submissions/:id/delete', 'post', { params: { id: 's3' } });
+    expect(res.statusCode).toBe(200);
+    expect(deleteDriveFileOrThrow).toHaveBeenCalledWith('drv_abc');
   });
 });

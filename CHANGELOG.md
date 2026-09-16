@@ -41,6 +41,18 @@ verifikasi rilis 1.3.0 di produksi.
   Semua 7 komponen ditulis ulang; 18 berkas / 164 test tetap hijau. Rancangan:
   `DESIGN.md` (baru).
 
+### Diperbaiki
+
+- `server/src/routes/admin.js` (`POST /admin/submissions/:id/delete`):
+  komentar fallback diperjelas — *tautan* **atau** *legacy R2
+  (`source_type='upload'` tanpa `drive_file_id`)* → lewati penghapusan Drive,
+  langsung hapus row. Kondisi kode tidak berubah (sudah benar sejak awal),
+  kini kejadian `MP-260912-82BFF1` dibuktikan dengan 3 test di
+  `admin-flow.test.js` (tautan, legacy R2, unggah-valid). Test naik 164 → 167.
+- Env produksi: kunci mati `R2_*` dihapus dari
+  `/opt/medprom/deploy/vps/.env` (penyimpanan pindah ke Drive sejak 1.1.0;
+  tersisa hanya backup `.env.bak-*`). API restart, healthz OK.
+
 ### Diubah
 
 - `deploy/vps/docker-compose.yml`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
