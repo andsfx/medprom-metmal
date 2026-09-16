@@ -22,7 +22,11 @@ beforeEach(() => { vi.restoreAllMocks(); });
 
 const PAYLOAD = {
   media_type_slug: 'spanduk', tenant_id: '', tenant_name: 'Optik Melawai',
-  pic_name: 'Andi', pic_phone: '08123456789', installation_date: '', notes: '',
+  unit_number: 'A-01', pic_name: 'Andi', pic_phone: '08123456789',
+  campaign_name: 'Promo', material_title: 'Spanduk Promo',
+  material_description: 'Keterangan.', material_type: 'Promosi',
+  media_target: 'Atrium 1', air_start_date: '', air_end_date: '',
+  installation_date: '', terms_accepted: true, notes: '',
   drive_file_id: '', file_name: '', mime_type: '', file_size_bytes: 0,
   link_url: 'https://drive.google.com/file/d/x/view', device_fingerprint: 'fp1',
 };
@@ -56,12 +60,21 @@ describe('submitPromo — propagasi errors[] dari HTTP 400', () => {
     await expect(submitPromo(PAYLOAD)).rejects.toThrow(/HTTP 400/);
   });
 
-  it('sukses mengembalikan id + created_at', async () => {
+  it('sukses mengembalikan id + nomor pengajuan + token status', async () => {
     global.fetch = vi.fn(async () => jsonResponse(
-      { success: true, id: 'abc-123', created_at: '2026-09-15T00:00:00Z' },
+      {
+        success: true, id: 'abc-123', submission_number: 'MP-260916-ABC234',
+        status_token: 'tok-1', status: 'menunggu_review', created_at: '2026-09-15T00:00:00Z',
+      },
     )) as unknown as typeof fetch;
 
-    await expect(submitPromo(PAYLOAD)).resolves.toEqual({ id: 'abc-123', created_at: '2026-09-15T00:00:00Z' });
+    await expect(submitPromo(PAYLOAD)).resolves.toEqual({
+      id: 'abc-123',
+      submission_number: 'MP-260916-ABC234',
+      status_token: 'tok-1',
+      status: 'menunggu_review',
+      created_at: '2026-09-15T00:00:00Z',
+    });
   });
 });
 

@@ -1,10 +1,11 @@
 /**
  * Wizard pengajuan media promosi — 3 langkah:
  *   1. Pilih media (spesifikasi + rules)
- *   2. Data tenant (pemilih dari API tenant) + PIC + tanggal pasang + catatan
- *   3. Kirim materi — KANONIS: kirim tautan penyimpanan tenant (Google Drive/
- *      Dropbox/WeTransfer); admin verifikasi manual. Mode unggah ke Drive mall
- *      adalah jalur legacy di balik isUploadModeEnabled() (VITE_PROMO_UPLOAD_MODE).
+ *   2. Data tenant (pemilih dari API tenant) + PIC + data materi PRD
+ *   3. Kirim materi — dua kanal resmi: kirim tautan penyimpanan tenant
+ *      (Google Drive/Dropbox/WeTransfer; kanonis) atau unggah berkas ke Drive
+ *      mall. Kanal unggah dapat dimatikan operator lewat
+ *      isUploadModeEnabled() (VITE_PROMO_UPLOAD_MODE='0').
  *
  * Status: idle → uploading → success | error. Pesan validasi server dipetakan
  * ke field terkait; sisanya ditampilkan verbatim.
@@ -13,11 +14,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
   ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, FileText, Film,
-  ImageIcon, Link2, Loader2, ShieldCheck, Upload, X,
+  ImageIcon, Info, Link2, Loader2, ShieldCheck, Upload, X,
 } from 'lucide-react';
 import { fetchMediaTypes, uploadFile, submitPromo, errorsFromApiError, mapSubmitErrors } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
-import { MAX_FILE_BYTES, MIME_LABELS, CATEGORY_LABELS, isUploadModeEnabled } from '../../constants/promo';
+import { MAX_FILE_BYTES, MIME_LABELS, CATEGORY_LABELS, MATERIAL_TYPES, isUploadModeEnabled } from '../../constants/promo';
 import { checkInstallationDate, toIsoDate, describeLeadTime, parseLeadTime, parseMaterialEmail } from '../../utils/leadTime';
 import { TenantSearchSelect } from './TenantSearchSelect';
 import type { PromoMediaType, TenantOption } from '../../types/promo';
@@ -84,10 +85,20 @@ export default function PromoUploadWizard() {
   const [manualMode, setManualMode] = useState(false);
   const [picName, setPicName] = useState('');
   const [picPhone, setPicPhone] = useState('');
+  const [campaignName, setCampaignName] = useState('');
+  const [materialTitle, setMaterialTitle] = useState('');
+  const [materialDescription, setMaterialDescription] = useState('');
+  const [materialType, setMaterialType] = useState('');
+  const [mediaTarget, setMediaTarget] = useState('');
+  const [airStartDate, setAirStartDate] = useState('');
+  const [airEndDate, setAirEndDate] = useState('');
   const [installationDate, setInstallationDate] = useState('');
+  const [termsAccepted, setTermsAccepted] = useState(false);
   const [notes, setNotes] = useState('');
 
-  const [sourceMode, setSourceMode] = useState<SourceMode>(() => (isUploadModeEnabled() ? 'upload' : 'link'));
+  // Dua kanal materi (keduanya resmi): tautan penyimpanan tenant (kanonis) atau
+  // unggah berkas ke Drive mall (FR-008..FR-015).
+  const [sourceMode, setSourceMode] = useState<SourceMode>('link');
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -97,6 +108,7 @@ export default function PromoUploadWizard() {
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [submitError, setSubmitError] = useState('');
   const [ticketId, setTicketId] = useState('');
+  const [statusToken, setStatusToken] = useState('');
   const [uploadPct, setUploadPct] = useState(0);
 
   const selectedMedia = useMemo(
@@ -134,7 +146,10 @@ export default function PromoUploadWizard() {
     try {
       sessionStorage.setItem(DRAFT_KEY, JSON.stringify({
         selectedSlug, tenantName: tenant?.name ?? '', tenantId: tenant?.id ?? '',
-        picName, picPhone, installationDate, notes, linkUrl,
+        unitNumber: tenant?.lot ?? '',
+        picName, picPhone, campaignName, materialTitle, materialDescription,
+        materialType, mediaTarget, airStartDate, airEndDate,
+        installationDate, notes, linkUrl,
       }));
     } catch { /* storage penuh / diblokir — draf opsional, jangan gagalkan submit */ }
   }
@@ -145,8 +160,11 @@ export default function PromoUploadWizard() {
     if (draftRestoredRef.current || mediaTypes.length === 0) return;
     draftRestoredRef.current = true;
     let draft: {
-      selectedSlug?: string; tenantName?: string; tenantId?: string;
-      picName?: string; picPhone?: string; installationDate?: string; notes?: string; linkUrl?: string;
+      selectedSlug?: string; tenantName?: string; tenantId?: string; unitNumber?: string;
+      picName?: string; picPhone?: string; campaignName?: string; materialTitle?: string;
+      materialDescription?: string; materialType?: string; mediaTarget?: string;
+      airStartDate?: string; airEndDate?: string; installationDate?: string;
+      notes?: string; linkUrl?: string;
     } | null = null;
     try {
       const raw = sessionStorage.getItem(DRAFT_KEY);
@@ -158,10 +176,20 @@ export default function PromoUploadWizard() {
       setStep(2);
     }
     if (draft.tenantName) {
-      setTenant({ id: draft.tenantId ?? '', name: draft.tenantName, floor: '', lot: '', category: '' });
+      setTenant({
+        id: draft.tenantId ?? '', name: draft.tenantName,
+        floor: '', lot: draft.unitNumber ?? '', category: '',
+      });
     }
     if (draft.picName) setPicName(draft.picName);
     if (draft.picPhone) setPicPhone(draft.picPhone);
+    if (draft.campaignName) setCampaignName(draft.campaignName);
+    if (draft.materialTitle) setMaterialTitle(draft.materialTitle);
+    if (draft.materialDescription) setMaterialDescription(draft.materialDescription);
+    if (draft.materialType) setMaterialType(draft.materialType);
+    if (draft.mediaTarget) setMediaTarget(draft.mediaTarget);
+    if (draft.airStartDate) setAirStartDate(draft.airStartDate);
+    if (draft.airEndDate) setAirEndDate(draft.airEndDate);
     if (draft.installationDate) setInstallationDate(draft.installationDate);
     if (draft.notes) setNotes(draft.notes);
     if (draft.linkUrl) setLinkUrl(draft.linkUrl);
@@ -172,7 +200,11 @@ export default function PromoUploadWizard() {
     if (mediaTypes.length === 0) return;
     persistDraft();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mediaTypes, selectedSlug, tenant, picName, picPhone, installationDate, notes, linkUrl]);
+  }, [
+    mediaTypes, selectedSlug, tenant, picName, picPhone, campaignName, materialTitle,
+    materialDescription, materialType, mediaTarget, airStartDate, airEndDate,
+    installationDate, notes, linkUrl,
+  ]);
 
   // Load katalog aktif; pre-select dari query param.
   useEffect(() => {
@@ -228,6 +260,14 @@ export default function PromoUploadWizard() {
     if (!picName.trim()) errs.pic_name = 'Nama PIC wajib diisi.';
     if (!picPhone.trim()) errs.pic_phone = 'Nomor telepon PIC wajib diisi.';
     else if (!/^[+0-9][0-9\s-]{7,19}$/.test(picPhone.trim())) errs.pic_phone = 'Format nomor telepon tidak valid.';
+    if (!campaignName.trim()) errs.campaign_name = 'Nama campaign wajib diisi.';
+    if (!materialTitle.trim()) errs.material_title = 'Judul materi wajib diisi.';
+    if (!materialDescription.trim()) errs.material_description = 'Deskripsi materi wajib diisi.';
+    if (!materialType) errs.material_type = 'Jenis materi wajib dipilih.';
+    if (!mediaTarget.trim()) errs.media_target = 'Media atau lokasi pemasangan wajib diisi.';
+    if (airStartDate && airEndDate && airEndDate < airStartDate) {
+      errs.air_end_date = 'Periode tayang berakhir sebelum tanggal mulai.';
+    }
     // Lead time media: cegah tanggal pasang yang mustahil dipenuhi Mall.
     const leadCheck = checkInstallationDate(
       installationDate, selectedMedia?.rules || '', toIsoDate(),
@@ -250,12 +290,16 @@ export default function PromoUploadWizard() {
       if (sourceMode === 'link') setLinkError('Tautan harus dimulai dengan http:// atau https://');
       return;
     }
+    // Persetujuan ketentuan wajib (PRD §9.3) — ditegakkan juga di server.
+    if (!termsAccepted) {
+      setSubmitError('Centang persetujuan ketentuan sebelum mengirim.');
+      return;
+    }
     setSubmitState('uploading');
     setSubmitError('');
     setUploadPct(0);
     try {
-      // Mode unggah (legacy): kirim file ke API → insert row.
-      // Mode tautan (kanonis): insert saja.
+      // Mode unggah: berkas dikirim ke API lebih dulu → id Drive. Mode tautan: insert saja.
       let driveFileId = '';
       if (sourceMode === 'upload' && file) {
         const uploaded = await uploadFile(file, setUploadPct);
@@ -265,9 +309,18 @@ export default function PromoUploadWizard() {
         media_type_slug: selectedMedia.slug,
         tenant_id: tenant.id,
         tenant_name: tenant.name,
+        unit_number: tenant.lot || '',
         pic_name: picName.trim(),
         pic_phone: picPhone.trim(),
+        campaign_name: campaignName.trim(),
+        material_title: materialTitle.trim(),
+        material_description: materialDescription.trim(),
+        material_type: materialType,
+        media_target: mediaTarget.trim(),
+        air_start_date: airStartDate,
+        air_end_date: airEndDate,
         installation_date: installationDate,
+        terms_accepted: termsAccepted,
         notes: notes.trim(),
         drive_file_id: driveFileId,
         file_name: sourceMode === 'upload' && file ? file.name : '',
@@ -276,7 +329,9 @@ export default function PromoUploadWizard() {
         link_url: sourceMode === 'link' ? linkUrl.trim() : '',
         device_fingerprint: getDeviceFingerprint(),
       });
-      setTicketId(result.id.replace(/-/g, '').slice(0, 8).toUpperCase() || '—');
+      // FR-016/FR-017: nomor pengajuan dari server; token untuk halaman status.
+      setTicketId(result.submission_number || '—');
+      setStatusToken(result.status_token || '');
       setSubmitState('success');
       clearDraft();
     } catch (err) {
@@ -287,7 +342,10 @@ export default function PromoUploadWizard() {
       if (Object.keys(mapped.fields).length > 0) {
         setFieldErrors((prev) => ({ ...prev, ...mapped.fields }));
         const stepForField: Record<string, Step> = {
-          media: 1, tenant: 2, pic_name: 2, pic_phone: 2, installation_date: 2, link_url: 3,
+          media: 1, tenant: 2, pic_name: 2, pic_phone: 2, campaign_name: 2,
+          material_title: 2, material_description: 2, material_type: 2,
+          media_target: 2, air_start_date: 2, air_end_date: 2,
+          installation_date: 2, terms_accepted: 2, link_url: 3,
         };
         const target = Object.keys(mapped.fields).map((f) => stepForField[f]).filter(Boolean)[0];
         if (target && target !== 3) setStep(target);
@@ -314,19 +372,23 @@ export default function PromoUploadWizard() {
               Tim Tenant Relations akan meninjau pengajuan Anda.
             </p>
             <div className="ui-dashboard-control mx-auto mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5">
-              <span className="text-xs ui-text-muted">Nomor tiket</span>
+              <span className="text-xs ui-text-muted">Nomor pengajuan</span>
               <span className="font-mono text-sm font-bold tracking-widest text-brand-primary-700 dark:text-brand-primary-300">{ticketId}</span>
             </div>
             <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-              Simpan nomor tiket ini. Jangan hapus atau ubah akses tautan materi sampai status
-              berubah menjadi <span className="font-semibold">Terpasang</span> — tim Tenant Relations
-              membuka tautan tersebut untuk verifikasi.
+              Simpan nomor ini. Status pengajuan dapat dipantau kapan saja melalui halaman status —
+              simpan tautannya, tidak perlu akun.
             </p>
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Status dapat dipantau di halaman Riwayat dari perangkat ini.
+              Status juga dapat dipantau di halaman Riwayat dari perangkat ini.
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
-              <Link to="/riwayat" className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition">
+              {statusToken && (
+                <Link to={`/status/${statusToken}`} className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition">
+                  Lihat Status Pengajuan
+                </Link>
+              )}
+              <Link to="/riwayat" className="ui-dashboard-control inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                 Lihat Riwayat
               </Link>
               <Link to="/" className="ui-dashboard-control inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
@@ -562,6 +624,121 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
+                    <label htmlFor="campaign-name" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Nama Campaign <span aria-hidden="true" className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="campaign-name"
+                      type="text"
+                      value={campaignName}
+                      maxLength={150}
+                      placeholder="Contoh: Promo Akhir Tahun"
+                      onChange={(e) => { setCampaignName(e.target.value); setFieldErrors((er) => ({ ...er, campaign_name: '' })); }}
+                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.campaign_name ? 'border-red-300 dark:border-red-700' : ''}`}
+                      aria-invalid={fieldErrors.campaign_name ? true : undefined}
+                    />
+                    {fieldErrors.campaign_name && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.campaign_name}</p>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="material-title" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Judul Materi <span aria-hidden="true" className="text-red-500">*</span>
+                    </label>
+                    <input
+                      id="material-title"
+                      type="text"
+                      value={materialTitle}
+                      maxLength={200}
+                      placeholder="Contoh: Spanduk Diskon 50%"
+                      onChange={(e) => { setMaterialTitle(e.target.value); setFieldErrors((er) => ({ ...er, material_title: '' })); }}
+                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_title ? 'border-red-300 dark:border-red-700' : ''}`}
+                      aria-invalid={fieldErrors.material_title ? true : undefined}
+                    />
+                    {fieldErrors.material_title && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_title}</p>}
+                  </div>
+
+                  <div>
+                    <label htmlFor="material-description" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Deskripsi Materi <span aria-hidden="true" className="text-red-500">*</span>
+                    </label>
+                    <textarea
+                      id="material-description"
+                      value={materialDescription}
+                      maxLength={2000}
+                      rows={3}
+                      placeholder="Penjelasan singkat isi materi promosi Anda."
+                      onChange={(e) => { setMaterialDescription(e.target.value); setFieldErrors((er) => ({ ...er, material_description: '' })); }}
+                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_description ? 'border-red-300 dark:border-red-700' : ''}`}
+                      aria-invalid={fieldErrors.material_description ? true : undefined}
+                    />
+                    {fieldErrors.material_description && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_description}</p>}
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="material-type" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        Jenis Materi <span aria-hidden="true" className="text-red-500">*</span>
+                      </label>
+                      <select
+                        id="material-type"
+                        value={materialType}
+                        onChange={(e) => { setMaterialType(e.target.value); setFieldErrors((er) => ({ ...er, material_type: '' })); }}
+                        className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_type ? 'border-red-300 dark:border-red-700' : ''}`}
+                        aria-invalid={fieldErrors.material_type ? true : undefined}
+                      >
+                        <option value="">Pilih jenis materi…</option>
+                        {MATERIAL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+                      </select>
+                      {fieldErrors.material_type && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_type}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor="media-target" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        Media / Lokasi Pemasangan <span aria-hidden="true" className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="media-target"
+                        type="text"
+                        value={mediaTarget}
+                        maxLength={200}
+                        placeholder={selectedMedia?.location_note || 'Contoh: Atrium 1'}
+                        onChange={(e) => { setMediaTarget(e.target.value); setFieldErrors((er) => ({ ...er, media_target: '' })); }}
+                        className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.media_target ? 'border-red-300 dark:border-red-700' : ''}`}
+                        aria-invalid={fieldErrors.media_target ? true : undefined}
+                      />
+                      {fieldErrors.media_target && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media_target}</p>}
+                    </div>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label htmlFor="air-start-date" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        Mulai Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
+                      </label>
+                      <input
+                        id="air-start-date"
+                        type="date"
+                        value={airStartDate}
+                        onChange={(e) => { setAirStartDate(e.target.value); setFieldErrors((er) => ({ ...er, air_start_date: '', air_end_date: '' })); }}
+                        className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                      {fieldErrors.air_start_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_start_date}</p>}
+                    </div>
+                    <div>
+                      <label htmlFor="air-end-date" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                        Berakhir Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
+                      </label>
+                      <input
+                        id="air-end-date"
+                        type="date"
+                        value={airEndDate}
+                        onChange={(e) => { setAirEndDate(e.target.value); setFieldErrors((er) => ({ ...er, air_end_date: '' })); }}
+                        className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                      {fieldErrors.air_end_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
+                    </div>
+                  </div>
+
+                  <div>
                     <label htmlFor="notes" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
                       Catatan untuk Tim Tenant Relations <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
@@ -599,9 +776,9 @@ export default function PromoUploadWizard() {
               <div className="p-5 sm:p-6">
                 <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Kirim Materi</h1>
                 <p className="ui-text-muted mt-1 text-sm">
-                  Kirim <span className="font-semibold">tautan</span> materi untuk {selectedMedia.name}
+                  Kirim materi untuk <span className="font-semibold">{selectedMedia.name}</span>
                   {formatsLabel && <> (format {formatsLabel}{selectedMedia.size_spec ? ` · ukuran ${selectedMedia.size_spec}` : ''})</>}.
-                  Materi tetap di penyimpanan Anda — kami hanya menyimpan tautannya.
+                  Pilih salah satu cara: unggah berkas ke penyimpanan Mall, atau kirim tautan milik Anda.
                 </p>
 
                 {/* Ringkasan */}
@@ -618,6 +795,14 @@ export default function PromoUploadWizard() {
                     <dt className="shrink-0 font-semibold ui-text-muted">Media:</dt>
                     <dd className="text-slate-900 dark:text-white">{selectedMedia.name}</dd>
                   </div>
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold ui-text-muted">Campaign:</dt>
+                    <dd className="text-slate-900 dark:text-white">{campaignName}</dd>
+                  </div>
+                  <div className="flex gap-2">
+                    <dt className="shrink-0 font-semibold ui-text-muted">Lokasi:</dt>
+                    <dd className="text-slate-900 dark:text-white">{mediaTarget}</dd>
+                  </div>
                   {installationDate && (
                     <div className="flex gap-2">
                       <dt className="shrink-0 font-semibold ui-text-muted">Tgl pasang:</dt>
@@ -626,23 +811,11 @@ export default function PromoUploadWizard() {
                   )}
                 </dl>
 
-                {/* Pemilih sumber materi — hanya saat mode unggah legacy aktif.
-                    Kanonis link-only: satu cara kirim, tanpa toggle. */}
-                {isUploadModeEnabled() && (
+                {/* Pemilih sumber materi — dua kanal resmi (tautan kanonis, unggah berkas).
+                    Kanal unggah disembunyikan bila operator menonaktifkannya
+                    (VITE_PROMO_UPLOAD_MODE='0', instance tanpa kredensial Drive). */}
+                {isUploadModeEnabled() ? (
                 <div className="mt-5 flex gap-2" role="group" aria-label="Cara mengirim materi">
-                  <button
-                    type="button"
-                    aria-pressed={sourceMode === 'upload'}
-                    onClick={() => { setSourceMode('upload'); setLinkError(''); }}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
-                      sourceMode === 'upload'
-                        ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
-                        : 'border-slate-200 text-slate-600 hover:border-brand-primary-300 dark:border-slate-700 dark:text-slate-300'
-                    }`}
-                  >
-                    <Upload className="h-4 w-4" aria-hidden="true" />
-                    Unggah File
-                  </button>
                   <button
                     type="button"
                     aria-pressed={sourceMode === 'link'}
@@ -656,7 +829,26 @@ export default function PromoUploadWizard() {
                     <Link2 className="h-4 w-4" aria-hidden="true" />
                     Kirim Tautan
                   </button>
+                  <button
+                    type="button"
+                    aria-pressed={sourceMode === 'upload'}
+                    onClick={() => { setSourceMode('upload'); setLinkError(''); }}
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                      sourceMode === 'upload'
+                        ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
+                        : 'border-slate-200 text-slate-600 hover:border-brand-primary-300 dark:border-slate-700 dark:text-slate-300'
+                    }`}
+                  >
+                    <Upload className="h-4 w-4" aria-hidden="true" />
+                    Unggah File
+                  </button>
                 </div>
+                ) : (
+                  <p className="mt-5 flex items-start gap-1.5 rounded-xl bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
+                    <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    Kanal unggah berkas sedang tidak diaktifkan pada instance ini — silakan kirim
+                    tautan materi Anda.
+                  </p>
                 )}
 
                 {/* Tautan materi — untuk file besar / folder Drive */}
@@ -778,10 +970,28 @@ export default function PromoUploadWizard() {
                     <p className="mt-1 text-xs text-red-700 dark:text-red-300">{submitError}</p>
                   </div>
                 )}
+
+                {/* Persetujuan ketentuan — wajib sebelum kirim (PRD §9.3). */}
+                <label className="mt-5 flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-200">
+                  <input
+                    type="checkbox"
+                    checked={termsAccepted}
+                    onChange={(e) => { setTermsAccepted(e.target.checked); setFieldErrors((er) => ({ ...er, terms_accepted: '' })); }}
+                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand-tosca)]"
+                  />
+                  <span>
+                    Saya menyatakan materi ini benar milik/kewenangan tenant saya dan menyetujui
+                    ketentuan pemasangan media promosi Metropolitan Mall Bekasi.
+                  </span>
+                </label>
+                {fieldErrors.terms_accepted && (
+                  <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.terms_accepted}</p>
+                )}
+
                 <button
                   type="button"
                   onClick={handleSubmit}
-                  disabled={!materialReady || submitState === 'uploading'}
+                  disabled={!materialReady || !termsAccepted || submitState === 'uploading'}
                   className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition"
                 >
                   {submitState === 'uploading' ? (

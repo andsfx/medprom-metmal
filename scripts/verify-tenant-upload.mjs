@@ -1,7 +1,7 @@
 /**
  * verify-tenant-upload.mjs — jalur tenant penuh via browser produksi:
- * landing → form pengajuan (pilih media, tenant, PIC) → upload file nyata →
- * tiket + dashboard staf + riwayat tenant.
+ * landing → form pengajuan (pilih media, tenant, PIC, data materi PRD) →
+ * unggah berkas nyata → nomor pengajuan + dashboard staf + riwayat tenant.
  *
  *   VERIFY_PASSWORD='...' node scripts/verify-tenant-upload.mjs
  */
@@ -28,7 +28,7 @@ const page = await browser.newPage();
 const errors = [];
 page.on('pageerror', (e) => errors.push(String(e)));
 
-let ticketId = '';
+let submissionNumber = '';
 
 try {
   // 1. Landing (katalog live)
@@ -49,48 +49,63 @@ try {
   await page.locator('[role=option]').first().click();
   check('tenant terpilih dari API tenant', optName.length > 2, optName);
 
+  // 4. Data PIC + field materi wajib PRD §9.3.
   await page.fill('input#pic-name', 'Andi Verifikasi');
   await page.fill('input#pic-phone', '081234567890');
-  await page.fill('textarea#notes', 'Uji alur tenant produksi.');
+  await page.fill('input#campaign-name', 'Verifikasi Produksi');
+  await page.fill('input#material-title', 'Spanduk Verifikasi');
+  await page.fill('textarea#material-description', 'Uji alur tenant produksi.');
+  await page.selectOption('select#material-type', 'Promosi');
+  await page.fill('input#media-target', 'Sisi Pintu Tol Bekasi Barat');
   await page.click('button:has-text("Lanjut — Kirim Materi")');
   await page.waitForSelector('text=Kirim Pengajuan', { timeout: 15000 });
 
-  // 4. Upload file via Drive flow (wizard → POST /drive/upload → Drive).
-  //    Klik label upload, isi file, tunggu tombol Kirim aktif (file tervalidasi).
+  // 5. Pilih kanal unggah berkas (bawaan wizard adalah kirim tautan).
+  await page.click('button:has-text("Unggah File")');
   await page.click('label:has-text("Klik untuk memilih file")');
   const fileChooser = await page.waitForEvent('filechooser', { timeout: 10000 });
   await fileChooser.setFiles(filePath);
-  await page.waitForSelector('button:has-text("Kirim Pengajuan")', { timeout: 10000 });
-  // Tunggu file tertera di UI sebelum submit.
   await page.waitForSelector('text=materi-verify.png', { timeout: 5000 });
 
-  // Submit: klik tombol Kirim Pengajuan, tunggu progress & success.
+  // 6. Persetujuan ketentuan wajib sebelum tombol kirim aktif.
+  await page.getByLabel(/Saya menyatakan/i).check();
   await page.click('button:has-text("Kirim Pengajuan")');
   await page.waitForSelector('text=Pengajuan Terkirim', { timeout: 90000 });
-  check('pengajuan sukses (tampil nomor tiket)', true);
+  check('pengajuan sukses (tampil nomor pengajuan)', true);
 
-  // 5. Tiket = 8 karakter hex (potongan pertama UUID, uppercase).
-  //    Tampilan: "Nomor Tiket: XXXXXXXX" pada layar sukses wizard.
+  // 7. Nomor pengajuan berformat MP-YYMMDD-XXXXXX (FR-016).
   const bodyText = await page.textContent('body');
-  const ticketMatch = bodyText.match(/Nomor Tiket:?\s*([A-Z0-9]{8})/);
-  ticketId = ticketMatch ? ticketMatch[1] : '';
-  check('nomor tiket 8-char hex', /^[A-F0-9]{8}$/.test(ticketId), ticketId);
+  const numberMatch = bodyText.match(/Nomor pengajuan\s*(MP-\d{6}-[A-Z0-9]{6})/);
+  submissionNumber = numberMatch ? numberMatch[1] : '';
+  check('nomor pengajuan MP-YYMMDD-XXXXXX', /^MP-\d{6}-[A-Z0-9]{6}$/.test(submissionNumber), submissionNumber);
 
-  // 6. Dashboard staf melihat pengajuan (via API admin)
+  // 8. Halaman status ber-token dapat dibuka tanpa login (FR-019).
+  const statusLink = await page.getAttribute('a:has-text("Lihat Status Pengajuan")', 'href');
+  check('tautan status tersedia setelah submit', Boolean(statusLink && statusLink.startsWith('/status/')), statusLink || '');
+  if (statusLink) {
+    await page.goto(`${BASE}${statusLink}`, { waitUntil: 'networkidle' });
+    const statusBody = await page.textContent('body');
+    check('halaman status menampilkan nomor pengajuan', statusBody.includes(submissionNumber), submissionNumber);
+    check('halaman status menampilkan riwayat status', statusBody.includes('Riwayat Status'));
+  }
+
+  // 9. Dashboard staf melihat pengajuan (via API admin) — status awal PRD.
   const ctx = await browser.newContext();
   const login = await ctx.request.post(`${API}/api/v1/auth/login`, {
     data: { email: EMAIL, password: PASSWORD },
   });
   check('login staf via API', login.ok());
-  const list = await ctx.request.get(`${API}/api/v1/admin/submissions?status=pending`, {
+  const list = await ctx.request.get(`${API}/api/v1/admin/submissions?status=menunggu_review`, {
     headers: { cookie: (login.headers()['set-cookie'] || '').split(';')[0] },
   });
   const json = await list.json();
   const found = (json.data || []).find((r) => r.tenant_name === optName);
   check('pengajuan muncul di antrean staf', Boolean(found), found ? `${found.status} · ${found.media_type_slug}` : 'tidak ditemukan');
+  check('status awal = menunggu_review', found?.status === 'menunggu_review', found?.status || '');
+  check('nomor pengajuan tersimpan di baris staf', found?.submission_number === submissionNumber, found?.submission_number || '');
   await ctx.close();
 
-  // 7. Riwayat publik menampilkan pengajuan (by media slug, tanpa auth)
+  // 10. Riwayat publik menampilkan pengajuan (by media slug, tanpa auth)
   await page.goto(`${BASE}/riwayat`, { waitUntil: 'networkidle' });
   const riwayatBody = await page.textContent('body');
   check('halaman riwayat menampilkan pengajuan', riwayatBody.includes('spanduk') || riwayatBody.includes('Spanduk'));

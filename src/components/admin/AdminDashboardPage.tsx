@@ -7,38 +7,44 @@ import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ChevronLeft, ChevronRight, Copy, Download, ExternalLink, FileText, Film,
-  ImageIcon, Link2, Loader2, LogOut, Megaphone, MessageCircle, Plus, Save, Trash2, Users as UsersIcon, X,
+  ImageIcon, Link2, Loader2, LogOut, Megaphone, MessageCircle, Plus, Save, Trash2, Users as UsersIcon, Wrench, X,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useConfirmDialog } from '../ConfirmDialog';
-import { STATUS_LABELS, CATEGORY_LABELS } from '../../constants/promo';
+import { STATUS_LABELS, STATUS_ORDER, CATEGORY_LABELS } from '../../constants/promo';
 import { submissionWaLink } from '../../utils/whatsapp';
 import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
+import { STATUS_TRANSITIONS, isInstallableStatus } from '../../utils/statusFlow';
 import {
-  fetchAdminSubmissions, updateSubmissionStatus, deleteSubmission,
+  fetchAdminSubmissions, fetchAdminSummary, fetchAdminSubmissionDetail,
+  updateSubmissionStatus, recordInstallation, deleteSubmission,
   fetchAdminMediaTypes, createMediaType, updateMediaType, deleteMediaType,
   downloadExportCsv, fetchAdminUsers, createUser, updateUser, deleteUser,
   type MediaTypeInput,
 } from '../../utils/adminApi';
 import type {
-  PromoMediaType, AdminSubmissionRow, AdminUserRow,
+  PromoMediaType, AdminSubmissionRow, AdminUserRow, StatusPageData,
 } from '../../types/promo';
 
 type Tab = 'submissions' | 'catalog' | 'users';
 
-const STATUS_OPTIONS = ['', 'pending', 'approved', 'rejected', 'installed'];
+const STATUS_OPTIONS = ['', ...STATUS_ORDER];
 const ROLE_OPTIONS = ['admin', 'tenant_relation', 'superadmin'];
 
 function StatusBadge({ status }: { status: string }) {
   const cls: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-    approved: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-    rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-    installed: 'bg-brand-primary-100 text-brand-primary-800 dark:bg-brand-primary-950/50 dark:text-brand-primary-300',
+    draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
+    menunggu_review: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+    perlu_revisi: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+    disetujui: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+    ditolak: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+    siap_dipasang: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
+    sudah_dipasang: 'bg-brand-primary-100 text-brand-primary-800 dark:bg-brand-primary-950/50 dark:text-brand-primary-300',
+    selesai: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${cls[status] ?? cls.pending}`}>
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${cls[status] ?? cls.draft}`}>
       {STATUS_LABELS[status] ?? status}
     </span>
   );
@@ -61,16 +67,31 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState('');
   const [mediaFilter, setMediaFilter] = useState('');
+  const [tenantFilter, setTenantFilter] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [search, setSearch] = useState('');
   const [mediaTypes, setMediaTypes] = useState<PromoMediaType[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [summary, setSummary] = useState<Record<string, number>>({});
+  const [summaryTotal, setSummaryTotal] = useState(0);
 
   const [detail, setDetail] = useState<AdminSubmissionRow | null>(null);
-  const [newStatus, setNewStatus] = useState('approved');
+  const [detailData, setDetailData] = useState<StatusPageData | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [newStatus, setNewStatus] = useState('disetujui');
   const [reviewNotes, setReviewNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
   const [exporting, setExporting] = useState(false);
+
+  // Form pemasangan (FR-041..FR-045).
+  const [installLocation, setInstallLocation] = useState('');
+  const [installStart, setInstallStart] = useState('');
+  const [installEnd, setInstallEnd] = useState('');
+  const [installNotes, setInstallNotes] = useState('');
+  const [installProof, setInstallProof] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -79,6 +100,10 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       const result = await fetchAdminSubmissions({
         status: statusFilter || undefined,
         media_type: mediaFilter || undefined,
+        tenant: tenantFilter || undefined,
+        date_from: dateFrom || undefined,
+        date_to: dateTo || undefined,
+        q: search || undefined,
         page,
       });
       setRows(result.data);
@@ -89,9 +114,22 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, mediaFilter, page]);
+  }, [statusFilter, mediaFilter, tenantFilter, dateFrom, dateTo, search, page]);
+
+  const loadSummary = useCallback(async () => {
+    try {
+      const s = await fetchAdminSummary();
+      setSummary(s.counts);
+      setSummaryTotal(s.total);
+    } catch {
+      // Ringkasan bersifat informatif — kegagalan tidak menghalangi daftar.
+      setSummary({});
+      setSummaryTotal(0);
+    }
+  }, []);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { void loadSummary(); }, [loadSummary]);
 
   useEffect(() => {
     fetchAdminMediaTypes()
@@ -124,10 +162,29 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
   function openDetail(row: AdminSubmissionRow) {
     setDetail(row);
-    setNewStatus(row.status === 'pending' ? 'approved' : row.status);
+    setDetailData(null);
+    setNewStatus(row.status === 'menunggu_review' ? 'disetujui' : row.status);
     setReviewNotes(row.review_notes || '');
     setSaveError('');
+    setInstallLocation('');
+    setInstallStart('');
+    setInstallEnd('');
+    setInstallNotes('');
+    setInstallProof('');
+    setDetailLoading(true);
+    fetchAdminSubmissionDetail(row.id)
+      .then((data) => setDetailData(data))
+      .catch(() => setDetailData(null))
+      .finally(() => setDetailLoading(false));
   }
+
+  /** Status tujuan yang sah dari status saat ini (FR-032..FR-034). */
+  const allowedStatuses = useMemo(() => {
+    if (!detail) return [];
+    const allowed = STATUS_TRANSITIONS[detail.status] || [];
+    // Status saat ini boleh "disimpan ulang" tanpa mengubah apa pun.
+    return [detail.status, ...allowed];
+  }, [detail]);
 
   async function saveStatus() {
     if (!detail) return;
@@ -136,9 +193,30 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     try {
       await updateSubmissionStatus(detail.id, newStatus, reviewNotes.trim());
       setDetail(null);
-      await load();
+      await Promise.all([load(), loadSummary()]);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan status.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function saveInstallation() {
+    if (!detail) return;
+    setSaving(true);
+    setSaveError('');
+    try {
+      await recordInstallation(detail.id, {
+        media_location: installLocation.trim(),
+        start_date: installStart,
+        end_date: installEnd,
+        notes: installNotes.trim(),
+        proof_url: installProof.trim(),
+      });
+      setDetail(null);
+      await Promise.all([load(), loadSummary()]);
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Gagal mencatat pemasangan.');
     } finally {
       setSaving(false);
     }
@@ -166,30 +244,99 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
   return (
     <div>
-      {/* Filter bar */}
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <label htmlFor="filter-status" className="text-xs font-semibold ui-text-muted">Status</label>
-        <select
-          id="filter-status"
-          value={statusFilter}
-          onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-          className="ui-dashboard-control rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
-        >
-          {STATUS_OPTIONS.map((s) => (
-            <option key={s} value={s}>{s === '' ? 'Semua' : STATUS_LABELS[s]}</option>
-          ))}
-        </select>
+      {/* Ringkasan jumlah per status (FR-025) */}
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+        {STATUS_ORDER.map((s) => (
+          <button
+            key={s}
+            type="button"
+            onClick={() => { setStatusFilter(statusFilter === s ? '' : s); setPage(1); }}
+            aria-pressed={statusFilter === s}
+            className={`ui-dashboard-control rounded-xl px-3 py-2.5 text-left transition ${
+              statusFilter === s ? 'ring-2 ring-brand-primary-500' : ''
+            }`}
+          >
+            <p className="text-[11px] font-semibold ui-text-muted">{STATUS_LABELS[s]}</p>
+            <p className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">{summary[s] ?? 0}</p>
+          </button>
+        ))}
+      </div>
+      <p className="mb-3 text-xs ui-text-muted">Total {summaryTotal} pengajuan tercatat.</p>
 
-        <label htmlFor="filter-media" className="ml-2 text-xs font-semibold ui-text-muted">Media</label>
-        <select
-          id="filter-media"
-          value={mediaFilter}
-          onChange={(e) => { setMediaFilter(e.target.value); setPage(1); }}
-          className="ui-dashboard-control max-w-48 rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
-        >
-          <option value="">Semua</option>
-          {mediaTypes.map((m) => <option key={m.slug} value={m.slug}>{m.name}</option>)}
-        </select>
+      {/* Filter bar */}
+      <div className="mb-4 flex flex-wrap items-end gap-2">
+        <div className="min-w-48 flex-1">
+          <label htmlFor="filter-search" className="mb-1 block text-xs font-semibold ui-text-muted">Cari</label>
+          <input
+            id="filter-search"
+            type="search"
+            value={search}
+            placeholder="Nomor pengajuan, tenant, atau judul materi"
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="filter-status" className="mb-1 block text-xs font-semibold ui-text-muted">Status</label>
+          <select
+            id="filter-status"
+            value={statusFilter}
+            onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
+            className="ui-dashboard-control rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+          >
+            {STATUS_OPTIONS.map((s) => (
+              <option key={s} value={s}>{s === '' ? 'Semua' : STATUS_LABELS[s]}</option>
+            ))}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="filter-media" className="mb-1 block text-xs font-semibold ui-text-muted">Media</label>
+          <select
+            id="filter-media"
+            value={mediaFilter}
+            onChange={(e) => { setMediaFilter(e.target.value); setPage(1); }}
+            className="ui-dashboard-control max-w-48 rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+          >
+            <option value="">Semua</option>
+            {mediaTypes.map((m) => <option key={m.slug} value={m.slug}>{m.name}</option>)}
+          </select>
+        </div>
+
+        <div>
+          <label htmlFor="filter-tenant" className="mb-1 block text-xs font-semibold ui-text-muted">Tenant</label>
+          <input
+            id="filter-tenant"
+            type="text"
+            value={tenantFilter}
+            placeholder="Nama tenant"
+            onChange={(e) => { setTenantFilter(e.target.value); setPage(1); }}
+            className="ui-dashboard-control w-40 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="filter-date-from" className="mb-1 block text-xs font-semibold ui-text-muted">Dari tanggal</label>
+          <input
+            id="filter-date-from"
+            type="date"
+            value={dateFrom}
+            onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
+            className="ui-dashboard-control rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="filter-date-to" className="mb-1 block text-xs font-semibold ui-text-muted">Sampai tanggal</label>
+          <input
+            id="filter-date-to"
+            type="date"
+            value={dateTo}
+            onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
+            className="ui-dashboard-control rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+          />
+        </div>
 
         <span className="ml-auto text-xs ui-text-muted">{total} pengajuan</span>
 
@@ -216,9 +363,10 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead>
             <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:text-slate-400">
+              <th className="px-3 py-2.5 font-semibold">Nomor</th>
               <th className="px-3 py-2.5 font-semibold">Tanggal</th>
               <th className="px-3 py-2.5 font-semibold">Tenant</th>
-              <th className="px-3 py-2.5 font-semibold">Media</th>
+              <th className="px-3 py-2.5 font-semibold">Materi</th>
               <th className="px-3 py-2.5 font-semibold">File</th>
               <th className="px-3 py-2.5 font-semibold">Status</th>
               <th className="px-3 py-2.5 font-semibold">Aksi</th>
@@ -226,24 +374,32 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           </thead>
           <tbody>
             {loading && (
-              <tr><td colSpan={6} className="px-3 py-10 text-center" role="status">
+              <tr><td colSpan={7} className="px-3 py-10 text-center" role="status">
                 <Loader2 className="mx-auto h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
               </td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={6} className="px-3 py-10 text-center text-sm ui-text-muted">Tidak ada pengajuan.</td></tr>
+              <tr><td colSpan={7} className="px-3 py-10 text-center text-sm ui-text-muted">Tidak ada pengajuan.</td></tr>
             )}
             {!loading && rows.map((r) => (
               <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60 dark:border-slate-800 dark:hover:bg-slate-800/40">
+                <td className="px-3 py-3">
+                  <span className="font-mono text-xs font-semibold text-brand-primary-700 dark:text-brand-primary-300">
+                    {r.submission_number || '—'}
+                  </span>
+                </td>
                 <td className="px-3 py-3 text-xs ui-text-muted">
                   {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
                 </td>
                 <td className="px-3 py-3">
                   <p className="font-semibold text-slate-900 dark:text-white">{r.tenant_name}</p>
-                  <p className="text-xs ui-text-muted">{r.pic_name} · {r.pic_phone}</p>
+                  <p className="text-xs ui-text-muted">
+                    {r.unit_number ? `Unit ${r.unit_number} · ` : ''}{r.pic_name} · {r.pic_phone}
+                  </p>
                 </td>
                 <td className="px-3 py-3">
-                  <p className="text-slate-800 dark:text-slate-200">{r.media_type_slug}</p>
+                  <p className="text-slate-800 dark:text-slate-200">{r.material_title || r.media_type_slug}</p>
+                  <p className="text-xs ui-text-muted">{r.media_type_slug}</p>
                   {r.installation_date && <p className="text-xs ui-text-muted">pasang: {r.installation_date}</p>}
                   {leadTimeRisk(r) && (
                     <span
@@ -331,24 +487,30 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           aria-labelledby="detail-title"
           onClick={(e) => { if (e.target === e.currentTarget) setDetail(null); }}
         >
-          <div className="ui-dashboard-surface max-h-[85vh] w-full max-w-lg overflow-auto p-6">
+          <div className="ui-dashboard-surface max-h-[85vh] w-full max-w-2xl overflow-auto p-6">
             <div className="mb-4 flex items-start justify-between gap-3">
-              <div>
-                <h2 id="detail-title" className="text-lg font-bold text-slate-900 dark:text-white">
-                  {detail.tenant_name}
+              <div className="min-w-0">
+                <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
+                  {detail.submission_number || '—'}
+                </p>
+                <h2 id="detail-title" className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">
+                  {detail.material_title || detail.tenant_name}
                 </h2>
                 <p className="mt-0.5 text-xs ui-text-muted">
-                  {detail.media_type_slug} · {detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+                  {detail.tenant_name} · {detail.media_type_slug} · {detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => setDetail(null)}
-                aria-label="Tutup"
-                className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700"
-              >
-                <X className="h-4 w-4" />
-              </button>
+              <div className="flex shrink-0 items-center gap-2">
+                <StatusBadge status={detail.status} />
+                <button
+                  type="button"
+                  onClick={() => setDetail(null)}
+                  aria-label="Tutup"
+                  className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
             </div>
 
             <dl className="space-y-2.5 text-sm">
@@ -357,11 +519,22 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 <dt className="w-32 shrink-0 font-semibold ui-text-muted">Tenant</dt>
                 <dd className="text-slate-900 dark:text-white">
                   {detail.tenant_name}
+                  {detail.unit_number && <span className="ml-1.5 text-xs ui-text-muted">Unit {detail.unit_number}</span>}
                   {detail.tenant_id
                     ? <span className="ml-1.5 text-xs ui-text-muted">(MID {detail.tenant_id})</span>
                     : <span className="ml-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">(manual — tidak tertaut MID)</span>}
                 </dd>
               </div>
+              {detail.campaign_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Campaign</dt><dd className="text-slate-900 dark:text-white">{detail.campaign_name}</dd></div>}
+              {detail.material_description && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Deskripsi</dt><dd className="text-slate-900 dark:text-white">{detail.material_description}</dd></div>}
+              {detail.material_type && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Jenis materi</dt><dd className="text-slate-900 dark:text-white">{detail.material_type}</dd></div>}
+              {detail.media_target && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Media/lokasi</dt><dd className="text-slate-900 dark:text-white">{detail.media_target}</dd></div>}
+              {(detail.air_start_date || detail.air_end_date) && (
+                <div className="flex gap-2">
+                  <dt className="w-32 shrink-0 font-semibold ui-text-muted">Periode tayang</dt>
+                  <dd className="text-slate-900 dark:text-white">{detail.air_start_date || '—'} s/d {detail.air_end_date || '—'}</dd>
+                </div>
+              )}
               {detail.installation_date && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Tgl pasang</dt><dd className="text-slate-900 dark:text-white">{detail.installation_date}</dd></div>}
               {leadTimeRisk(detail) && (
                 <div className="flex gap-2">
@@ -396,6 +569,91 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               {detail.notes && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Catatan tenant</dt><dd className="text-slate-900 dark:text-white">{detail.notes}</dd></div>}
               {detail.reviewed_by_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Direview oleh</dt><dd className="text-slate-900 dark:text-white">{detail.reviewed_by_name}</dd></div>}
             </dl>
+
+            {/* Riwayat versi materi (FR-030) */}
+            {detailLoading && (
+              <p className="mt-4 flex items-center gap-2 text-xs ui-text-muted" role="status">
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+                Memuat riwayat versi…
+              </p>
+            )}
+            {!detailLoading && detailData && detailData.files.length > 0 && (
+              <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
+                <p className="text-xs font-semibold ui-text-muted">Versi materi</p>
+                <ul className="mt-1.5 space-y-1.5">
+                  {detailData.files.map((f) => (
+                    <li key={f.id} className="flex items-center justify-between gap-2 text-xs">
+                      <span className="min-w-0">
+                        <span className="font-semibold text-slate-800 dark:text-slate-100">Versi {f.version}</span>
+                        <span className="ml-1.5 ui-text-muted">
+                          {f.created_at ? new Date(f.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                        </span>
+                      </span>
+                      <a
+                        href={f.source_type === 'link' ? f.link_url : f.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                      >
+                        <ExternalLink className="h-3 w-3" aria-hidden="true" />
+                        Buka
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Riwayat status (FR-031, FR-037) */}
+            {!detailLoading && detailData && detailData.history.length > 0 && (
+              <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
+                <p className="text-xs font-semibold ui-text-muted">Riwayat status</p>
+                <ol className="mt-1.5 space-y-2">
+                  {detailData.history.map((h) => (
+                    <li key={h.id} className="text-xs">
+                      <p className="font-semibold text-slate-800 dark:text-slate-100">
+                        {STATUS_LABELS[h.to_status] ?? h.to_status}
+                        <span className="ml-1.5 font-normal ui-text-muted">
+                          {h.created_at ? new Date(h.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
+                          {h.actor_type === 'admin' && h.actor_name ? ` · ${h.actor_name}` : ''}
+                        </span>
+                      </p>
+                      {h.comment && <p className="mt-0.5 leading-relaxed text-slate-600 dark:text-slate-300">{h.comment}</p>}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            )}
+
+            {/* Informasi pemasangan (FR-047) */}
+            {!detailLoading && detailData?.installation && (
+              <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
+                <p className="text-xs font-semibold ui-text-muted">Informasi pemasangan</p>
+                <dl className="mt-1.5 space-y-1.5 text-xs">
+                  <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Lokasi</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.media_location}</dd></div>
+                  {(detailData.installation.start_date || detailData.installation.end_date) && (
+                    <div className="flex gap-2">
+                      <dt className="w-28 shrink-0 ui-text-muted">Periode</dt>
+                      <dd className="text-slate-900 dark:text-white">
+                        {detailData.installation.start_date || '—'} s/d {detailData.installation.end_date || '—'}
+                      </dd>
+                    </div>
+                  )}
+                  {detailData.installation.notes && <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Catatan</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.notes}</dd></div>}
+                  {detailData.installation.proof_url && (
+                    <div className="flex gap-2">
+                      <dt className="w-28 shrink-0 ui-text-muted">Bukti</dt>
+                      <dd>
+                        <a href={detailData.installation.proof_url} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-primary-700 dark:text-brand-primary-300">
+                          Buka bukti pemasangan
+                        </a>
+                      </dd>
+                    </div>
+                  )}
+                  {detailData.installation.installed_by && <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Dicatat oleh</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.installed_by}</dd></div>}
+                </dl>
+              </div>
+            )}
 
             {/* Aksi cepat: buka materi (verifikasi manual) + teruskan status via WA.
                 wa.me butuh digit + kode negara; normalizer menangani format
@@ -449,9 +707,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             {canManage ? (
               <div className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-700">
                 <fieldset>
-                  <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">Set status</legend>
+                  <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    Ubah status
+                  </legend>
+                  {/* Hanya transisi yang sah dari status saat ini (PRD §8) —
+                      server tetap memvalidasi ulang. */}
                   <div className="flex flex-wrap gap-2">
-                    {(['approved', 'rejected', 'installed'] as const).map((s) => (
+                    {allowedStatuses.map((s) => (
                       <label
                         key={s}
                         className={`cursor-pointer rounded-xl border px-3.5 py-2 text-sm font-semibold transition ${
@@ -468,14 +730,22 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           onChange={() => setNewStatus(s)}
                           className="sr-only"
                         />
-                        {STATUS_LABELS[s]}
+                        {STATUS_LABELS[s] ?? s}
+                        {s === detail.status && <span className="ml-1 text-[10px] font-normal ui-text-muted">(sekarang)</span>}
                       </label>
                     ))}
                   </div>
+                  {STATUS_TRANSITIONS[detail.status]?.length === 0 && (
+                    <p className="mt-1.5 text-xs ui-text-muted">
+                      Status ini bersifat final — tidak ada perubahan status lanjutan.
+                    </p>
+                  )}
                 </fieldset>
 
                 <label htmlFor="review-notes" className="mb-1.5 mt-4 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  Catatan Review <span className="text-xs font-normal ui-text-muted">(untuk tenant)</span>
+                  Catatan Review <span className="text-xs font-normal ui-text-muted">
+                    (wajib untuk Perlu Revisi dan Ditolak)
+                  </span>
                 </label>
                 <textarea
                   id="review-notes"
@@ -486,10 +756,95 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
                 />
 
+                {/* Catat pemasangan — hanya bila materi boleh dipasang (FR-040). */}
+                {isInstallableStatus(detail.status) && (
+                  <fieldset className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
+                    <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      Catat pemasangan
+                    </legend>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div className="sm:col-span-2">
+                        <label htmlFor="install-location" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          Media / lokasi pemasangan <span className="text-red-500">*</span>
+                        </label>
+                        <input
+                          id="install-location"
+                          type="text"
+                          value={installLocation}
+                          maxLength={200}
+                          placeholder={detail.media_target || 'Contoh: Atrium 1'}
+                          onChange={(e) => setInstallLocation(e.target.value)}
+                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="install-start" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal mulai</label>
+                        <input
+                          id="install-start"
+                          type="date"
+                          value={installStart}
+                          onChange={(e) => setInstallStart(e.target.value)}
+                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="install-end" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal berakhir</label>
+                        <input
+                          id="install-end"
+                          type="date"
+                          value={installEnd}
+                          onChange={(e) => setInstallEnd(e.target.value)}
+                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label htmlFor="install-notes" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Catatan pemasangan</label>
+                        <input
+                          id="install-notes"
+                          type="text"
+                          value={installNotes}
+                          maxLength={1000}
+                          onChange={(e) => setInstallNotes(e.target.value)}
+                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label htmlFor="install-proof" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          Tautan bukti pemasangan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
+                        </label>
+                        <input
+                          id="install-proof"
+                          type="url"
+                          inputMode="url"
+                          value={installProof}
+                          maxLength={500}
+                          placeholder="https://drive.google.com/…"
+                          onChange={(e) => setInstallProof(e.target.value)}
+                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                        />
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs ui-text-muted">
+                      Menyimpan pemasangan menetapkan status materi menjadi Sudah Dipasang.
+                    </p>
+                  </fieldset>
+                )}
+
                 {saveError && <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{saveError}</p>}
 
-                <div className="mt-4 flex justify-end gap-2">
+                <div className="mt-4 flex flex-wrap justify-end gap-2">
                   <button type="button" onClick={() => setDetail(null)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+                  {isInstallableStatus(detail.status) && (
+                    <button
+                      type="button"
+                      onClick={() => void saveInstallation()}
+                      disabled={saving || !installLocation.trim()}
+                      className="ui-dashboard-control inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-50 dark:text-slate-200"
+                    >
+                      <Wrench className="h-4 w-4" aria-hidden="true" />
+                      Catat Pemasangan
+                    </button>
+                  )}
                   <button
                     type="button"
                     onClick={() => void saveStatus()}
@@ -497,7 +852,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
-                    Simpan
+                    Simpan Status
                   </button>
                 </div>
               </div>

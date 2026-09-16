@@ -3,7 +3,7 @@
  * Semua butuh sesi login (cookie sb-access-token via credentials: include).
  */
 import { apiGet, apiGetRaw, apiPost, apiUrl, ApiError } from '../lib/rest';
-import type { PromoMediaType, AdminSubmissionRow, AdminUserRow } from '../types/promo';
+import type { PromoMediaType, AdminSubmissionRow, AdminUserRow, StatusPageData } from '../types/promo';
 
 export interface SubmissionsPage {
   data: AdminSubmissionRow[];
@@ -14,13 +14,54 @@ export interface SubmissionsPage {
 }
 
 export async function fetchAdminSubmissions(params: {
-  status?: string; media_type?: string; page?: number;
+  status?: string; media_type?: string; tenant?: string;
+  date_from?: string; date_to?: string; q?: string; page?: number;
 }): Promise<SubmissionsPage> {
   const qs = new URLSearchParams();
   if (params.status) qs.set('status', params.status);
   if (params.media_type) qs.set('media_type', params.media_type);
+  if (params.tenant) qs.set('tenant', params.tenant);
+  if (params.date_from) qs.set('date_from', params.date_from);
+  if (params.date_to) qs.set('date_to', params.date_to);
+  if (params.q) qs.set('q', params.q);
   if (params.page && params.page > 1) qs.set('page', String(params.page));
   return apiGetRaw<SubmissionsPage>(`/admin/submissions?${qs.toString()}`);
+}
+
+export interface SubmissionSummary {
+  total: number;
+  counts: Record<string, number>;
+}
+
+export async function fetchAdminSummary(): Promise<SubmissionSummary> {
+  const data = await apiGet<SubmissionSummary>('/admin/submissions/summary');
+  return { total: data?.total || 0, counts: data?.counts || {} };
+}
+
+/** Detail lengkap: pengajuan + riwayat status + versi materi + pemasangan. */
+export async function fetchAdminSubmissionDetail(id: string): Promise<StatusPageData> {
+  const data = await apiGet<StatusPageData>(`/admin/submissions/${id}`);
+  return {
+    submission: data.submission,
+    history: Array.isArray(data.history) ? data.history : [],
+    files: Array.isArray(data.files) ? data.files : [],
+    installation: data.installation ?? null,
+  };
+}
+
+export interface InstallationInput {
+  media_location: string;
+  start_date?: string;
+  end_date?: string;
+  notes?: string;
+  proof_url?: string;
+}
+
+export async function recordInstallation(id: string, input: InstallationInput): Promise<void> {
+  const result = await apiPost<{ success: boolean; error?: string }>(
+    `/admin/submissions/${id}/installation`, input,
+  );
+  if (!result.success) throw new ApiError(result.error || 'Gagal mencatat pemasangan', 'APP');
 }
 
 export async function updateSubmissionStatus(

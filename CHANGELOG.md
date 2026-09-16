@@ -5,6 +5,109 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+Penyelarasan kebijakan dokumentasi + perbaikan jalur deploy yang ditemukan saat
+verifikasi rilis 1.3.0 di produksi.
+
+### Ditambahkan
+
+- **Kebijakan dokumentasi**: rencana/audit eksekusi disimpan di
+  `docs/PLAN_YYYY-MM-DD_HH-mm.md`, dan setiap perubahan wajib dicatat di
+  `[Unreleased]` (`AGENTS.md` § Commit & Rilis). Rencana pertama:
+  `docs/PLAN_2026-09-16_12-04.md` (implementasi + deploy 1.3.0).
+
+### Diubah
+
+- `deploy/vps/docker-compose.yml`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
+  `GOOGLE_REFRESH_TOKEN` dari wajib (`:?`) menjadi opsional (`:-`). Kanal unggah
+  memang *fail-closed* (`POST /drive/upload` → `503`), jadi kredensial Drive
+  yang belum diisi **tidak boleh** memblokir boot API. Instance tanpa kredensial
+  Drive tetap melayani kanal tautan secara penuh.
+
+### Diperbaiki
+
+- **Perintah `rsync` pada panduan deploy menghapus seluruh backup DB.**
+  `backup.sh` menulis ke `/opt/medprom/backups`, yaitu **di dalam** tujuan rsync
+  `/opt/medprom/`, sementara sumber tidak punya `backups/`; dengan `--delete`
+  setiap rilis menghapus semua backup. Kedua perintah di
+  `deploy/vps/README-DEPLOY.md` kini memuat `--exclude 'backups/'`. Rilis 1.3.0
+  sendiri dideploy dengan merge (tanpa `--delete`) agar backup tetap utuh.
+- `AGENTS.md`: pitfall #1 ditandai selesai; ditambah #10 (**kode & skema wajib
+  naik bersamaan** — terbukti `violates check constraint` saat API versi lama
+  menulis status lama sementara `/healthz` tetap `ok`), #11 (`R2_*` sudah mati di
+  `.env` VPS; `GOOGLE_*` sengaja opsional), #12 (klaim docs wajib cocok kode).
+
+## [1.3.0] — 2026-09-16
+
+Penerapan PRD *Tenant Material Management* (MVP) pada platform: alur status 8
+tahap, nomor pengajuan + token status, revisi materi berversi, pencatatan
+pemasangan, dan dashboard staf dengan ringkasan/pencarian/filter tanggal.
+
+### Ditambahkan
+
+- **Nomor pengajuan** `MP-YYMMDD-XXXXXX` dan **token status** acak 32 karakter
+  per pengajuan (FR-016, FR-018). Keduanya unik lewat partial unique index;
+  pengajuan lama di-backfill saat migrasi.
+- **Halaman status publik** `/status/:token` (FR-019..FR-022): status terkini,
+  catatan tim, riwayat perubahan status, riwayat versi materi, dan informasi
+  pemasangan. Token adalah satu-satunya kredensial tenant — pesan untuk token
+  salah diseragamkan agar tidak membocorkan keberadaan pengajuan.
+- **Revisi materi berversi** (FR-015, FR-021, AC 11.3): form unggah ulang hanya
+  muncul saat status **Perlu Revisi**; versi baru disimpan sebagai versi
+  terbaru, versi lama tetap tersedia untuk staf, status kembali **Menunggu
+  Review**. Kepemilikan ditegakkan lewat fingerprint perangkat.
+- **Alur status 8 tahap** sesuai PRD §8 (Draft, Menunggu Review, Perlu Revisi,
+  Disetujui, Ditolak, Siap Dipasang, Sudah Dipasang, Selesai) beserta penegakan
+  transisinya di server (`server/src/lib/statusFlow.js`, cermin
+  `src/utils/statusFlow.ts`).
+- **Pencatatan pemasangan** (FR-040..FR-046): hanya untuk materi Disetujui/Siap
+  Dipasang, wajib menentukan media/lokasi, opsional tanggal + catatan + tautan
+  bukti; menyimpan menetapkan status **Sudah Dipasang**.
+- **Dashboard staf**: ringkasan jumlah per status (FR-025, klik untuk memfilter),
+  pencarian nomor pengajuan/tenant/judul materi (FR-026), filter tenant dan
+  rentang tanggal (FR-027), serta detail dengan riwayat versi dan riwayat status
+  (FR-028..FR-031).
+- **Field form PRD §9.3**: nama campaign, judul materi, deskripsi materi, jenis
+  materi, media/lokasi pemasangan, periode tayang, dan persetujuan ketentuan
+  (wajib). Snapshot `unit_number` disimpan bersama tenant (PRD §9.2).
+- **Unggah berkas sebagai kanal setara** dengan kirim tautan (FR-008..FR-015):
+  kanal unggah menyala bawaan, dapat dimatikan operator lewat
+  `VITE_PROMO_UPLOAD_MODE='0'`.
+- Tabel data model PRD: `promo_submission_files`, `promo_submission_history`,
+  `promo_installations` (Data Model: Material File / Review History /
+  Installation Record). Migrasi mem-backfill satu baris **versi 1** untuk
+  pengajuan lama yang materinya masih hanya di kolom
+  `promo_submissions.file_url`/`link_url`, sehingga riwayat versi tidak kosong
+  untuk data warisan.
+- Kolom **Nomor Pengajuan**, Nomor Unit, Nama Campaign, dan Judul Materi pada
+  ekspor CSV.
+
+### Diperbaiki
+
+- **Migrasi status pada DB yang sudah jalan.** `server/schema.sql` melepas CHECK
+  lama sebelum baris status diremap. Sebelumnya remap `pending → menunggu_review`
+  melanggar CHECK lama (`pending`/`approved`/`rejected`/`installed`), sehingga
+  `db:migrate` akan gagal di setiap instance yang sudah berjalan — sementara DB
+  baru tetap hijau, jadi bug-nya hanya muncul di produksi. Pengecekan CHECK kini
+  berbasis definisi constraint (bukan nama) karena nama constraint lama
+  bergantung versi skema.
+- `users.role` default `'viewer'` (melanggar CHECK-nya sendiri) diganti
+  `'tenant_relation'` (pitfall lama, kini ikut dimigrasikan).
+- Pencarian tenant MID juga mencocokkan nomor unit/lot, bukan hanya nama
+  (FR-004).
+
+### Catatan rilis
+
+Ada perubahan skema — **wajib** menjalankan migrasi sebelum API baru dipakai:
+
+```bash
+node scripts/db-migrate.mjs
+```
+
+Migrasi mengubah `status` lama (4 nilai) menjadi 8 nilai PRD, menambah kolom
+materi/tenant baru, dan mengisi nomor + token untuk pengajuan lama. Urutan
+deploy tetap: API + skema dulu, frontend terakhir. `db:seed` tidak berubah dan
+tidak wajib untuk rilis ini.
+
 ## [1.2.0] — 2026-09-15
 
 Penyelarasan katalog dengan deck "MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026",

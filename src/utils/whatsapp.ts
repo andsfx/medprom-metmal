@@ -7,6 +7,7 @@
  * `wa.me/0812-3456-7890` gagal untuk setiap pengajuan yang mengikuti format
  * yang diterima form. Normalizer ini menjembatani keduanya.
  */
+import { STATUS_LABELS } from '../constants/promo';
 
 /** Buang semua non-digit, lalu ubah awalan Indonesia → kode negara 62. */
 export function toWaNumber(raw: string | null | undefined): string | null {
@@ -39,15 +40,12 @@ export function submissionWaLink(input: {
   status: string;
   review_notes?: string;
 }): string | null {
-  const statusLabel: Record<string, string> = {
-    pending: 'Menunggu',
-    approved: 'Disetujui',
-    rejected: 'Ditolak',
-    installed: 'Terpasang',
-  };
+  // Label dari satu sumber (src/constants/promo) — jangan duplikasi daftar
+  // status di sini: saat status bertambah, peta lokal akan diam-diam basi dan
+  // pesan WA menampilkan kunci mentah (mis. "menunggu_review").
   const lines = [
     `Halo ${input.tenant_name},`,
-    `Pengajuan media promosi (${input.media_type_slug}) berstatus: ${statusLabel[input.status] ?? input.status}.`,
+    `Pengajuan media promosi (${input.media_type_slug}) berstatus: ${STATUS_LABELS[input.status] ?? input.status}.`,
   ];
   if (input.review_notes) lines.push(`Catatan Tenant Relations: ${input.review_notes}`);
   lines.push('Terima kasih. — Tenant Relations Metropolitan Mall Bekasi');

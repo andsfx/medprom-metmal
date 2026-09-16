@@ -70,9 +70,14 @@ services:
       MID_API_KEY: ${MID_API_KEY:-}
       # Storage media — Google Drive (akun mediapromosi.metmalbekasi@gmail.com).
       # Refresh token diproduksi scripts/drive-auth.mjs dari mesin lokal.
-      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:?isi GOOGLE_CLIENT_ID di .env}
-      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:?isi GOOGLE_CLIENT_SECRET di .env}
-      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:?isi GOOGLE_REFRESH_TOKEN di .env}
+      # SENGAJA opsional (`:-`), bukan wajib (`:?`): kanal unggah berkas adalah
+      # fitur fail-closed — bila kredensial kosong, `driveReady` di drive.js
+      # membuat POST /drive/upload membalas 503 sementara kanal tautan (kanonis)
+      # tetap jalan penuh. Membuatnya wajib akan memblokir boot seluruh API
+      # hanya karena fitur opsional belum dikonfigurasi.
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:-}
       DRIVE_ROOT_FOLDER_ID: ${DRIVE_ROOT_FOLDER_ID:-}
     volumes:
       # Repo root (server/ + schema) — read-only.

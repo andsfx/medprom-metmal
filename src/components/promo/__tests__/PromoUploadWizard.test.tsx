@@ -60,6 +60,28 @@ function renderWizard(route = '/ajukan') {
   );
 }
 
+/** Isi seluruh field wajib langkah 2 (PRD §9.3). */
+async function fillStep2Fields() {
+  fireEvent.change(await screen.findByLabelText(/Nama PIC/i), { target: { value: 'Andi PIC' } });
+  fireEvent.change(screen.getByLabelText(/Nomor Telepon PIC/i), { target: { value: '081234567890' } });
+  fireEvent.change(screen.getByLabelText(/Nama Campaign/i), { target: { value: 'Promo Akhir Tahun' } });
+  fireEvent.change(screen.getByLabelText(/Judul Materi/i), { target: { value: 'Spanduk Diskon 50%' } });
+  fireEvent.change(screen.getByLabelText(/Deskripsi Materi/i), { target: { value: 'Diskon akhir tahun.' } });
+  fireEvent.change(screen.getByLabelText(/Jenis Materi/i), { target: { value: 'Promosi' } });
+  fireEvent.change(screen.getByLabelText(/Media \/ Lokasi Pemasangan/i), { target: { value: 'Atrium 1' } });
+}
+
+/** Pilih tenant dari combobox pencarian (bukan isian manual). */
+async function pickTenant(name = 'Optik Melawai') {
+  fireEvent.change(screen.getByLabelText(/Nama Tenant/i), { target: { value: name } });
+  fireEvent.click(await screen.findByText(name));
+}
+
+/** Centang persetujuan ketentuan agar tombol kirim aktif (PRD §9.3). */
+function acceptTerms() {
+  fireEvent.click(screen.getByLabelText(/Saya menyatakan/i));
+}
+
 async function wizardToStep3() {
   mockedFetchMediaTypes.mockResolvedValue(MEDIA);
   renderWizard();
@@ -69,14 +91,10 @@ async function wizardToStep3() {
   fireEvent.click(screen.getByLabelText(/Videotron/i));
   fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
 
-  // Step 2: isi data tenant
-  const nameInput = await screen.findByLabelText(/Nama PIC/i);
-  fireEvent.change(nameInput, { target: { value: 'Andi PIC' } });
-  fireEvent.change(screen.getByLabelText(/Nomor Telepon PIC/i), { target: { value: '081234567890' } });
-  // Tenant picker: ketik lalu pilih opsi listbox.
-  fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Optik Melawai' } });
-  const option = await screen.findByText('Optik Melawai');
-  fireEvent.click(option);
+  // Step 2: data tenant + PIC + field PRD
+  await screen.findByLabelText(/Nama PIC/i);
+  await fillStep2Fields();
+  await pickTenant();
   fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
   await screen.findByRole('heading', { name: 'Kirim Materi' });
 }
@@ -102,7 +120,6 @@ describe('PromoUploadWizard', () => {
   });
 
   it('menolak file format di luar yang diterima media (videotron: txt)', async () => {
-    vi.stubEnv('VITE_PROMO_UPLOAD_MODE', '1');
     await wizardToStep3();
 
     fireEvent.click(screen.getByRole('button', { name: /Unggah File/i }));
@@ -112,15 +129,16 @@ describe('PromoUploadWizard', () => {
     fireEvent.change(input);
 
     expect(await screen.findByText(/Format file tidak didukung. Gunakan JPEG,MP4/i)).toBeInTheDocument();
-    vi.unstubAllEnvs();
   });
 
-  it('alur sukses (mode unggah legacy): upload → submit menampilkan layar tiket', async () => {
-    vi.stubEnv('VITE_PROMO_UPLOAD_MODE', '1');
+  it('alur sukses (kanal unggah): upload → submit menampilkan nomor pengajuan', async () => {
     mockedUploadFile.mockResolvedValue({
       file_id: 'f1', web_view_link: '', file_name: 'materi.jpg', mime_type: 'image/jpeg', file_size_bytes: 1024,
     });
-    mockedSubmitPromo.mockResolvedValue({ id: 'abcdefgh-1234', created_at: '2026-09-12T00:00:00Z' });
+    mockedSubmitPromo.mockResolvedValue({
+      id: 'abcdefgh-1234', submission_number: 'MP-260916-ABC234', status_token: 'tok-1',
+      status: 'menunggu_review', created_at: '2026-09-12T00:00:00Z',
+    });
     await wizardToStep3();
 
     fireEvent.click(screen.getByRole('button', { name: /Unggah File/i }));
@@ -129,34 +147,68 @@ describe('PromoUploadWizard', () => {
     Object.defineProperty(input, 'files', { value: [file] });
     fireEvent.change(input);
 
+    acceptTerms();
     const submitBtn = screen.getByRole('button', { name: /Kirim Pengajuan/i });
     await waitFor(() => { expect(submitBtn).not.toBeDisabled(); });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByText('Pengajuan Terkirim!')).toBeInTheDocument();
-    expect(screen.getByText('ABCDEFGH')).toBeInTheDocument();
+    // Nomor pengajuan dari server, bukan potongan UUID.
+    expect(screen.getByText('MP-260916-ABC234')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Lihat Riwayat/i })).toHaveAttribute('href', '/riwayat');
+    // Token status membuka halaman status.
+    expect(screen.getByRole('link', { name: /Lihat Status Pengajuan/i })).toHaveAttribute('href', '/status/tok-1');
     expect(mockedSubmitPromo).toHaveBeenCalledWith(expect.objectContaining({
       media_type_slug: 'videotron',
       tenant_name: 'Optik Melawai',
+      unit_number: 'A-01',
       pic_name: 'Andi PIC',
+      campaign_name: 'Promo Akhir Tahun',
+      material_title: 'Spanduk Diskon 50%',
+      material_type: 'Promosi',
+      media_target: 'Atrium 1',
+      terms_accepted: true,
       mime_type: 'image/jpeg',
       device_fingerprint: 'testfp123',
     }));
-    vi.unstubAllEnvs();
   });
 
-  it('default link-only: tanpa tab unggah, langsung input tautan', async () => {
-    mockedSubmitPromo.mockResolvedValue({ id: 'link1234-5678', created_at: '2026-09-13T00:00:00Z' });
+  it('dua kanal materi tersedia: tautan (kanonis) dan unggah berkas', async () => {
     await wizardToStep3();
 
-    // Toggle upload tidak dirender; input tautan langsung tersedia.
-    expect(screen.queryByRole('button', { name: /Unggah File/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Kirim Tautan/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Unggah File/i })).toBeInTheDocument();
+    // Default kanal tautan.
     expect(await screen.findByLabelText(/Tautan Materi/i)).toBeInTheDocument();
   });
 
+  it('VITE_PROMO_UPLOAD_MODE=0 → kanal unggah disembunyikan, tautan tetap bisa dipakai', async () => {
+    vi.stubEnv('VITE_PROMO_UPLOAD_MODE', '0');
+    try {
+      await wizardToStep3();
+
+      // Seluruh pemilih kanal disembunyikan (tautan tetap kanal bawaan), dan
+      // input tautan tetap tersedia sehingga tenant tidak pernah buntu.
+      expect(screen.queryByRole('button', { name: /Unggah File/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('group', { name: /Cara mengirim materi/i })).not.toBeInTheDocument();
+      expect(screen.getByText(/Kanal unggah berkas sedang tidak diaktifkan/i)).toBeInTheDocument();
+
+      const linkInput = await screen.findByLabelText(/Tautan Materi/i);
+      fireEvent.change(linkInput, { target: { value: 'https://drive.google.com/file/d/xyz/view' } });
+      acceptTerms();
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /Kirim Pengajuan/i })).not.toBeDisabled();
+      });
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('mode tautan: kirim URL Drive tanpa unggah file', async () => {
-    mockedSubmitPromo.mockResolvedValue({ id: 'link1234-5678', created_at: '2026-09-13T00:00:00Z' });
+    mockedSubmitPromo.mockResolvedValue({
+      id: 'link1234-5678', submission_number: 'MP-260916-LINK01', status_token: 'tok-2',
+      status: 'menunggu_review', created_at: '2026-09-13T00:00:00Z',
+    });
     await wizardToStep3();
 
     const linkInput = await screen.findByLabelText(/Tautan Materi/i);
@@ -166,6 +218,7 @@ describe('PromoUploadWizard', () => {
     expect(screen.getByRole('button', { name: /Kirim Pengajuan/i })).toBeDisabled();
 
     fireEvent.change(linkInput, { target: { value: 'https://drive.google.com/file/d/xyz/view' } });
+    acceptTerms();
     const submitBtn = screen.getByRole('button', { name: /Kirim Pengajuan/i });
     await waitFor(() => { expect(submitBtn).not.toBeDisabled(); });
     fireEvent.click(submitBtn);
@@ -182,6 +235,20 @@ describe('PromoUploadWizard', () => {
     }));
   });
 
+  it('tombol kirim terkunci sebelum persetujuan ketentuan dicentang', async () => {
+    await wizardToStep3();
+
+    const linkInput = await screen.findByLabelText(/Tautan Materi/i);
+    fireEvent.change(linkInput, { target: { value: 'https://drive.google.com/file/d/xyz/view' } });
+
+    // Materi valid tapi ketentuan belum disetujui → tombol tetap terkunci.
+    expect(screen.getByRole('button', { name: /Kirim Pengajuan/i })).toBeDisabled();
+    acceptTerms();
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /Kirim Pengajuan/i })).not.toBeDisabled();
+    });
+  });
+
   it('pesan validasi server dari errors[] dipetakan ke field (bukan 400 generik)', async () => {
     mockedSubmitPromo.mockRejectedValue(new ApiError(
       'Tautan materi harus berupa URL http/https yang valid', '400',
@@ -191,6 +258,7 @@ describe('PromoUploadWizard', () => {
 
     const linkInput = await screen.findByLabelText(/Tautan Materi/i);
     fireEvent.change(linkInput, { target: { value: 'https://drive.google.com/file/d/xyz/view' } });
+    acceptTerms();
     const submitBtn = screen.getByRole('button', { name: /Kirim Pengajuan/i });
     await waitFor(() => { expect(submitBtn).not.toBeDisabled(); });
     fireEvent.click(submitBtn);
@@ -206,12 +274,32 @@ describe('PromoUploadWizard', () => {
 
     const linkInput = await screen.findByLabelText(/Tautan Materi/i);
     fireEvent.change(linkInput, { target: { value: 'https://drive.google.com/file/d/xyz/view' } });
+    acceptTerms();
     const submitBtn = screen.getByRole('button', { name: /Kirim Pengajuan/i });
     await waitFor(() => { expect(submitBtn).not.toBeDisabled(); });
     fireEvent.click(submitBtn);
 
     expect(await screen.findByText(/Gagal terhubung ke server/i)).toBeInTheDocument();
     expect(screen.getByText('Pengajuan gagal.')).toBeInTheDocument();
+  });
+
+  it('validasi langkah 2: field PRD wajib sebelum lanjut ke kirim materi', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA);
+    renderWizard();
+    fireEvent.click(await screen.findByLabelText(/Videotron/i));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+
+    await screen.findByLabelText(/Nama PIC/i);
+    // Isi PIC + tenant saja; field campaign/materi dibiarkan kosong.
+    fireEvent.change(screen.getByLabelText(/Nama PIC/i), { target: { value: 'Andi PIC' } });
+    fireEvent.change(screen.getByLabelText(/Nomor Telepon PIC/i), { target: { value: '081234567890' } });
+    await pickTenant();
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+
+    expect(await screen.findByText(/Nama campaign wajib diisi/i)).toBeInTheDocument();
+    expect(screen.getByText(/Judul materi wajib diisi/i)).toBeInTheDocument();
+    expect(screen.getByText(/Media atau lokasi pemasangan wajib diisi/i)).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: 'Kirim Materi' })).not.toBeInTheDocument();
   });
 });
 
@@ -236,10 +324,8 @@ describe('PromoUploadWizard — lead time materi', () => {
     fireEvent.click(await screen.findByLabelText(/Spanduk/i));
     fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
     await screen.findByLabelText(/Nama PIC/i);
-    fireEvent.change(screen.getByLabelText(/Nama PIC/i), { target: { value: 'Andi PIC' } });
-    fireEvent.change(screen.getByLabelText(/Nomor Telepon PIC/i), { target: { value: '081234567890' } });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Optik Melawai' } });
-    fireEvent.click(await screen.findByText('Optik Melawai'));
+    await fillStep2Fields();
+    await pickTenant();
   }
 
   it('menampilkan hint lead time dari teks rules media', async () => {
@@ -280,10 +366,8 @@ describe('PromoUploadWizard — kanal email media sosial', () => {
     fireEvent.click(await screen.findByLabelText(/Feed Instagram/i));
     fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
     await screen.findByLabelText(/Nama PIC/i);
-    fireEvent.change(screen.getByLabelText(/Nama PIC/i), { target: { value: 'Andi PIC' } });
-    fireEvent.change(screen.getByLabelText(/Nomor Telepon PIC/i), { target: { value: '081234567890' } });
-    fireEvent.change(screen.getByRole('combobox'), { target: { value: 'Optik Melawai' } });
-    fireEvent.click(await screen.findByText('Optik Melawai'));
+    await fillStep2Fields();
+    await pickTenant();
     fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
     await screen.findByRole('heading', { name: 'Kirim Materi' });
   }
@@ -309,15 +393,14 @@ describe('PromoUploadWizard — fallback tenant manual (API tenant tidak tersedi
     fireEvent.click(await screen.findByText('Videotron'));
     fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
 
-    const combobox = await screen.findByRole('combobox');
-    fireEvent.change(combobox, { target: { value: 'Gerai Baru' } });
+    const tenantInput = await screen.findByLabelText(/Nama Tenant/i);
+    fireEvent.change(tenantInput, { target: { value: 'Gerai Baru' } });
 
     // Mode manual aktif → combobox berubah jadi input teks biasa + hint tampil.
     expect(await screen.findByText(/Daftar tenant tidak tersedia/i, { timeout: 5000 })).toBeInTheDocument();
-    expect(screen.queryByRole('combobox')).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/Nama Tenant/i)).not.toHaveAttribute('role', 'combobox');
 
-    fireEvent.change(screen.getByLabelText(/Nama PIC/i), { target: { value: 'Andi PIC' } });
-    fireEvent.change(screen.getByLabelText(/Nomor Telepon PIC/i), { target: { value: '081234567890' } });
+    await fillStep2Fields();
     fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
 
     expect(await screen.findByRole('heading', { name: 'Kirim Materi' })).toBeInTheDocument();

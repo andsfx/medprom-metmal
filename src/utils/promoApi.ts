@@ -5,7 +5,7 @@
  */
 import { apiGet, apiPost, apiUrl, ApiError } from '../lib/rest';
 import type {
-  PromoMediaType, TenantOption, PromoSubmissionPayload, MySubmissionRow,
+  PromoMediaType, TenantOption, PromoSubmissionPayload, MySubmissionRow, StatusPageData,
 } from '../types/promo';
 
 // ─── Katalog (publik) ───────────────────────────────────────────
@@ -127,7 +127,14 @@ export function mapSubmitErrors(errors: string[]): { fields: Record<string, stri
     let field: string | null = null;
     if (low.includes('telepon')) field = 'pic_phone';
     else if (low.includes('tautan')) field = 'link_url';
-    else if (low.includes('installation_date') || low.includes('tanggal')) field = 'installation_date';
+    else if (low.includes('installation_date') || low.includes('tanggal pasang')) field = 'installation_date';
+    else if (low.includes('periode tayang')) field = 'air_start_date';
+    else if (low.includes('campaign')) field = 'campaign_name';
+    else if (low.includes('judul materi')) field = 'material_title';
+    else if (low.includes('deskripsi')) field = 'material_description';
+    else if (low.includes('jenis materi')) field = 'material_type';
+    else if (low.includes('lokasi pemasangan')) field = 'media_target';
+    else if (low.includes('persetujuan ketentuan')) field = 'terms_accepted';
     else if (low.includes('pic')) field = 'pic_name';
     else if (low.includes('gerai') || low.includes('tenant')) field = 'tenant';
     else if (low.includes('media')) field = 'media';
@@ -139,9 +146,12 @@ export function mapSubmitErrors(errors: string[]): { fields: Record<string, stri
   return { fields, general };
 }
 
-export async function submitPromo(payload: PromoSubmissionPayload): Promise<{ id: string; created_at: string }> {
+export async function submitPromo(payload: PromoSubmissionPayload): Promise<{
+  id: string; submission_number: string; status_token: string; status: string; created_at: string;
+}> {
   interface SubmitResponse {
-    success: boolean; error?: string; id?: string; created_at?: string; errors?: string[];
+    success: boolean; error?: string; id?: string; submission_number?: string;
+    status_token?: string; status?: string; created_at?: string; errors?: string[];
   }
   let result: SubmitResponse;
   try {
@@ -163,7 +173,13 @@ export async function submitPromo(payload: PromoSubmissionPayload): Promise<{ id
       : (result.error || 'Gagal mengirim pengajuan');
     throw new ApiError(message, 'APP', result.errors ? { errors: result.errors } : undefined);
   }
-  return { id: result.id || '', created_at: result.created_at || '' };
+  return {
+    id: result.id || '',
+    submission_number: result.submission_number || '',
+    status_token: result.status_token || '',
+    status: result.status || 'menunggu_review',
+    created_at: result.created_at || '',
+  };
 }
 
 // ─── Riwayat per perangkat (publik) ─────────────────────────────
@@ -176,4 +192,55 @@ export async function fetchMySubmissions(fingerprint: string): Promise<MySubmiss
     if (err instanceof ApiError) return [];
     throw err;
   }
+}
+
+// ─── Status via token (publik, FR-019..FR-022) ───────────────────
+
+export async function fetchStatusByToken(token: string): Promise<StatusPageData> {
+  const data = await apiGet<StatusPageData>(`/promo/submissions/status/${encodeURIComponent(token)}`);
+  return {
+    submission: data.submission,
+    history: Array.isArray(data.history) ? data.history : [],
+    files: Array.isArray(data.files) ? data.files : [],
+    installation: data.installation ?? null,
+  };
+}
+
+// ─── Kirim revisi materi (FR-015, FR-021) ───────────────────────
+
+export interface RevisionInput {
+  link_url?: string;
+  drive_file_id?: string;
+  file_name?: string;
+  mime_type?: string;
+  notes?: string;
+  device_fingerprint: string;
+}
+
+export async function submitRevision(
+  id: string,
+  input: RevisionInput,
+): Promise<{ version: number; status: string }> {
+  interface RevisionResponse {
+    success: boolean; error?: string; errors?: string[];
+    version?: number; status?: string;
+  }
+  let result: RevisionResponse;
+  try {
+    result = await apiPost<RevisionResponse>(`/promo/submissions/${id}/revision`, input);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      const errors = errorsFromApiError(err);
+      const message = errors.length > 0 ? errors.join('; ') : err.message;
+      throw new ApiError(message, err.code, { ...(err.payload || {}), errors });
+    }
+    throw err;
+  }
+  if (!result.success) {
+    throw new ApiError(
+      (result.errors && result.errors[0]) || result.error || 'Gagal mengirim revisi',
+      'APP',
+    );
+  }
+  return { version: result.version || 1, status: result.status || 'menunggu_review' };
 }

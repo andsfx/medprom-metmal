@@ -20,6 +20,7 @@ import bcrypt from 'bcryptjs';
 import { db } from '../db.js';
 import { requireRole, logActivity, READ_ROLES, STAFF_ROLES } from '../auth.js';
 import { deleteDriveFileOrThrow } from '../drive.js';
+import { SUBMISSION_STATUSES, canTransition, isInstallableStatus } from '../lib/statusFlow.js';
 
 const router = Router();
 
@@ -38,31 +39,60 @@ function csvEscape(val) {
   return str;
 }
 
-const STATUSES = ['pending', 'approved', 'rejected', 'installed'];
+const STATUSES = SUBMISSION_STATUSES;
 const SLUG_RE = /^[a-z0-9-]+$/;
 const CATEGORIES = ['outdoor', 'indoor', 'social'];
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // ══════════ SUBMISSIONS ══════════
 
 // ─── GET /admin/submissions ─────────────────────────────────────
+// Filter: status, media_type, tenant, rentang tanggal, plus pencarian bebas
+// (nomor pengajuan / tenant / judul materi) — FR-026, FR-027.
+function buildSubmissionFilters(query) {
+  const status = String(query?.status || '').trim();
+  const mediaType = String(query?.media_type || '').trim();
+  const tenant = String(query?.tenant || '').trim();
+  const dateFrom = String(query?.date_from || '').trim();
+  const dateTo = String(query?.date_to || '').trim();
+  const search = sanitize(query?.q || '', 100);
+
+  const where = [];
+  const values = [];
+  if (status && STATUSES.includes(status)) {
+    values.push(status);
+    where.push(`status = $${values.length}`);
+  }
+  if (mediaType) {
+    values.push(mediaType);
+    where.push(`media_type_slug = $${values.length}`);
+  }
+  if (tenant) {
+    values.push(`%${tenant}%`);
+    where.push(`tenant_name ILIKE $${values.length}`);
+  }
+  if (DATE_RE.test(dateFrom)) {
+    values.push(dateFrom);
+    where.push(`created_at >= $${values.length}::date`);
+  }
+  if (DATE_RE.test(dateTo)) {
+    values.push(dateTo);
+    // `dateTo` inklusif sampai akhir hari.
+    where.push(`created_at < ($${values.length}::date + interval '1 day')`);
+  }
+  if (search) {
+    values.push(`%${search}%`);
+    const p = `$${values.length}`;
+    where.push(`(submission_number ILIKE ${p} OR tenant_name ILIKE ${p} OR material_title ILIKE ${p})`);
+  }
+  return { whereSql: where.length > 0 ? `WHERE ${where.join(' AND ')}` : '', values };
+}
+
 router.get('/submissions', requireRole(READ_ROLES), async (req, res, next) => {
   try {
-    const status = String(req.query?.status || '').trim();
-    const mediaType = String(req.query?.media_type || '').trim();
     const page = Math.max(1, parseInt(String(req.query?.page || '1'), 10) || 1);
     const perPage = 20;
-
-    const where = [];
-    const values = [];
-    if (status && STATUSES.includes(status)) {
-      values.push(status);
-      where.push(`status = $${values.length}`);
-    }
-    if (mediaType) {
-      values.push(mediaType);
-      where.push(`media_type_slug = $${values.length}`);
-    }
-    const whereSql = where.length > 0 ? `WHERE ${where.join(' AND ')}` : '';
+    const { whereSql, values } = buildSubmissionFilters(req.query);
 
     const { rows: countRows } = await db.query(
       `SELECT COUNT(*)::int AS n FROM promo_submissions ${whereSql}`,
@@ -95,7 +125,82 @@ router.get('/submissions', requireRole(READ_ROLES), async (req, res, next) => {
   }
 });
 
+// ─── GET /admin/submissions/summary — jumlah per status (FR-025) ─
+router.get('/submissions/summary', requireRole(READ_ROLES), async (_req, res, next) => {
+  try {
+    const { rows } = await db.query(
+      'SELECT status, COUNT(*)::int AS n FROM promo_submissions GROUP BY status',
+    );
+    const counts = {};
+    for (const s of SUBMISSION_STATUSES) counts[s] = 0;
+    let total = 0;
+    for (const row of rows) {
+      counts[row.status] = row.n;
+      total += row.n;
+    }
+    return res.json({ success: true, data: { total, counts } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─── GET /admin/submissions/:id — detail lengkap (FR-028..FR-030) ─
+router.get('/submissions/:id', requireRole(READ_ROLES), async (req, res, next) => {
+  try {
+    const id = String(req.params?.id || '').trim();
+    if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
+
+    const { rows } = await db.query(
+      `SELECT s.*, u.display_name AS reviewed_by_name
+       FROM promo_submissions s
+       LEFT JOIN users u ON u.id = s.reviewed_by
+       WHERE s.id = $1 LIMIT 1`,
+      [id],
+    );
+    const submission = rows[0] || null;
+    if (!submission) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
+
+    const [historyRes, filesRes, installRes] = await Promise.all([
+      db.query(
+        `SELECT id, submission_id, from_status, to_status, comment, actor_type,
+                actor_name, actor_id, created_at
+         FROM promo_submission_history WHERE submission_id = $1
+         ORDER BY created_at ASC`,
+        [id],
+      ),
+      db.query(
+        `SELECT id, submission_id, version, source_type, file_url, file_name,
+                mime_type, file_size_bytes, link_url, drive_file_id, uploaded_by,
+                notes, created_at
+         FROM promo_submission_files WHERE submission_id = $1
+         ORDER BY version DESC`,
+        [id],
+      ),
+      db.query(
+        `SELECT id, submission_id, media_location, start_date, end_date, notes,
+                proof_url, installed_by, installed_by_id, created_at, updated_at
+         FROM promo_installations WHERE submission_id = $1 LIMIT 1`,
+        [id],
+      ),
+    ]);
+
+    return res.json({
+      success: true,
+      data: {
+        submission,
+        history: historyRes.rows,
+        files: filesRes.rows,
+        installation: installRes.rows[0] || null,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // ─── POST /admin/submissions/:id/status ─────────────────────────
+// FR-032..FR-037: transisi divalidasi terhadap alur status; komentar wajib saat
+// meminta revisi, alasan wajib saat menolak; nama admin + waktu tercatat.
 router.post('/submissions/:id/status', requireRole(STAFF_ROLES), async (req, res, next) => {
   try {
     const id = String(req.params?.id || '').trim();
@@ -103,21 +208,137 @@ router.post('/submissions/:id/status', requireRole(STAFF_ROLES), async (req, res
     const reviewNotes = sanitize(req.body?.review_notes || '', 2000);
 
     if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
-    if (!STATUSES.includes(status) || status === 'pending') {
-      return res.status(400).json({ success: false, error: 'Status harus approved, rejected, atau installed' });
+    if (!STATUSES.includes(status)) {
+      return res.status(400).json({ success: false, error: 'Status tidak dikenal' });
+    }
+    if (status === 'perlu_revisi' && !reviewNotes) {
+      return res.status(400).json({ success: false, error: 'Komentar wajib diisi ketika meminta revisi' });
+    }
+    if (status === 'ditolak' && !reviewNotes) {
+      return res.status(400).json({ success: false, error: 'Alasan wajib diisi ketika menolak materi' });
+    }
+
+    const { rows: existingRows } = await db.query(
+      'SELECT id, status FROM promo_submissions WHERE id = $1 LIMIT 1',
+      [id],
+    );
+    const existing = existingRows[0] || null;
+    if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
+
+    // Transisi harus sesuai alur status PRD §8 (FR-039: materi disetujui tidak
+    // dapat diedit tanpa alur baru).
+    if (existing.status !== status && !canTransition(existing.status, status)) {
+      return res.status(400).json({
+        success: false,
+        error: `Status tidak dapat berpindah dari ${existing.status} ke ${status}.`,
+      });
+    }
+
+    await db.query(
+      `UPDATE promo_submissions
+       SET status = $1, review_notes = $2, reviewed_by = $3, reviewed_at = now(),
+           status_changed_at = now(), updated_at = now()
+       WHERE id = $4`,
+      [status, reviewNotes, req.auth.user.id, id],
+    );
+
+    if (existing.status !== status) {
+      await db.query(
+        `INSERT INTO promo_submission_history
+          (submission_id, from_status, to_status, comment, actor_type, actor_name, actor_id)
+         VALUES ($1,$2,$3,$4,'admin',$5,$6)`,
+        [id, existing.status, status, reviewNotes, req.auth.user.display_name, req.auth.user.id],
+      );
+    }
+
+    logActivity(req.auth.user, 'update_submission_status', 'promo_submission', id, { from: existing.status, status }, req);
+    return res.json({ success: true, status });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─── POST /admin/submissions/:id/installation ───────────────────
+// FR-040..FR-046: pemasangan hanya untuk materi Disetujui/Siap Dipasang, wajib
+// menentukan media/lokasi; status menjadi Sudah Dipasang.
+router.post('/submissions/:id/installation', requireRole(STAFF_ROLES), async (req, res, next) => {
+  try {
+    const id = String(req.params?.id || '').trim();
+    const d = req.body || {};
+    const mediaLocation = sanitize(d.media_location || '', 200);
+    const startDate = sanitize(d.start_date || '', 10);
+    const endDate = sanitize(d.end_date || '', 10);
+    const notes = sanitize(d.notes || '', 1000);
+    const proofUrl = sanitize(d.proof_url || '', 500);
+
+    if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
+    if (!mediaLocation) return res.status(400).json({ success: false, error: 'Media atau lokasi pemasangan wajib diisi' });
+    if (startDate && !DATE_RE.test(startDate)) {
+      return res.status(400).json({ success: false, error: 'Tanggal mulai harus format YYYY-MM-DD' });
+    }
+    if (endDate && !DATE_RE.test(endDate)) {
+      return res.status(400).json({ success: false, error: 'Tanggal berakhir harus format YYYY-MM-DD' });
+    }
+    if (startDate && endDate && endDate < startDate) {
+      return res.status(400).json({ success: false, error: 'Tanggal berakhir sebelum tanggal mulai' });
+    }
+    if (proofUrl && !/^https?:\/\/[^\s]+$/i.test(proofUrl)) {
+      return res.status(400).json({ success: false, error: 'Tautan bukti pemasangan harus URL http/https' });
     }
 
     const { rows } = await db.query(
-      `UPDATE promo_submissions
-       SET status = $1, review_notes = $2, reviewed_by = $3, reviewed_at = now(), updated_at = now()
-       WHERE id = $4
-       RETURNING id`,
-      [status, reviewNotes, req.auth.user.id, id],
+      'SELECT id, status FROM promo_submissions WHERE id = $1 LIMIT 1',
+      [id],
     );
-    if (!rows[0]) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
+    const existing = rows[0] || null;
+    if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
+    if (!isInstallableStatus(existing.status)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Pemasangan hanya dapat dicatat untuk materi berstatus Disetujui atau Siap Dipasang.',
+      });
+    }
 
-    logActivity(req.auth.user, 'update_submission_status', 'promo_submission', id, { status }, req);
-    return res.json({ success: true });
+    const { rows: installRows } = await db.query(
+      'SELECT id FROM promo_installations WHERE submission_id = $1 LIMIT 1',
+      [id],
+    );
+    if (installRows[0]) {
+      await db.query(
+        `UPDATE promo_installations
+         SET media_location = $1, start_date = $2, end_date = $3, notes = $4,
+             proof_url = $5, installed_by = $6, installed_by_id = $7, updated_at = now()
+         WHERE submission_id = $8`,
+        [mediaLocation, startDate, endDate, notes, proofUrl, req.auth.user.display_name, req.auth.user.id, id],
+      );
+    } else {
+      await db.query(
+        `INSERT INTO promo_installations
+          (submission_id, media_location, start_date, end_date, notes, proof_url, installed_by, installed_by_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [id, mediaLocation, startDate, endDate, notes, proofUrl, req.auth.user.display_name, req.auth.user.id],
+      );
+    }
+
+    // Status akhir pemasangan: Sudah Dipasang (AC 11.4). Siap Dipasang → Sudah
+    // Dipasang sah menurut alur; Disetujui → Sudah Dipasang diizinkan FR-040.
+    if (existing.status !== 'sudah_dipasang') {
+      await db.query(
+        `UPDATE promo_submissions
+         SET status = 'sudah_dipasang', status_changed_at = now(), updated_at = now()
+         WHERE id = $1`,
+        [id],
+      );
+      await db.query(
+        `INSERT INTO promo_submission_history
+          (submission_id, from_status, to_status, comment, actor_type, actor_name, actor_id)
+         VALUES ($1,$2,'sudah_dipasang',$3,'admin',$4,$5)`,
+        [id, existing.status, `Dipasang di ${mediaLocation}`, req.auth.user.display_name, req.auth.user.id],
+      );
+    }
+
+    logActivity(req.auth.user, 'record_installation', 'promo_submission', id, { mediaLocation }, req);
+    return res.json({ success: true, status: 'sudah_dipasang' });
   } catch (err) {
     return next(err);
   }
@@ -324,23 +545,28 @@ router.post('/media-types/:id/delete', requireRole(STAFF_ROLES), async (req, res
 router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT s.created_at, s.tenant_name, s.tenant_id, s.pic_name, s.pic_phone,
-              s.media_type_slug, s.installation_date, s.status, s.review_notes,
-              s.notes, s.source_type, s.file_name, s.file_url, s.link_url, s.ip_address
+      `SELECT s.submission_number, s.created_at, s.tenant_name, s.tenant_id,
+              s.unit_number, s.pic_name, s.pic_phone, s.media_type_slug,
+              s.campaign_name, s.material_title, s.installation_date, s.status,
+              s.review_notes, s.notes, s.source_type, s.file_name, s.file_url,
+              s.link_url, s.ip_address
        FROM promo_submissions s
        ORDER BY s.created_at DESC`,
     );
 
     const header = [
-      'Tanggal', 'Nama Gerai', 'Tenant ID', 'Nama PIC', 'Telepon PIC', 'Jenis Media',
+      'Nomor Pengajuan', 'Tanggal', 'Nama Gerai', 'Tenant ID', 'Nomor Unit',
+      'Nama PIC', 'Telepon PIC', 'Jenis Media', 'Nama Campaign', 'Judul Materi',
       'Tanggal Pasang', 'Status', 'Catatan Review', 'Catatan Tenant', 'Sumber',
       'Nama File', 'URL File', 'URL Tautan', 'IP',
     ];
     const lines = [header.join(',')];
     for (const r of rows) {
       lines.push([
+        r.submission_number,
         r.created_at ? new Date(r.created_at).toISOString() : '',
-        r.tenant_name, r.tenant_id, r.pic_name, r.pic_phone, r.media_type_slug,
+        r.tenant_name, r.tenant_id, r.unit_number, r.pic_name, r.pic_phone,
+        r.media_type_slug, r.campaign_name, r.material_title,
         r.installation_date, r.status, r.review_notes, r.notes,
         r.source_type === 'link' ? 'Tautan' : 'Unggah',
         r.file_name, r.file_url, r.link_url, r.ip_address,

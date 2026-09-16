@@ -87,9 +87,18 @@ const VALID_UPLOAD = {
   media_type_slug: 'spanduk',
   tenant_id: 'T001',
   tenant_name: 'Optik Melawai',
+  unit_number: 'L1-05',
   pic_name: 'Andi',
   pic_phone: '081234567890',
+  campaign_name: 'Promo Akhir Tahun',
+  material_title: 'Spanduk Diskon 50%',
+  material_description: 'Diskon akhir tahun seluruh produk.',
+  material_type: 'Promosi',
+  media_target: 'Sisi Pintu Tol Bekasi Barat',
+  air_start_date: '2026-10-01',
+  air_end_date: '2026-10-31',
   installation_date: '',
+  terms_accepted: true,
   notes: '',
   drive_file_id: 'file-1',
   file_name: 'spanduk.jpg',
@@ -113,14 +122,14 @@ beforeEach(() => {
   mockedQuery.mockImplementation((sql) => {
     const text = String(sql);
     if (text.includes('FROM promo_media_types')) {
-      return Promise.resolve({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PNG,PDF' }] });
+      return Promise.resolve({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PNG,PDF', rules: '' }] });
     }
     // INSERT dicek dulu: SQL-nya juga memuat `drive_file_id` (kolom).
     if (text.includes('INSERT INTO promo_submissions')) {
-      return Promise.resolve({ rows: [{ id: 'uuid-1', created_at: '2026-09-13T00:00:00Z' }] });
+      return Promise.resolve({ rows: [{ id: 'uuid-1', submission_number: 'MP-260916-ABC234', status_token: 'tok-1', created_at: '2026-09-13T00:00:00Z' }] });
     }
-    // `drive_file_id` duplicate check (mocked before INSERT every time)
-    if (text.includes('drive_file_id')) return Promise.resolve({ rows: [] });
+    // Cek duplikat drive_file_id (dijalankan sebelum INSERT).
+    if (text.includes('FROM promo_submissions WHERE drive_file_id')) return Promise.resolve({ rows: [] });
     if (text.includes('COUNT(*)')) return Promise.resolve({ rows: [{ n: 0 }] });
     return Promise.resolve({ rows: [] });
   });
@@ -132,7 +141,24 @@ describe('POST /promo/submit — validasi', () => {
     expect(res.statusCode).toBe(400);
     expect(Array.isArray(res.body.errors)).toBe(true);
     expect(res.body.errors).toContain('Nama gerai wajib diisi');
-    expect(res.body.errors).toContain('drive_file_id wajib diisi');
+    expect(res.body.errors).toContain('Nama campaign wajib diisi');
+    expect(res.body.errors).toContain('Judul materi wajib diisi');
+    expect(res.body.errors).toContain('Deskripsi materi wajib diisi');
+    expect(res.body.errors).toContain('Jenis materi wajib diisi');
+    expect(res.body.errors).toContain('Media atau lokasi pemasangan wajib diisi');
+    expect(res.body.errors).toContain('Persetujuan ketentuan wajib dicentang');
+  });
+
+  it('persetujuan ketentuan belum dicentang → 400', async () => {
+    const { res } = await callSubmit({ ...VALID_UPLOAD, terms_accepted: false });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.errors).toContain('Persetujuan ketentuan wajib dicentang');
+  });
+
+  it('periode tayang berakhir sebelum mulai → 400', async () => {
+    const { res } = await callSubmit({ ...VALID_UPLOAD, air_start_date: '2026-10-31', air_end_date: '2026-10-01' });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.errors).toContain('Periode tayang berakhir sebelum tanggal mulai');
   });
 
   it('nomor telepon tidak valid → 400', async () => {
@@ -154,6 +180,12 @@ describe('POST /promo/submit — validasi', () => {
     expect(res.body.error).toBe('File tidak ditemukan di storage.');
   });
 
+  it('tanpa drive_file_id dan tanpa tautan → 400', async () => {
+    const { res } = await callSubmit({ ...VALID_UPLOAD, drive_file_id: '' });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.errors).toContain('drive_file_id wajib diisi');
+  });
+
   it('file melebihi 50MB → 400', async () => {
     mockedDrive.mockResolvedValue({ ok: true, id: 'file-1', name: 'x.jpg', mimeType: 'image/jpeg', size: 60 * 1024 * 1024, webViewLink: 'https://drive.google.com/file/d/file-1/view' });
     const { res } = await callSubmit(VALID_UPLOAD);
@@ -162,13 +194,15 @@ describe('POST /promo/submit — validasi', () => {
   });
 
   it('drive_file_id sudah dipakai pengajuan lain → 400', async () => {
-    mockedQuery.mockImplementationOnce((sql) => {
-      if (String(sql).includes('FROM promo_media_types')) return Promise.resolve({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PNG,PDF' }] });
-      return Promise.resolve({ rows: [] });
-    });
-    mockedQuery.mockImplementationOnce((sql) => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM promo_media_types')) {
+        return Promise.resolve({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PNG,PDF', rules: '' }] });
+      }
       // duplicate guard: return 1 row (id already used)
-      if (String(sql).includes('drive_file_id')) return Promise.resolve({ rows: [{ id: 'older-uuid' }] });
+      if (text.includes('FROM promo_submissions WHERE drive_file_id')) {
+        return Promise.resolve({ rows: [{ id: 'older-uuid' }] });
+      }
       return Promise.resolve({ rows: [] });
     });
     const { res } = await callSubmit(VALID_UPLOAD);
@@ -179,37 +213,56 @@ describe('POST /promo/submit — validasi', () => {
   });
 
   it('media type tidak aktif → 400', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM promo_media_types')) return Promise.resolve({ rows: [] });
+      return Promise.resolve({ rows: [] });
+    });
     const { res } = await callSubmit(VALID_UPLOAD);
     expect(res.statusCode).toBe(400);
     expect(res.body.error).toBe('Jenis media promosi tidak dikenal atau tidak aktif.');
   });
 
   it('fingerprint sudah 5x / 24 jam → 429', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ slug: 'spanduk' }] });
-    mockedQuery.mockResolvedValueOnce({ rows: [] });
-    mockedQuery.mockResolvedValueOnce({ rows: [{ n: 5 }] });
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM promo_media_types')) return Promise.resolve({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PDF', rules: '' }] });
+      if (text.includes('FROM promo_submissions WHERE drive_file_id')) return Promise.resolve({ rows: [] });
+      if (text.includes('COUNT(*)')) return Promise.resolve({ rows: [{ n: 5 }] });
+      return Promise.resolve({ rows: [] });
+    });
     const { res } = await callSubmit(VALID_UPLOAD);
-    expect([400,429]).toContain(res.statusCode);
+    expect(res.statusCode).toBe(429);
     expect(res.body.error).toBe('Terlalu banyak pengajuan dari perangkat ini. Coba lagi besok.');
   });
 
-  it('happy path upload Drive → 201 + INSERT params benar', async () => {
-    // Media + dup-check + fingerprint count + INSERT all from default mock
+  it('happy path upload Drive → 201 + nomor/token + INSERT params benar', async () => {
     const { res } = await callSubmit(VALID_UPLOAD);
     expect([200,201]).toContain(res.statusCode);
     expect(res.body.success).toBe(true);
     expect(res.body.id).toBe('uuid-1');
+    // FR-016/FR-017/FR-018: nomor pengajuan + token status dikembalikan ke tenant.
+    expect(res.body.submission_number).toBe('MP-260916-ABC234');
+    expect(res.body.status_token).toBe('tok-1');
+    expect(res.body.status).toBe('menunggu_review');
 
     const insertCall = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_submissions'));
     expect(insertCall).toBeDefined();
     const params = insertCall[1];
-    expect(params[0]).toBe('spanduk');
-    expect(params[7]).toBe('upload');          // source_type
-    expect(params[8]).toBe('https://drive.google.com/file/d/file-1/view'); // file_url = webViewLink
-    expect(params[9]).toBe('spanduk-srv.jpg'); // file_name dari metadata Drive
-    expect(params[13]).toBe('file-1');        // drive_file_id ($14)
-    expect(params[14]).toBe('fp123');          // fingerprint ($15)
+    // Nomor & token dibuat server (acak) — periksa formatnya, bukan nilai tetap.
+    expect(params[0]).toMatch(/^MP-\d{6}-[23456789ABCDEFGHJKMNPQRSTUVWXYZ]{6}$/); // submission_number
+    expect(params[1]).toMatch(/^[A-Za-z0-9_-]{32}$/);                             // status_token
+    expect(params[2]).toBe('spanduk');           // media_type_slug
+    expect(params[18]).toBe('upload');           // source_type
+    expect(params[19]).toBe('https://drive.google.com/file/d/file-1/view'); // file_url
+    expect(params[20]).toBe('spanduk-srv.jpg');  // file_name dari metadata Drive
+    expect(params[24]).toBe('file-1');           // drive_file_id
+    expect(params[25]).toBe('menunggu_review');  // status awal
+    expect(params[26]).toBe('fp123');            // fingerprint
+
+    // Versi 1 materi + riwayat pembuka ikut dicatat.
+    expect(mockedQuery.mock.calls.some((c) => String(c[0]).includes('INSERT INTO promo_submission_files'))).toBe(true);
+    expect(mockedQuery.mock.calls.some((c) => String(c[0]).includes('INSERT INTO promo_submission_history'))).toBe(true);
   });
 });
 
@@ -218,29 +271,34 @@ describe('POST /promo/submit — mode tautan eksternal', () => {
     media_type_slug: 'spanduk',
     tenant_id: 'T001',
     tenant_name: 'Optik Melawai',
+    unit_number: 'L1-05',
     pic_name: 'Andi',
     pic_phone: '081234567890',
+    campaign_name: 'Promo Akhir Tahun',
+    material_title: 'Spanduk Diskon 50%',
+    material_description: 'Diskon akhir tahun.',
+    material_type: 'Promosi',
+    media_target: 'Sisi Pintu Tol Bekasi Barat',
+    air_start_date: '',
+    air_end_date: '',
     installation_date: '',
+    terms_accepted: true,
     notes: '',
     link_url: 'https://drive.google.com/file/d/xyz/view',
     device_fingerprint: 'fp123',
   };
 
   it('tautan https valid → 201 tanpa menyentuh Drive', async () => {
-    mockedQuery.mockResolvedValueOnce({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PDF' }] });
-    mockedQuery.mockResolvedValueOnce({ rows: [{ n: 0 }] });
-    mockedQuery.mockResolvedValueOnce({ rows: [{ id: 'uuid-2', created_at: '2026-09-13T00:00:00Z' }] });
-
     const { res } = await callSubmit(LINK_BODY);
     expect([200,201]).toContain(res.statusCode);
     expect(mockedDrive).not.toHaveBeenCalled();
 
     const params = mockedQuery.mock.calls
       .find((c) => String(c[0]).includes('INSERT INTO promo_submissions'))[1];
-    expect(params[7]).toBe('link');
-    expect(params[8]).toBe('');
-    expect(params[11]).toBe('https://drive.google.com/file/d/xyz/view');
-    expect(params[12]).toBe(0);
+    expect(params[18]).toBe('link');   // source_type
+    expect(params[19]).toBe('');       // file_url
+    expect(params[22]).toBe('https://drive.google.com/file/d/xyz/view'); // link_url
+    expect(params[23]).toBe(0);        // file_size_bytes
   });
 
   it('tautan tanpa skema http(s) → 400', async () => {
@@ -273,8 +331,9 @@ describe('POST /promo/submit — lead time materi', () => {
         return Promise.resolve({ rows: [{ slug: 'spanduk', accepted_formats: 'JPEG,PDF', rules }] });
       }
       if (text.includes('INSERT INTO promo_submissions')) {
-        return Promise.resolve({ rows: [{ id: 'uuid-9', created_at: '2026-09-13T00:00:00Z' }] });
+        return Promise.resolve({ rows: [{ id: 'uuid-9', submission_number: 'MP-260916-ZZZ999', status_token: 'tok-9', created_at: '2026-09-13T00:00:00Z' }] });
       }
+      if (text.includes('COUNT(*)')) return Promise.resolve({ rows: [{ n: 0 }] });
       return Promise.resolve({ rows: [] });
     });
   }
@@ -284,6 +343,12 @@ describe('POST /promo/submit — lead time materi', () => {
     tenant_name: 'Optik Melawai',
     pic_name: 'Andi',
     pic_phone: '081234567890',
+    campaign_name: 'Promo',
+    material_title: 'Spanduk Promo',
+    material_description: 'Keterangan promo.',
+    material_type: 'Promosi',
+    media_target: 'Pintu Tol',
+    terms_accepted: true,
     link_url: 'https://drive.google.com/file/d/xyz/view',
     device_fingerprint: 'fp123',
   };

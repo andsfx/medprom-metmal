@@ -53,7 +53,7 @@ describe('submissionWaLink', () => {
       pic_phone: '08123456789',
       tenant_name: 'Optik Melawai',
       media_type_slug: 'spanduk',
-      status: 'approved',
+      status: 'disetujui',
       review_notes: 'Desain OK.',
     });
     expect(link).toContain('https://wa.me/628123456789?text=');
@@ -61,11 +61,33 @@ describe('submissionWaLink', () => {
     expect(decoded).toContain('Optik Melawai');
     expect(decoded).toContain('Disetujui');
     expect(decoded).toContain('Desain OK.');
+    // Kunci mentah tidak boleh bocor ke pesan tenant.
+    expect(decoded).not.toContain('disetujui)');
+  });
+
+  it('memakai label untuk seluruh 8 status PRD (bukan kunci mentah)', () => {
+    const cases: Array<[string, string]> = [
+      ['menunggu_review', 'Menunggu Review'],
+      ['perlu_revisi', 'Perlu Revisi'],
+      ['disetujui', 'Disetujui'],
+      ['ditolak', 'Ditolak'],
+      ['siap_dipasang', 'Siap Dipasang'],
+      ['sudah_dipasang', 'Sudah Dipasang'],
+      ['selesai', 'Selesai'],
+      ['draft', 'Draft'],
+    ];
+    for (const [status, label] of cases) {
+      const link = submissionWaLink({
+        pic_phone: '08123456789', tenant_name: 'X', media_type_slug: 'spanduk', status,
+      });
+      const decoded = decodeURIComponent(link!.split('text=')[1]!);
+      expect(decoded).toContain(`berstatus: ${label}.`);
+    }
   });
 
   it('mengembalikan null bila nomor tidak valid', () => {
     expect(submissionWaLink({
-      pic_phone: '', tenant_name: 'X', media_type_slug: 'spanduk', status: 'pending',
+      pic_phone: '', tenant_name: 'X', media_type_slug: 'spanduk', status: 'menunggu_review',
     })).toBeNull();
   });
 });

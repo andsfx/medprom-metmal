@@ -4,7 +4,10 @@ import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 import AdminDashboardPage from '../AdminDashboardPage';
 import { useAuth } from '../../../hooks/useAuth';
-import { fetchAdminSubmissions, fetchAdminMediaTypes, updateSubmissionStatus } from '../../../utils/adminApi';
+import {
+  fetchAdminSubmissions, fetchAdminMediaTypes, updateSubmissionStatus,
+  fetchAdminSummary, fetchAdminSubmissionDetail, recordInstallation,
+} from '../../../utils/adminApi';
 import type { AdminSubmissionRow } from '../../../types/promo';
 
 vi.mock('../../../hooks/useAuth');
@@ -13,8 +16,11 @@ vi.mock('../../../utils/adminApi', async (importOriginal) => {
   return {
     ...actual,
     fetchAdminSubmissions: vi.fn(),
+    fetchAdminSummary: vi.fn(),
+    fetchAdminSubmissionDetail: vi.fn(),
     fetchAdminMediaTypes: vi.fn(),
     updateSubmissionStatus: vi.fn(),
+    recordInstallation: vi.fn(),
     deleteSubmission: vi.fn(),
     downloadExportCsv: vi.fn(),
   };
@@ -22,37 +28,53 @@ vi.mock('../../../utils/adminApi', async (importOriginal) => {
 
 const mockedUseAuth = vi.mocked(useAuth);
 const mockedFetchSubmissions = vi.mocked(fetchAdminSubmissions);
+const mockedFetchSummary = vi.mocked(fetchAdminSummary);
+const mockedFetchDetail = vi.mocked(fetchAdminSubmissionDetail);
 const mockedFetchMediaTypes = vi.mocked(fetchAdminMediaTypes);
 const mockedUpdateStatus = vi.mocked(updateSubmissionStatus);
+const mockedRecordInstallation = vi.mocked(recordInstallation);
 
-const ROWS: AdminSubmissionRow[] = [
-  {
-    id: 'sub-1', media_type_slug: 'spanduk', tenant_id: 'T1', tenant_name: 'Optik Melawai',
-    pic_name: 'Andi', pic_phone: '08123456789', installation_date: '', notes: '',
+/** Bentuk baris API staf (snake_case, 8 status PRD). */
+function row(over: Partial<AdminSubmissionRow>): AdminSubmissionRow {
+  return {
+    id: 'sub-x', submission_number: 'MP-260916-ABC234', status_token: 'tok-x',
+    media_type_slug: 'spanduk', tenant_id: 'T1', tenant_name: 'Optik Melawai',
+    unit_number: 'L1-05', pic_name: 'Andi', pic_phone: '08123456789',
+    campaign_name: 'Promo', material_title: 'Spanduk Diskon', material_description: '',
+    material_type: 'Promosi', media_target: 'Atrium 1', air_start_date: '', air_end_date: '',
+    installation_date: '', terms_accepted: true, notes: '',
     source_type: 'upload',
     file_url: 'https://drive.google.com/file/d/file-1/view', file_name: 'spanduk.jpg',
-    mime_type: 'image/jpeg', file_size_bytes: 1024, link_url: '', status: 'pending',
+    mime_type: 'image/jpeg', file_size_bytes: 1024, drive_file_id: 'file-1', link_url: '',
+    status: 'menunggu_review', status_changed_at: '2026-09-12T01:00:00Z',
     review_notes: '', reviewed_by: null, reviewed_at: null, reviewed_by_name: null,
-    device_fingerprint: 'fp1', ip_address: '127.0.0.1', created_at: '2026-09-12T01:00:00Z',
-  },
-  {
-    id: 'sub-2', media_type_slug: 'videotron', tenant_id: 'T2', tenant_name: 'Momoiro',
-    pic_name: 'Budi', pic_phone: '08987654321', installation_date: '2026-09-20', notes: '',
-    source_type: 'upload',
+    device_fingerprint: 'fp1', ip_address: '127.0.0.1',
+    created_at: '2026-09-12T01:00:00Z', updated_at: '2026-09-12T01:00:00Z',
+    ...over,
+  };
+}
+
+const ROWS: AdminSubmissionRow[] = [
+  row({ id: 'sub-1' }),
+  row({
+    id: 'sub-2', submission_number: 'MP-260916-DEF567', media_type_slug: 'videotron',
+    tenant_id: 'T2', tenant_name: 'Momoiro', unit_number: 'L2-10',
+    pic_name: 'Budi', pic_phone: '08987654321', installation_date: '2026-09-20',
+    material_title: 'Video Promo', source_type: 'upload',
     file_url: 'https://drive.google.com/file/d/file-2/view', file_name: 'video.mp4',
-    mime_type: 'video/mp4', file_size_bytes: 2048, link_url: '', status: 'approved',
-    review_notes: 'OK', reviewed_by: 'u1', reviewed_at: '2026-09-12T02:00:00Z', reviewed_by_name: 'Admin Test',
-    device_fingerprint: 'fp2', ip_address: '127.0.0.1', created_at: '2026-09-11T01:00:00Z',
-  },
-  {
-    id: 'sub-3', media_type_slug: 'big-banner', tenant_id: 'T3', tenant_name: 'Kopi Kenangan',
-    pic_name: 'Citra', pic_phone: '08111222333', installation_date: '', notes: '',
-    source_type: 'link',
-    file_url: '', file_name: '', mime_type: '', file_size_bytes: 0,
-    link_url: 'https://drive.google.com/file/d/abc/view', status: 'pending',
-    review_notes: '', reviewed_by: null, reviewed_at: null, reviewed_by_name: null,
-    device_fingerprint: 'fp3', ip_address: '127.0.0.1', created_at: '2026-09-10T01:00:00Z',
-  },
+    mime_type: 'video/mp4', drive_file_id: 'file-2', status: 'disetujui',
+    review_notes: 'OK', reviewed_by: 'u1', reviewed_at: '2026-09-12T02:00:00Z',
+    reviewed_by_name: 'Admin Test', device_fingerprint: 'fp2',
+    created_at: '2026-09-11T01:00:00Z',
+  }),
+  row({
+    id: 'sub-3', submission_number: 'MP-260916-GHI890', media_type_slug: 'big-banner',
+    tenant_id: 'T3', tenant_name: 'Kopi Kenangan', unit_number: 'L3-01',
+    pic_name: 'Citra', pic_phone: '08111222333', source_type: 'link',
+    file_url: '', file_name: '', mime_type: '', file_size_bytes: 0, drive_file_id: '',
+    link_url: 'https://drive.google.com/file/d/abc/view', status: 'menunggu_review',
+    device_fingerprint: 'fp3', created_at: '2026-09-10T01:00:00Z',
+  }),
 ];
 
 const PAGE = { data: ROWS, total: 3, page: 1, per_page: 20, total_pages: 1 };
@@ -61,6 +83,28 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedFetchSubmissions.mockResolvedValue(PAGE);
   mockedFetchMediaTypes.mockResolvedValue([]);
+  mockedFetchSummary.mockResolvedValue({
+    total: 3,
+    counts: {
+      menunggu_review: 2, perlu_revisi: 0, disetujui: 1, siap_dipasang: 0,
+      sudah_dipasang: 0, ditolak: 0, selesai: 0, draft: 0,
+    },
+  });
+  mockedFetchDetail.mockResolvedValue({
+    submission: ROWS[0]!,
+    history: [{
+      id: 'h1', submission_id: 'sub-1', from_status: '', to_status: 'menunggu_review',
+      comment: 'Pengajuan dikirim tenant', actor_type: 'tenant', actor_name: '',
+      actor_id: null, created_at: '2026-09-12T01:00:00Z',
+    }],
+    files: [{
+      id: 'f1', submission_id: 'sub-1', version: 1, source_type: 'upload',
+      file_url: 'https://drive.google.com/file/d/file-1/view', file_name: 'spanduk.jpg',
+      mime_type: 'image/jpeg', file_size_bytes: 1024, link_url: '', drive_file_id: 'file-1',
+      uploaded_by: 'tenant', notes: '', created_at: '2026-09-12T01:00:00Z',
+    }],
+    installation: null,
+  });
 });
 
 function renderDashboard(user: { id: string; email: string; display_name: string; role: string } | null) {
@@ -90,11 +134,49 @@ describe('AdminDashboardPage', () => {
 
     expect(await screen.findByText('Optik Melawai')).toBeInTheDocument();
     expect(screen.getByText('Momoiro')).toBeInTheDocument();
-    expect(screen.getAllByText('Menunggu').length).toBeGreaterThan(0);
+    // Nomor pengajuan tampil di tabel (FR-026).
+    expect(screen.getByText('MP-260916-ABC234')).toBeInTheDocument();
+    expect(screen.getAllByText('Menunggu Review').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Disetujui').length).toBeGreaterThan(0);
     // Admin bisa review + hapus.
     expect(screen.getAllByRole('button', { name: /Detail/i }).length).toBe(3);
     expect(screen.getAllByRole('button', { name: /Hapus pengajuan/i }).length).toBe(3);
+  });
+
+  it('menampilkan ringkasan jumlah per status (FR-025)', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    // Ringkasan dirender sebagai tombol filter: label status + jumlah.
+    const pendingCard = screen.getByRole('button', { name: /Menunggu Review 2/i });
+    expect(pendingCard).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Disetujui 1/i })).toBeInTheDocument();
+    expect(screen.getByText(/Total 3 pengajuan tercatat/i)).toBeInTheDocument();
+  });
+
+  it('mencari pengajuan lewat kolom cari (FR-026)', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.change(screen.getByLabelText(/^Cari$/i), { target: { value: 'MP-260916' } });
+
+    await waitFor(() => {
+      expect(mockedFetchSubmissions).toHaveBeenCalledWith(expect.objectContaining({ q: 'MP-260916' }));
+    });
+  });
+
+  it('memfilter berdasarkan rentang tanggal (FR-027)', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.change(screen.getByLabelText(/Dari tanggal/i), { target: { value: '2026-09-01' } });
+    fireEvent.change(screen.getByLabelText(/Sampai tanggal/i), { target: { value: '2026-09-30' } });
+
+    await waitFor(() => {
+      expect(mockedFetchSubmissions).toHaveBeenCalledWith(expect.objectContaining({
+        date_from: '2026-09-01', date_to: '2026-09-30',
+      }));
+    });
   });
 
   it('pengajuan bertautan: tabel menaut ke URL eksternal, bukan file Drive', async () => {
@@ -118,7 +200,7 @@ describe('AdminDashboardPage', () => {
     await screen.findByText('Optik Melawai');
 
     fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[0]!);
-    await screen.findByText(/Set status/i);
+    await screen.findByText(/Ubah status/i);
 
     // Aksi verifikasi manual: tautan materi sebagai tombol primer.
     expect(screen.getByRole('link', { name: /Buka tautan materi/i }))
@@ -127,6 +209,17 @@ describe('AdminDashboardPage', () => {
     // wa.me menerima digit + kode negara: 08123456789 → 628123456789.
     const wa = screen.getByRole('link', { name: /Kirim pesan WA/i });
     expect(wa.getAttribute('href')).toContain('https://wa.me/628123456789?text=');
+  });
+
+  it('modal detail menampilkan riwayat status dan versi materi (FR-030, FR-031)', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[0]!);
+
+    expect(await screen.findByText('Riwayat status')).toBeInTheDocument();
+    expect(screen.getByText('Versi materi')).toBeInTheDocument();
+    expect(screen.getByText('Versi 1')).toBeInTheDocument();
   });
 
   it('menandai pengajuan yang masuk lebih lambat dari lead time media', async () => {
@@ -182,10 +275,10 @@ describe('AdminDashboardPage', () => {
     renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
     await screen.findByText('Optik Melawai');
 
-    fireEvent.change(screen.getByLabelText(/Status/i), { target: { value: 'pending' } });
+    fireEvent.change(screen.getByLabelText(/^Status$/i), { target: { value: 'perlu_revisi' } });
 
     await waitFor(() => {
-      expect(mockedFetchSubmissions).toHaveBeenCalledWith(expect.objectContaining({ status: 'pending' }));
+      expect(mockedFetchSubmissions).toHaveBeenCalledWith(expect.objectContaining({ status: 'perlu_revisi' }));
     });
   });
 
@@ -194,18 +287,64 @@ describe('AdminDashboardPage', () => {
     await screen.findByText('Optik Melawai');
 
     fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[0]!);
-    await screen.findByText(/Set status/i);
+    await screen.findByText(/Ubah status/i);
 
-    fireEvent.click(screen.getByRole('radio', { name: 'Terpasang' }));
-    fireEvent.change(screen.getByLabelText(/Catatan Review/i), { target: { value: 'Sudah terpasang hari Jumat.' } });
-    fireEvent.click(screen.getByRole('button', { name: /Simpan/i }));
+    // Hanya transisi sah dari Menunggu Review yang ditawarkan.
+    expect(screen.getByRole('radio', { name: /Disetujui/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Ditolak/i })).toBeInTheDocument();
+    expect(screen.getByRole('radio', { name: /Perlu Revisi/i })).toBeInTheDocument();
+    expect(screen.queryByRole('radio', { name: /Sudah Dipasang/i })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('radio', { name: /Disetujui/i }));
+    fireEvent.change(screen.getByLabelText(/Catatan Review/i), { target: { value: 'Materi sesuai ketentuan.' } });
+    fireEvent.click(screen.getByRole('button', { name: /Simpan Status/i }));
 
     await waitFor(() => {
-      expect(mockedUpdateStatus).toHaveBeenCalledWith('sub-1', 'installed', 'Sudah terpasang hari Jumat.');
+      expect(mockedUpdateStatus).toHaveBeenCalledWith('sub-1', 'disetujui', 'Materi sesuai ketentuan.');
     });
     // Modal tertutup + list dimuat ulang.
     await waitFor(() => {
-      expect(screen.queryByText(/Set status/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Ubah status/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('menawarkan pemasangan hanya untuk materi Disetujui (FR-040)', async () => {
+    // sub-2 = disetujui; buka detailnya (indeks 1).
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Momoiro');
+
+    mockedFetchDetail.mockResolvedValue({
+      submission: ROWS[1]!,
+      history: [],
+      files: [],
+      installation: null,
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[1]!);
+
+    expect(await screen.findByRole('group', { name: /Catat pemasangan/i })).toBeInTheDocument();
+    expect(screen.getByLabelText(/Media \/ lokasi pemasangan/i)).toBeInTheDocument();
+  });
+
+  it('mencatat pemasangan lewat modal detail (FR-041..FR-044)', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Momoiro');
+
+    mockedFetchDetail.mockResolvedValue({
+      submission: ROWS[1]!, history: [], files: [], installation: null,
+    });
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[1]!);
+
+    fireEvent.change(await screen.findByLabelText(/Media \/ lokasi pemasangan/i), {
+      target: { value: 'Videotron Atrium 1' },
+    });
+    fireEvent.change(screen.getByLabelText(/Tanggal mulai/i), { target: { value: '2026-10-01' } });
+    fireEvent.click(screen.getByRole('button', { name: /Catat Pemasangan/i }));
+
+    await waitFor(() => {
+      expect(mockedRecordInstallation).toHaveBeenCalledWith('sub-2', expect.objectContaining({
+        media_location: 'Videotron Atrium 1',
+        start_date: '2026-10-01',
+      }));
     });
   });
 

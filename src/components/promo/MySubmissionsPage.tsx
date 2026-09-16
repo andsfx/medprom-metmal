@@ -13,12 +13,16 @@ import type { MySubmissionRow } from '../../types/promo';
 
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { cls: string; icon: React.ReactNode }> = {
-    pending: { cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', icon: <Clock className="h-3.5 w-3.5" aria-hidden="true" /> },
-    approved: { cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> },
-    rejected: { cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> },
-    installed: { cls: 'bg-brand-primary-100 text-brand-primary-800 dark:bg-brand-primary-950/50 dark:text-brand-primary-300', icon: <Wrench className="h-3.5 w-3.5" aria-hidden="true" /> },
+    draft: { cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', icon: <Info className="h-3.5 w-3.5" aria-hidden="true" /> },
+    menunggu_review: { cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', icon: <Clock className="h-3.5 w-3.5" aria-hidden="true" /> },
+    perlu_revisi: { cls: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', icon: <Info className="h-3.5 w-3.5" aria-hidden="true" /> },
+    disetujui: { cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> },
+    ditolak: { cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> },
+    siap_dipasang: { cls: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300', icon: <Wrench className="h-3.5 w-3.5" aria-hidden="true" /> },
+    sudah_dipasang: { cls: 'bg-brand-primary-100 text-brand-primary-800 dark:bg-brand-primary-950/50 dark:text-brand-primary-300', icon: <Wrench className="h-3.5 w-3.5" aria-hidden="true" /> },
+    selesai: { cls: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> },
   };
-  const cfg = map[status] ?? map.pending!;
+  const cfg = map[status] ?? map.menunggu_review!;
   return (
     <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-bold ${cfg.cls}`}>
       {cfg.icon}
@@ -91,7 +95,12 @@ export default function MySubmissionsPage() {
                   <li key={r.id} className="ui-dashboard-control rounded-xl p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-slate-900 dark:text-white">{r.media_type_slug}</p>
+                        <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
+                          {r.submission_number}
+                        </p>
+                        <p className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">
+                          {r.material_title || r.media_type_slug}
+                        </p>
                         <p className="mt-0.5 text-xs ui-text-muted">
                           {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
                         </p>
@@ -103,17 +112,27 @@ export default function MySubmissionsPage() {
                         <span className="font-semibold">Catatan TR: </span>{r.review_notes}
                       </p>
                     )}
-                    {(r.source_type === 'link' ? r.link_url : r.file_url) && (
-                      <a
-                        href={r.source_type === 'link' ? r.link_url : r.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
-                      >
-                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                        {r.source_type === 'link' ? 'Buka tautan materi' : 'Lihat file materi'}
-                      </a>
-                    )}
+                    <div className="mt-3 flex flex-wrap items-center gap-3">
+                      {(r.source_type === 'link' ? r.link_url : r.file_url) && (
+                        <a
+                          href={r.source_type === 'link' ? r.link_url : r.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                          {r.source_type === 'link' ? 'Buka tautan materi' : 'Lihat file materi'}
+                        </a>
+                      )}
+                      {r.status_token && (
+                        <Link
+                          to={`/status/${r.status_token}`}
+                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                        >
+                          Lihat status & kirim revisi
+                        </Link>
+                      )}
+                    </div>
                   </li>
                 ))}
               </ul>

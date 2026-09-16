@@ -28,6 +28,7 @@ rsync -az --delete \
   --exclude node_modules --exclude dist --exclude .env* \
   --exclude '.vercel' --exclude '*.log' \
   --exclude 'client_secret*.json' --exclude '*-token.json' \
+  --exclude 'backups/' \
   /d/Andy/medprom-metmal/ root@100.69.24.32:/opt/medprom/
 ```
 
@@ -58,12 +59,19 @@ ADMIN_PASSWORD='Password-Kuat-Min-8' docker compose exec -e ADMIN_PASSWORD \
 ```
 
 Kedua perintah idempotent — aman dijalankan ulang setelah update kode.
-`db-migrate.mjs` menerapkan `server/schema.sql` (termasuk kolom `source_type`,
-`link_url`, dan `drive_file_id` untuk penyimpanan Drive),
+`db-migrate.mjs` menerapkan `server/schema.sql`: kolom penyimpanan Drive
+(`source_type`, `link_url`, `drive_file_id`), kolom data PRD (nomor pengajuan,
+token status, snapshot unit, campaign/judul/deskripsi materi, periode tayang),
+tabel versi materi/riwayat status/pemasangan, **serta remap status lama (4 nilai)
+ke 8 nilai PRD**.
 `seed-media-types.mjs` menyinkronkan `accepted_formats` dan `rules` — dua kolom
 yang bersumber dari deck 2026 — tanpa menimpa harga/lokasi yang sudah diedit
 admin. Menjalankan seed setelah update kode akan menyebarkan koreksi ketentuan
 ke instance yang sudah jalan.
+
+> **Rilis 1.3.0 wajib menjalankan `db-migrate` sebelum API baru dipakai.**
+> Migrasi mengubah `status` menjadi 8 nilai PRD dan mengisi nomor + token untuk
+> pengajuan lama. Urutan deploy tetap: API + skema dulu, frontend terakhir.
 
 ## 5. Caddy subdomain
 
@@ -106,6 +114,7 @@ rsync -az --delete \
   --exclude node_modules --exclude dist --exclude .env* \
   --exclude '.vercel' --exclude '*.log' \
   --exclude 'client_secret*.json' --exclude '*-token.json' \
+  --exclude 'backups/' \
   /d/Andy/medprom-metmal/ root@100.69.24.32:/opt/medprom/
 
 # 2. Restart API + terapkan skema dan katalog (keduanya idempotent)

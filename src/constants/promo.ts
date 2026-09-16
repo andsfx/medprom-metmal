@@ -1,11 +1,30 @@
 /** Label status & kategori pengajuan — satu sumber untuk publik + admin. */
 
+/**
+ * Label 8 status PRD §8. Urutannya mengikuti alur kerja (bukan alfabetis) agar
+ * bisa dipakai langsung untuk dropdown filter dan ringkasan dashboard.
+ */
 export const STATUS_LABELS: Record<string, string> = {
-  pending: 'Menunggu',
-  approved: 'Disetujui',
-  rejected: 'Ditolak',
-  installed: 'Terpasang',
+  draft: 'Draft',
+  menunggu_review: 'Menunggu Review',
+  perlu_revisi: 'Perlu Revisi',
+  disetujui: 'Disetujui',
+  ditolak: 'Ditolak',
+  siap_dipasang: 'Siap Dipasang',
+  sudah_dipasang: 'Sudah Dipasang',
+  selesai: 'Selesai',
 };
+
+/** Urutan tampilan status pada filter & ringkasan dashboard. */
+export const STATUS_ORDER: string[] = [
+  'menunggu_review',
+  'perlu_revisi',
+  'disetujui',
+  'siap_dipasang',
+  'sudah_dipasang',
+  'ditolak',
+  'selesai',
+];
 
 export const CATEGORY_LABELS: Record<string, string> = {
   outdoor: 'Outdoor',
@@ -15,22 +34,32 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 export const CATEGORY_ORDER: string[] = ['outdoor', 'indoor', 'social'];
 
+/** Jenis materi (field form PRD §9.3) — nilai disimpan apa adanya. */
+export const MATERIAL_TYPES: string[] = [
+  'Promosi',
+  'Event',
+  'Seasonal Campaign',
+  'Lainnya',
+];
+
 /**
- * Mode unggah file ke Drive mall — jalur LEGACY.
+ * Kanal unggah berkas ke Drive mall.
  *
- * Kanonis adalah link-only: tenant mengirim tautan penyimpanannya sendiri dan
- * admin memverifikasi manual. Mode unggah dipertahankan sementara di balik flag
- * agar data legacy tetap bisa diproses; jangan nyalakan untuk pengajuan baru.
- * Aktifkan hanya bila VITE_PROMO_UPLOAD_MODE='1' (masa transisi).
+ * PRD menetapkan unggah berkas sebagai salah satu kanal materi (FR-008..FR-015),
+ * berdampingan dengan kanal tautan (kanonis). Karena itu kanal unggah
+ * **menyala secara bawaan**; `VITE_PROMO_UPLOAD_MODE='0'` adalah saklar
+ * opt-out untuk instance yang belum punya kredensial Google Drive — pada
+ * instance seperti itu server menolak bersih dengan 503 (fail-closed,
+ * lihat `driveReady` di server/src/drive.js), jadi lebih baik tombolnya tidak
+ * ditampilkan sama sekali.
  *
  * Fungsi (bukan konstanta) supaya test bisa `vi.stubEnv` per-kasus.
  */
 export function isUploadModeEnabled(): boolean {
-  return (import.meta.env.VITE_PROMO_UPLOAD_MODE as string | undefined) === '1';
+  return (import.meta.env.VITE_PROMO_UPLOAD_MODE as string | undefined) !== '0';
 }
 
-/** Kap ukuran file FE — sinkron server MAX_UPLOAD_BYTES (50MB). Hanya relevan
- *  selama mode unggah aktif. */
+/** Kap ukuran file FE — sinkron server MAX_UPLOAD_BYTES (50MB). */
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 /** Mime → label tampilan. */
