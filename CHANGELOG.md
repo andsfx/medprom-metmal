@@ -14,6 +14,19 @@ verifikasi rilis 1.3.0 di produksi.
   `docs/PLAN_YYYY-MM-DD_HH-mm.md`, dan setiap perubahan wajib dicatat di
   `[Unreleased]` (`AGENTS.md` § Commit & Rilis). Rencana pertama:
   `docs/PLAN_2026-09-16_12-04.md` (implementasi + deploy 1.3.0).
+- **Petunjuk kredensial akun staf di halaman `/login` (tahap pengembangan).**
+  Halaman login menampilkan ketiga akun staf beserta password defaultnya, dan
+  tiap akun bisa diklik untuk mengisi form otomatis. Sumber tunggalnya
+  `src/constants/devCredentials.ts`; password default seragam `admin123`,
+  diset ke produksi lewat `create-admin.mjs --reset`.
+
+  ⚠️ **Ini menampilkan kredensial ke siapa pun yang membuka `/login`.**
+  Untuk pengembangan saja. Sebelum dipakai publik: set
+  `VITE_PROMO_SHOW_DEV_LOGIN='0'` (Vercel → Settings → Environment Variables),
+  **build + deploy ulang** (nilai `VITE_*` di-inline saat build, bukan dibaca
+  runtime), lalu ganti password akun nyata. Saat flag mati panelnya tidak
+  dirender; kode kredensial tetap ikut ter-bundle (flag hanya menggerbangi
+  perenderan).
 
 ### Diubah
 

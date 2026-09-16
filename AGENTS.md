@@ -316,7 +316,17 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     `bad interpreter`/`\r` liar, dan berkas ber-CRLF yang disunting ulang
     menghasilkan diff se-berkas (pernah terjadi: AGENTS.md tampak berubah 427
     baris padahal suntingannya kecil). Setiap berkas baru wajib LF.
-13. **Klaim di komentar/docs harus cocok dengan kode.** Docs basi wajib
+13. **Halaman `/login` menampilkan kredensial staf selama pengembangan.** Panel
+    di `AdminLoginPage` mencetak email ketiga akun + password `admin123` ke
+    siapa pun yang membuka `/login`, dan ketiga akun produksi memang memakai
+    password itu. Digerbangi `VITE_PROMO_SHOW_DEV_LOGIN` (opt-out, pola sama
+    dengan `VITE_PROMO_UPLOAD_MODE`) yang sumbernya
+    `src/constants/devCredentials.ts`. **Sebelum dipakai publik**: set flag ke
+    `'0'`, build + deploy ulang (nilai `VITE_*` di-inline saat build, bukan
+    dibaca runtime — mengubah env Vercel saja tidak cukup tanpa redeploy), lalu
+    reset password akun nyata. Perlu diingat flag hanya menggerbangi
+    perenderan, jadi kredensialnya tetap ada di bundle.
+14. **Klaim di komentar/docs harus cocok dengan kode.** Docs basi wajib
     diperbaiki saat menyentuh area itu.
 
 ## Commit & Rilis
