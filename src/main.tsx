@@ -11,3 +11,12 @@ createRoot(document.getElementById("root")!).render(
     </BrowserRouter>
   </StrictMode>
 );
+
+// Service worker — hanya di produksi. Di dev, SW mengacaukan HMR Vite.
+if (import.meta.env.PROD && "serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {
+      // Registrasi gagal (mis. mode privat) — aplikasi tetap jalan online.
+    });
+  });
+}

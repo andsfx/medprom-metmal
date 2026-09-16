@@ -1,7 +1,7 @@
 # DESIGN — Medprom Metmal
 
 > **Sumber kebenaran:** `src/styles/theme.css`, `src/styles/base.css`, `index.html` (fonts).  
-> **Dibuat:** 2026-09-16
+> **Dibuat:** 2026-09-16 · **Direvisi:** 2026-09-16 (arah App Produk + PWA)
 
 ## Arah Desain
 
@@ -9,20 +9,28 @@ Medprom Metmal adalah portal operasional tenant — pengajuan, verifikasi, pelac
 bukan halaman kampanye komunitas. Desainnya harus terasa presisi, terstruktur,
 tipografis, dan tenang.
 
-Arah: **editorial kontras** — serif display sebagai hero, tinta pekat di atas
-kertas putih bersih, whitespace luas, garis hairline, dan aksen tosca yang
-sangat hemat.
+Arah: **app produk** — kerangka aplikasi tetap (app bar + tab bar), permukaan
+putih bersih, garis hairline, aksen tosca hemat, dan sentuhan serif Fraunces
+yang dipertahankan untuk judul serta angka.
 
-Ini adalah keberangkatan fundamental dari project event Metmal (warm cream
-paper, Bricolage Grotesque, kartu bulat soft-elevation, tosca+pink merata).
-Tidak boleh ada kebocoran pola event ke medprom; tiap komponen ditulis ulang
-dalam bahasa desain editorial.
+Arah ini menggantikan **editorial kontras** (revisi sebelumnya). Yang berubah:
+tipografi antarmuka dipegang Geist dengan kerapatan lebih tinggi, radius naik,
+dan bayangan diizinkan kembali secara terbatas untuk elemen mengapung. Yang
+**dipertahankan**: palet tinta-di-kertas, hairline sebagai pemisah utama, dan
+tosca sebagai aksen — bukan permukaan.
+
+Platform juga merupakan **PWA yang dapat dipasang** (`display: standalone`),
+jadi setiap layar harus masuk akal tanpa chrome browser: tidak boleh ada layar
+yang bergantung pada tombol back peramban.
+
+Tidak boleh ada kebocoran pola event ke medprom (warm cream paper, Bricolage
+Grotesque, kartu bulat soft-elevation, tosca+pink merata).
 
 ## Kata Kunci Visual
 
-- serif display · tinta di kertas
-- whitespace lebar · garis rambut (hairline)
-- nomor besar · hierarki jelas
+- kerangka app tetap · navigasi selalu terjangkau
+- tinta di kertas · garis rambut (hairline)
+- serif untuk judul & angka · sans untuk kerja
 - aksen tosca hemat · monokrom dominan
 
 ## Tipografi
@@ -141,20 +149,37 @@ kontras serif/tinta. Dark mode ditunda sampai fondasi terang mantap.
 | `--surface-card` | `#ffffff` | Kartu, panel, form |
 | `--surface-hover` | `#f5f5f4` | Hover baris/opsi |
 
-Kartu **tidak** punya bayangan (`box-shadow: none`). Pembedaan dari latar:
-border hairline `1px solid #e7e5e4`. Elevasi dibuat dengan perbedaan warna
-latar, bukan dengan bayangan — karena arah editorial = cetak, bukan material.
+Kartu statis **tidak** punya bayangan. Pembedaan dari latar: border hairline
+`1px solid #e7e5e4`. Perbedaan kedalaman antar-permukaan dibuat dengan warna
+latar, bukan bayangan.
+
+### Elevasi — hanya untuk elemen mengapung
+
+Sejak arah **App Produk**, tiga token bayangan dipakai — dan **hanya** untuk
+elemen yang benar-benar mengapung di atas konten yang bergulir. Tanpa ini,
+app bar sticky dan bottom sheet tidak terbaca sebagai lapisan terpisah.
+
+| Token | Konteks | Catatan |
+|-------|---------|---------|
+| `--elevation-bar` | Top app bar saat konten tergulir | Aktif via `data-elevated="true"`; garis bawah diganti bayangan |
+| `--elevation-sheet` | Bottom sheet / dialog | Bayangan mengarah ke atas |
+| `--elevation-fab` | Tombol aksi mengapung | Berwarna tosca, bukan netral |
+
+Di luar tiga konteks itu, bayangan **dilarang**. Kartu katalog, panel form, dan
+baris tabel tetap hairline.
 
 ### Radius
 
-| Elemen | Radius | Tailwind |
-|--------|--------|----------|
-| Kartu, panel | `0.5rem` | `rounded-lg` |
-| Tombol, input | `0.375rem` | `rounded-md` |
-| Chip, badge | `0.25rem` | `rounded` |
-| Modal | `0.5rem` | `rounded-lg` |
+| Elemen | Radius | Token |
+|--------|--------|-------|
+| Kartu, panel | `0.875rem` | `--radius-card` |
+| Tombol, input | `0.625rem` | `--radius-control` |
+| Chip, badge | pill penuh | `--radius-chip` |
+| Sheet (tepi atas) | `1.25rem` | `--radius-sheet` |
 
-Tajam, presisi, bersih. Tidak ada `rounded-2xl`/`rounded-3xl` (kampanye event).
+Lebih lunak daripada arah editorial sebelumnya (`0.5rem`/`0.375rem`/`0.25rem`):
+aplikasi terasa dapat disentuh, cetakan terasa tajam. Chip memakai pill karena
+badge status dibaca sebagai label, bukan potongan kertas.
 
 ## Aturan Garis (Rule)
 
@@ -210,6 +235,62 @@ CTA primer + CTA sekunder (dua tombol)
 
 Tidak ada hero image, illustration, atau background color selain putih. Tosca
 hanya di eyebrow teks + rule, bukan sebagai blok warna.
+
+## Kerangka Aplikasi (App Shell)
+
+Setiap layar tenant dirender di dalam `AppShell`
+(`src/components/layout/AppShell.tsx`). Tidak ada halaman yang membuat header
+atau pembungkus `min-h-screen` sendiri — itu sumber duplikasi dan inkonsistensi.
+
+```
+┌─────────────────────────────┐
+│ TopAppBar  (sticky, blur)   │  ← judul kontekstual + back + aksi
+├─────────────────────────────┤
+│                             │
+│  <main class="app-scroll">  │  ← HANYA area ini yang menggulir
+│                             │
+├─────────────────────────────┤
+│ BottomTabBar (mobile saja)  │  ← Katalog · Ajukan · Riwayat
+└─────────────────────────────┘
+```
+
+**Aturan:**
+
+- Hanya `.app-scroll` yang menggulir; bar tidak pernah bergeser. Ini yang
+  membedakan aplikasi dari dokumen.
+- Top app bar **wajib** punya judul. Layar tanpa judul membingungkan saat
+  dibuka sebagai PWA standalone (tidak ada title bar browser).
+- Tombol kembali hanya muncul bila layar memang punya induk (`back`).
+  Alur wizard memakai `back` yang memundurkan langkah, bukan riwayat browser.
+- Tab bar **hanya mobile** (`< 640px`). Di desktop navigasi ada di app bar.
+- Konten menyisakan ruang bawah `calc(var(--app-tabbar-h) + var(--safe-bottom))`
+  agar aksi terakhir tidak tertutup tab bar atau home indicator.
+
+### Sheet — pengganti dialog tengah
+
+Di mobile, dialog terpusat terasa asing. Satu kelas `.app-sheet` beradaptasi:
+
+| Viewport | Perilaku |
+|----------|----------|
+| `< 640px` | Menempel bawah, lebar penuh, radius hanya di tepi atas (`1.25rem`), maks `92dvh`, ada pegangan geser |
+| `≥ 640px` | Dialog terpusat, lebar `min(40rem, 100vw - 3rem)`, radius seragam, maks `85dvh` |
+
+Komponen `src/components/ui/Sheet.tsx` menangani kunci gulir latar, tutup dengan
+`Escape`/scrim, jebakan fokus, dan pemulihan fokus ke pemicu.
+
+### Target sentuh
+
+Setiap kontrol interaktif minimal **44×44 px** (`--tap-min`), mengikuti
+WCAG 2.2 AA (2.5.8). Umpan balik tekan memakai `.app-pressable` (`scale(0.97)`)
+karena `:hover` tidak ada di layar sentuh.
+
+### PWA
+
+- `display: standalone`, `theme_color #00918E`, `lang id`.
+- Ikon: `any` 192/512 + `maskable` 512 (safe zone 80%).
+- Service worker: shell + aset di-cache; **permintaan `/api/` tidak pernah
+  di-cache** — status pengajuan yang basi lebih buruk daripada gagal terang-terangan.
+- Naikkan `CACHE_VERSION` di `public/sw.js` setiap rilis yang mengubah aset shell.
 
 ## Komponen
 

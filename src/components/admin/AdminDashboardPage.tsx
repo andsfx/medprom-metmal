@@ -483,13 +483,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       {/* Modal detail/review */}
       {detail && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+          className="app-scrim"
           role="dialog"
           aria-modal="true"
           aria-labelledby="detail-title"
           onClick={(e) => { if (e.target === e.currentTarget) setDetail(null); }}
         >
-          <div className="ui-admin-card max-h-[85vh] w-full max-w-2xl overflow-auto p-6">
+          <div className="app-sheet overflow-auto p-6">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
@@ -1043,13 +1043,13 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
       {/* Form create/edit */}
       {form && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+          className="app-scrim"
           role="dialog"
           aria-modal="true"
           aria-labelledby="catalog-form-title"
           onClick={(e) => { if (e.target === e.currentTarget) setForm(null); }}
         >
-          <form onSubmit={saveCatalog} className="ui-admin-card max-h-[85vh] w-full max-w-2xl overflow-auto p-6">
+          <form onSubmit={saveCatalog} className="app-sheet overflow-auto p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 id="catalog-form-title" className="text-lg font-bold text-slate-900 dark:text-white">
                 {form.id ? 'Edit Media' : 'Tambah Media'}
@@ -1281,13 +1281,13 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
 
       {form && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-sm"
+          className="app-scrim"
           role="dialog"
           aria-modal="true"
           aria-labelledby="user-form-title"
           onClick={(e) => { if (e.target === e.currentTarget) setForm(null); }}
         >
-          <form onSubmit={saveUser} className="ui-admin-card w-full max-w-md p-6">
+          <form onSubmit={saveUser} className="app-sheet p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 id="user-form-title" className="text-lg font-bold text-slate-900 dark:text-white">
                 {form.id ? 'Edit User' : 'Tambah User'}

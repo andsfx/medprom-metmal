@@ -41,10 +41,10 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="ui-page flex min-h-screen items-center justify-center px-4">
+    <div className="app-shell items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-md bg-brand-primary-600">
+          <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] bg-brand-primary-600">
             <Megaphone className="h-6 w-6 text-white" aria-hidden="true" />
           </span>
           <h1 className="font-display mt-3 text-xl font-bold text-slate-900 dark:text-white">Login Staf</h1>

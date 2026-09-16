@@ -8,9 +8,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  AlertTriangle, ArrowLeft, CheckCircle2, ExternalLink, Info, Loader2,
+  AlertTriangle, CheckCircle2, ExternalLink, Info, Loader2,
   Send, Upload, X,
 } from 'lucide-react';
+import AppShell from '../layout/AppShell';
 import { fetchStatusByToken, submitRevision, uploadFile, errorsFromApiError } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
 import { STATUS_LABELS } from '../../constants/promo';
@@ -120,17 +121,8 @@ export default function SubmissionStatusPage() {
   }
 
   return (
-    <div className="ui-page min-h-screen">
-      <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
-        <div className="mb-6 flex items-center justify-between">
-          <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300">
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            Beranda
-          </Link>
-          <span className="text-xs font-semibold text-brand-primary-600 dark:text-brand-primary-400">
-            Metropolitan Mall Bekasi
-          </span>
-        </div>
+    <AppShell title="Status Pengajuan" back backTo="/riwayat">
+      <div className="mx-auto max-w-2xl px-4 py-5">
 
         {loading && (
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
@@ -460,6 +452,6 @@ export default function SubmissionStatusPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

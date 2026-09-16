@@ -10,6 +10,27 @@ verifikasi rilis 1.3.0 di produksi.
 
 ### Ditambahkan
 
+- **Platform kini PWA yang dapat dipasang** (`display: standalone`).
+  `public/manifest.webmanifest` (ikon any 192/512 + maskable 512, pintasan
+  Ajukan & Riwayat), `public/icon.svg` + PNG hasil `scripts/gen-icons.mjs`
+  (Playwright, tanpa dependensi baru), dan `public/sw.js` — service worker
+  tulis tangan: shell + aset di-cache, **permintaan `/api/` tidak pernah
+  di-cache** agar status pengajuan tidak pernah basi. Registrasi hanya di
+  produksi (`src/main.tsx`). Terverifikasi: SW `activated`, cache
+  `medprom-shell-v1` + `medprom-aset-v1` terisi, halaman tetap terbuka saat
+  offline, dan nol respons API tersimpan di cache.
+- **Kerangka aplikasi (app shell) untuk seluruh layar tenant.**
+  `src/components/layout/AppShell.tsx`, `TopAppBar.tsx` (judul kontekstual,
+  tombol kembali, terangkat saat konten menggulir), `BottomTabBar.tsx`
+  (Katalog · Ajukan · Riwayat, mobile saja), dan `src/components/ui/Sheet.tsx`
+  (bottom sheet di mobile, dialog terpusat di desktop; kunci gulir latar,
+  tutup via Escape/scrim, jebakan fokus, pemulihan fokus). 17 test mount baru
+  untuk keduanya.
+- **`scripts/preview-server.mjs`**: server pratinjau lokal yang menyajikan
+  `dist/` sekaligus mem-proksikan `/api/*` ke API produksi (meneruskan body,
+  cookie, dan `Set-Cookie`). Dipakai untuk verifikasi visual build produksi
+  tanpa melonggarkan whitelist CORS produksi.
+
 - **Kebijakan dokumentasi**: rencana/audit eksekusi disimpan di
   `docs/PLAN_YYYY-MM-DD_HH-mm.md`, dan setiap perubahan wajib dicatat di
   `[Unreleased]` (`AGENTS.md` § Commit & Rilis). Rencana pertama:
@@ -43,6 +64,27 @@ verifikasi rilis 1.3.0 di produksi.
 
 ### Diperbaiki
 
+- **Dua kelas CSS dipakai tetapi tidak pernah didefinisikan** — residu migrasi
+  `sed` pada redesign Editorial Kontras. `ui-alert-panel` (dipakai
+  `AdminDashboardPage` ×3 dan `PromoUploadWizard` ×1) dan `ui-empty-panel`
+  (dipakai `MySubmissionsPage`) tidak punya aturan, sehingga panel galat dan
+  panel kosong **tampil tanpa gaya apa pun di produksi**. Keduanya kini
+  didefinisikan (termasuk varian `.dark`).
+- **Tab bar bawah tetap tampil di desktop.** `display: grid` pada `.app-tabbar`
+  mengalahkan utilitas `sm:hidden` di komponen, sehingga tab bar muncul di layar
+  lebar. Penyembunyian dipindah ke `@media (min-width: 640px)` di CSS dan
+  `sm:hidden` dihapus agar hanya ada satu sumber kebenaran. Terverifikasi:
+  mobile `grid` + padding bawah 60px, desktop `none` + padding 0.
+- **CTA hero landing bentrok dengan tombol per kartu media.** Keduanya bernama
+  "Ajukan Materi", sehingga `getAllByRole('link', {name:/Ajukan Materi/i})[0]`
+  menangkap CTA hero dan asersi slug media gagal. CTA hero berganti nama
+  menjadi "Mulai Pengajuan" — label, bukan test, yang diperbaiki.
+- **Judul app bar menduplikasi heading langkah wizard.** Judul app bar dinamis
+  (`STEPS[step-1].label`) membuat "Kirim Materi" muncul sebagai dua heading
+  sekaligus. Judul app bar kini tetap "Ajukan Materi"; nama langkah hanya di
+  indikator progres.
+- **`### Diperbaiki` duplikat di `[Unreleased]`** digabung menjadi satu bagian.
+
 - `server/src/routes/admin.js` (`POST /admin/submissions/:id/delete`):
   komentar fallback diperjelas — *tautan* **atau** *legacy R2
   (`source_type='upload'` tanpa `drive_file_id`)* → lewati penghapusan Drive,
@@ -55,13 +97,32 @@ verifikasi rilis 1.3.0 di produksi.
 
 ### Diubah
 
+- **Arah desain bergeser dari Editorial Kontras ke App Produk** (keputusan
+  pengguna). Geist memimpin tipografi antarmuka; Fraunces dipertahankan sebagai
+  aksen display untuk judul dan angka. Radius naik (`--radius-card` `0.875rem`,
+  `--radius-control` `0.625rem`, chip pill, `--radius-sheet` `1.25rem`), dan
+  bayangan dipulihkan secara terbatas lewat tiga token elevasi
+  (`--elevation-bar|sheet|fab`) — hanya untuk elemen mengapung; kartu statis
+  tetap hairline. Token baru: `--tap-min` (44px), `--safe-top`/`--safe-bottom`.
+  Utilitas baru: `.app-shell`, `.app-scroll`, `.app-bar`, `.app-tabbar`,
+  `.app-tab`, `.app-pressable`, `.app-scrim`, `.app-sheet`, `.app-sheet-grip`.
+  `DESIGN.md` diperbarui mengikuti (bagian Kerangka Aplikasi + Permukaan &
+  Elevasi + Radius).
+- **Seluruh halaman tenant dimigrasikan ke app shell.** `PromoLandingPage`
+  (header sendiri dihapus; hero dipadatkan; katalog jadi fokus), 
+  `PromoUploadWizard` (header + stepper nomor diganti app bar dan indikator
+  progres bersegmen; tab bar disembunyikan agar alur fokus), `MySubmissionsPage`,
+  dan `SubmissionStatusPage`. `AdminLoginPage` memakai kanvas `.app-shell`.
+- **Tiga dialog tengah di dashboard staf menjadi sheet responsif.**
+  Detail/review pengajuan, form katalog, dan form pengguna kini memakai
+  `.app-scrim` + `.app-sheet`: menempel bawah di mobile (radius hanya tepi atas,
+  maks 92dvh), dialog terpusat 640px di desktop (radius seragam, maks 85dvh).
+
 - `deploy/vps/docker-compose.yml`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,
   `GOOGLE_REFRESH_TOKEN` dari wajib (`:?`) menjadi opsional (`:-`). Kanal unggah
   memang *fail-closed* (`POST /drive/upload` → `503`), jadi kredensial Drive
   yang belum diisi **tidak boleh** memblokir boot API. Instance tanpa kredensial
   Drive tetap melayani kanal tautan secara penuh.
-
-### Diperbaiki
 
 - **Perintah `rsync` pada panduan deploy menghapus seluruh backup DB.**
   `backup.sh` menulis ke `/opt/medprom/backups`, yaitu **di dalam** tujuan rsync

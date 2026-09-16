@@ -1,4 +1,4 @@
-/* Base styles — editorial direction (serif Fraunces + white surfaces). */
+/* Base styles — arah "App Produk" (Geist memimpin, Fraunces aksen display). */
 
 body {
   font-family: var(--font-body);
@@ -46,6 +46,22 @@ body {
   border-radius: var(--radius-card);
   border: 1px solid #fecaca;
   background: #fef2f2;
+}
+
+/* Panel galat — nama historis, dipakai wizard + dashboard (4 callsite). */
+.ui-alert-panel {
+  border-radius: var(--radius-card);
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+}
+
+/* Panel kosong — nama historis, dipakai halaman riwayat. */
+.ui-empty-panel {
+  border-radius: var(--radius-card);
+  border: 1px dashed #d6d3d1;
+  background: var(--surface-offset);
+  text-align: center;
+  color: var(--ink-muted);
 }
 
 /* ─── Buttons ─── */
@@ -177,4 +193,188 @@ body {
 
 .dark .ui-rule {
   border-color: #334155;
+}
+
+/* ═══ App shell — kerangka aplikasi (bar, tab bar, sheet, FAB) ═══ */
+
+/* Kanvas app: mengunci tinggi viewport agar hanya area konten yang menggulir,
+ * seperti aplikasi asli — bukan seluruh dokumen. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--surface-page);
+}
+
+/* Area konten yang menggulir; menyisakan ruang untuk tab bar + safe area. */
+.app-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: calc(var(--app-tabbar-h) + var(--safe-bottom));
+}
+
+@media (min-width: 640px) {
+  /* Tab bar hanya mobile — di desktop ruang bawah tidak perlu disisakan. */
+  .app-scroll {
+    padding-bottom: 0;
+  }
+}
+
+/* Top app bar — sticky, buram, terangkat saat konten lewat di belakangnya. */
+.app-bar {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  height: calc(var(--app-bar-h) + var(--safe-top));
+  padding-top: var(--safe-top);
+  padding-inline: 0.75rem;
+  border-bottom: var(--rule);
+  background: color-mix(in srgb, var(--surface-page) 85%, transparent);
+  backdrop-filter: blur(12px) saturate(180%);
+}
+
+.app-bar[data-elevated='true'] {
+  border-bottom-color: transparent;
+  box-shadow: var(--elevation-bar);
+}
+
+/* Bottom tab bar — navigasi utama di mobile. */
+.app-tabbar {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 40;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  height: calc(var(--app-tabbar-h) + var(--safe-bottom));
+  padding-bottom: var(--safe-bottom);
+  border-top: var(--rule);
+  background: color-mix(in srgb, var(--surface-page) 92%, transparent);
+  backdrop-filter: blur(12px) saturate(180%);
+}
+
+/* Tab bar bawah hanya untuk mobile. Aturan ini ada di CSS (bukan `sm:hidden`
+ * di komponen) karena `display: grid` di atas mengalahkan utilitas Tailwind. */
+@media (min-width: 640px) {
+  .app-tabbar {
+    display: none;
+  }
+}
+
+.app-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  min-height: var(--tap-min);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--ink-muted);
+  transition: color 150ms ease;
+}
+
+.app-tab[aria-current='page'] {
+  color: var(--brand-tosca-600);
+  font-weight: 600;
+}
+
+/* Umpan balik sentuh — pengganti :hover yang tidak ada di layar sentuh. */
+.app-pressable {
+  -webkit-tap-highlight-color: transparent;
+  transition: transform 120ms ease, background-color 150ms ease;
+}
+
+.app-pressable:active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-pressable:active {
+    transform: none;
+  }
+}
+
+/* Sheet — bottom sheet di mobile, dialog terpusat di desktop. */
+.app-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgb(17 21 26 / 0.45);
+  backdrop-filter: blur(2px);
+}
+
+.app-sheet {
+  position: fixed;
+  inset-inline: 0;
+  bottom: 0;
+  z-index: 51;
+  max-height: 92dvh;
+  display: flex;
+  flex-direction: column;
+  border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  padding-bottom: var(--safe-bottom);
+  background: var(--surface-card);
+  box-shadow: var(--elevation-sheet);
+}
+
+/* Pegangan geser — penanda visual bahwa sheet bisa ditutup. */
+.app-sheet-grip {
+  width: 2.25rem;
+  height: 0.25rem;
+  margin: 0.625rem auto 0;
+  border-radius: 9999px;
+  background: #d6d3d1;
+}
+
+@media (min-width: 640px) {
+  .app-sheet {
+    inset: 50% auto auto 50%;
+    translate: -50% -50%;
+    width: min(40rem, calc(100vw - 3rem));
+    max-height: 85dvh;
+    border-radius: var(--radius-card);
+    padding-bottom: 0;
+  }
+
+  .app-sheet-grip {
+    display: none;
+  }
+}
+
+/* Dark mode app shell (konsol staf). */
+.dark .app-shell {
+  background: #0f172a;
+}
+
+.dark .app-bar,
+.dark .app-tabbar {
+  border-color: #334155;
+  background: rgb(15 23 42 / 0.9);
+}
+
+.dark .app-sheet {
+  background: #1e293b;
+}
+
+.dark .app-sheet-grip {
+  background: #475569;
+}
+
+.dark .ui-alert-panel {
+  border-color: rgb(239 68 68 / 0.3);
+  background: rgb(239 68 68 / 0.1);
+}
+
+.dark .ui-empty-panel {
+  border-color: #475569;
+  background: rgb(30 41 59 / 0.5);
+  color: #94a3b8;
 }

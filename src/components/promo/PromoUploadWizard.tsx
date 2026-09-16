@@ -21,6 +21,7 @@ import { getDeviceFingerprint } from '../../utils/fingerprint';
 import { MAX_FILE_BYTES, MIME_LABELS, CATEGORY_LABELS, MATERIAL_TYPES, isUploadModeEnabled } from '../../constants/promo';
 import { checkInstallationDate, toIsoDate, describeLeadTime, parseLeadTime, parseMaterialEmail } from '../../utils/leadTime';
 import { TenantSearchSelect } from './TenantSearchSelect';
+import AppShell from '../layout/AppShell';
 import type { PromoMediaType, TenantOption } from '../../types/promo';
 
 type Step = 1 | 2 | 3;
@@ -361,8 +362,8 @@ export default function PromoUploadWizard() {
   // ─── Layar sukses ───
   if (submitState === 'success') {
     return (
-      <div className="ui-page min-h-screen">
-        <div className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
+      <AppShell title="Pengajuan Terkirim" hideTabBar>
+        <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="ui-card p-8 text-center">
             <CheckCircle2 className="mx-auto h-14 w-14 text-green-600 dark:text-green-400" aria-hidden="true" />
             <h1 className="font-display mt-4 text-2xl font-bold text-slate-900 dark:text-white">Pengajuan Terkirim!</h1>
@@ -397,53 +398,45 @@ export default function PromoUploadWizard() {
             </div>
           </div>
         </div>
-      </div>
+      </AppShell>
     );
   }
 
   return (
-    <div className="ui-page min-h-screen">
-      <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
-        {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <button
-            type="button"
-            onClick={() => (step === 1 ? navigate('/') : setStep((s) => (s === 3 ? 2 : 1) as Step))}
-            className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+    <AppShell
+      title="Ajukan Materi"
+      back
+      backTo={step === 1 ? '/' : undefined}
+      hideTabBar
+    >
+      <div className="mx-auto max-w-2xl px-4 py-5">
+        {/* Progres langkah — indikator tipis khas aplikasi berlangkah */}
+        <nav className="mb-6" aria-label="Langkah pengajuan">
+          <div className="flex items-baseline justify-between">
+            <p className="text-sm font-semibold text-slate-900 dark:text-white">
+              {STEPS[step - 1]?.label}
+            </p>
+            <p className="text-xs ui-text-muted tabular-nums">
+              Langkah {step} dari {STEPS.length}
+            </p>
+          </div>
+          <div
+            className="mt-2 flex gap-1.5"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuemax={STEPS.length}
+            aria-valuenow={step}
+            aria-label="Progres pengajuan"
           >
-            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
-            {step === 1 ? 'Beranda' : 'Sebelumnya'}
-          </button>
-          <span className="text-xs font-semibold text-brand-primary-600 dark:text-brand-primary-400">
-            Metropolitan Mall Bekasi
-          </span>
-        </div>
-
-        {/* Stepper — langkah bernomor editorial */}
-        <nav className="mb-8 flex items-center gap-4 sm:gap-6" aria-label="Langkah pengajuan">
-          {STEPS.map((s, i) => {
-            const n = (i + 1) as Step;
-            const active = n === step;
-            const done = n < step;
-            return (
-              <div key={s.label} className={`flex items-center gap-2 transition ${active || done ? '' : 'opacity-40'}`}>
-                <span
-                  aria-current={active ? 'step' : undefined}
-                  className={`ui-number shrink-0 text-2xl sm:text-3xl tabular-nums ${
-                    done ? '' : active ? '' : ''
-                  }`}
-                >
-                  {String(n).padStart(2, '0')}
-                </span>
-                <span className={`hidden text-xs font-semibold tracking-wide uppercase sm:inline ${active ? 'text-slate-900' : 'text-slate-400'}`}>
-                  {s.label}
-                </span>
-                {i < STEPS.length - 1 && (
-                  <span className="hidden text-sm text-slate-300 sm:inline" aria-hidden="true">·</span>
-                )}
-              </div>
-            );
-          })}
+            {STEPS.map((s, i) => (
+              <span
+                key={s.label}
+                className={`h-1 flex-1 rounded-full transition-colors ${
+                  i < step ? 'bg-brand-primary-600' : 'bg-stone-200 dark:bg-slate-700'
+                }`}
+              />
+            ))}
+          </div>
         </nav>
 
         {loading && (
@@ -1017,7 +1010,7 @@ export default function PromoUploadWizard() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }
 

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronDown, MapPin, Ruler, Tag, ArrowRight, AlertTriangle } from 'lucide-react';
 import { fetchMediaTypes } from '../../utils/promoApi';
+import AppShell from '../layout/AppShell';
 import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../constants/promo';
 import type { PromoMediaType } from '../../types/promo';
 
@@ -112,48 +113,42 @@ export default function PromoLandingPage() {
   }, []);
 
   return (
-    <div className="ui-page min-h-screen">
-      {/* Header */}
-      <header className="ui-chrome sticky top-0 z-40 border-b">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
-          <div className="flex items-center gap-2.5">
-            <span className="font-display text-lg font-bold text-slate-900">Media Promosi</span>
-            <span className="hidden text-xs ui-text-muted sm:inline">Metropolitan Mall Bekasi</span>
-          </div>
-          <nav className="flex items-center gap-3 text-sm font-medium" aria-label="Navigasi">
-            <Link to="/riwayat" className="text-slate-600 transition hover:text-brand-primary-700 dark:text-slate-300">Riwayat</Link>
-            <Link to="/login" className="text-slate-600 transition hover:text-brand-primary-700 dark:text-slate-300">Login Staf</Link>
-          </nav>
-        </div>
-      </header>
-
-      {/* Hero */}
-      <section className="mx-auto max-w-6xl px-4 pb-12 pt-14 sm:pt-20">
-        <p className="text-xs font-bold uppercase tracking-[0.3em] text-brand-primary-600">
+    <AppShell
+      actions={
+        <Link
+          to="/login"
+          className="app-pressable ui-focus-ring rounded-full px-3 py-2 text-sm font-medium text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300"
+        >
+          Login Staf
+        </Link>
+      }
+    >
+      {/* Hero — padat, langsung ke aksi (bukan halaman pembuka panjang) */}
+      <section className="mx-auto max-w-6xl px-4 pb-6 pt-6 sm:pb-10 sm:pt-10">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-primary-600">
           Tenant Relations · 2026
         </p>
-        <h1 className="font-display mt-4 text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-6xl">
-          Ajukan Materi<br />Promosi Tenant Anda
+        <h1 className="font-display mt-2 text-2xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
+          Ajukan Materi Promosi Tenant Anda
         </h1>
-        <p className="ui-text-muted mt-6 max-w-lg text-sm leading-relaxed sm:text-base">
+        <p className="ui-text-muted mt-2 max-w-lg text-sm leading-relaxed">
           Kirim materi media promosi — spanduk, LED, videotron, hingga media sosial —
-          langsung ke Tim Tenant Relations. Spesifikasi tiap media tercantum jelas dan
-          status pengajuan Anda bisa dipantau.
+          langsung ke Tim Tenant Relations. Status pengajuan bisa dipantau kapan saja.
         </p>
-        <div className="mt-8 flex flex-wrap gap-3">
+        <div className="mt-5 flex flex-wrap gap-2.5">
+          <Link
+            to="/ajukan"
+            className="ui-btn-primary app-pressable inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 py-3 text-sm font-semibold"
+          >
+            Mulai Pengajuan
+            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+          </Link>
           <a
             href="#katalog"
-            className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-semibold transition"
+            className="ui-btn-secondary app-pressable inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 py-3 text-sm font-medium"
           >
-            Lihat Katalog Media
-            <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            Lihat Katalog
           </a>
-          <Link
-            to="/riwayat"
-            className="ui-btn-secondary inline-flex items-center gap-2 rounded-md px-6 py-3 text-sm font-medium transition"
-          >
-            Cek Status Pengajuan
-          </Link>
         </div>
       </section>
 
@@ -229,6 +224,6 @@ export default function PromoLandingPage() {
           &copy; {new Date().getFullYear()} Metropolitan Mall Bekasi — Metland Coloring Life
         </p>
       </footer>
-    </div>
+    </AppShell>
   );
 }
