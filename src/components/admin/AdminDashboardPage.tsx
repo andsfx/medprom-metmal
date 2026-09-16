@@ -1396,7 +1396,7 @@ export default function AdminDashboardPage() {
               <Megaphone className="h-5 w-5 text-white" aria-hidden="true" />
             </span>
             <div className="leading-tight">
-              <p className="text-sm font-bold text-slate-900 dark:text-white">Media Promosi — Admin</p>
+              <h1 className="text-sm font-bold text-slate-900 dark:text-white">Media Promosi — Admin</h1>
               <p className="text-[11px] ui-text-muted">Metropolitan Mall Bekasi</p>
             </div>
           </div>

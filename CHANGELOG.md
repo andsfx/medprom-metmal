@@ -63,6 +63,26 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Wizard tidak menggulir ke atas saat pindah langkah.** Pengguna yang
+  menggulir jauh di langkah 1 mendarat di tengah halaman pada langkah 2 —
+  terukur judul langkah 2 berada **639px di atas layar**, sehingga pengguna
+  tidak melihat apa yang harus diisi. Fokus juga tetap di `BODY`, jadi pembaca
+  layar tidak diberi tahu langkah berganti. Kini setiap perpindahan langkah
+  menggulir area konten ke atas dan memindahkan fokus ke judul langkah.
+- **Dua `<h1>` tampil bersamaan di wizard.** Judul app bar dan judul langkah
+  sama-sama `<h1>`, dan `/admin` justru tidak punya `<h1>` sama sekali.
+  Hierarki diseragamkan: judul app bar adalah `<h1>` (nama layar), judul
+  konten turun menjadi `<h2>`. Terverifikasi tiap layar kini tepat satu `<h1>`.
+- **Pesan error field tidak terhubung ke field-nya.** `aria-describedby`
+  tidak dipakai sama sekali, sehingga pembaca layar mengumumkan field tidak
+  valid tetapi tidak pernah membacakan alasannya. Delapan field kini menautkan
+  `aria-describedby` ke `<p id="err-*" role="alert">`.
+- **Safari iOS memperbesar halaman saat input difokuskan.** Seluruh input
+  berukuran 14px, di bawah ambang 16px yang memicu zoom otomatis — keyboard
+  muncul dengan halaman sudah ter-zoom. Kontrol isian kini 16px pada layar
+  `< 640px`, tanpa memakai `maximum-scale=1` (yang akan melanggar WCAG karena
+  memblokir pinch-zoom).
+
 - **Kerangka aplikasi tidak benar-benar mengunci gulir** — dokumen ikut
   menggulir dan app bar bergeser saat konten digulir (inti klaim "seperti
   aplikasi"). Akar masalahnya bukan `min-height`, melainkan keturunan

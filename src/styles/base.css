@@ -37,6 +37,19 @@ body {
   min-height: var(--tap-min);
 }
 
+/* Safari iOS memperbesar halaman saat input difokuskan bila font-size-nya di
+ * bawah 16px — keyboard muncul dengan halaman sudah ter-zoom, lalu tidak
+ * kembali. Dinaikkan hanya pada layar kecil, dan hanya untuk kontrol isian
+ * (bukan tombol/tautan ber-`.ui-control`), supaya kepadatan desktop tetap.
+ * Pinch-zoom tidak diblokir: memakai `maximum-scale=1` akan melanggar WCAG. */
+@media (max-width: 639px) {
+  input.ui-control,
+  select.ui-control,
+  textarea.ui-control {
+    font-size: 1rem; /* 16px */
+  }
+}
+
 .ui-empty {
   border-radius: var(--radius-card);
   border: 1px dashed #d6d3d1;

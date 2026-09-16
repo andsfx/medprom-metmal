@@ -152,9 +152,9 @@ export default function SubmissionStatusPage() {
                     <p className="font-mono text-sm font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
                       {data.submission.submission_number}
                     </p>
-                    <h1 className="font-display mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                    <h2 className="font-display mt-1 text-lg font-bold text-slate-900 dark:text-white">
                       {data.submission.material_title || data.submission.media_type_slug}
-                    </h1>
+                    </h2>
                     <p className="mt-0.5 text-xs ui-text-muted">
                       {data.submission.tenant_name}
                       {data.submission.unit_number ? ` · Unit ${data.submission.unit_number}` : ''}

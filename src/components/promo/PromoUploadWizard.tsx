@@ -79,6 +79,9 @@ export default function PromoUploadWizard() {
   const [loadError, setLoadError] = useState(false);
 
   const [step, setStep] = useState<Step>(1);
+  const stepHeadingRef = useRef<HTMLHeadingElement>(null);
+  const lewatiResetPertama = useRef(true);
+
   const [selectedSlug, setSelectedSlug] = useState('');
   const [rulesOpen, setRulesOpen] = useState(false);
 
@@ -104,6 +107,23 @@ export default function PromoUploadWizard() {
   const [fileError, setFileError] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [linkError, setLinkError] = useState('');
+
+  // Setiap pindah langkah: gulir kembali ke atas dan pindahkan fokus ke judul
+  // langkah baru. Tanpa ini, pengguna yang menggulir jauh di langkah
+  // sebelumnya mendarat di tengah halaman dan tidak melihat judul langkahnya
+  // (pernah terukur: judul langkah 2 berada 639px di atas layar).
+  useEffect(() => {
+    if (lewatiResetPertama.current) {
+      lewatiResetPertama.current = false;
+      return;
+    }
+    const judul = stepHeadingRef.current;
+    if (!judul) return;
+    const area = judul.closest('.app-scroll');
+    if (area) area.scrollTop = 0;
+    judul.focus();
+  }, [step]);
+
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
@@ -366,7 +386,7 @@ export default function PromoUploadWizard() {
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="ui-card p-8 text-center">
             <CheckCircle2 className="mx-auto h-14 w-14 text-green-600 dark:text-green-400" aria-hidden="true" />
-            <h1 className="font-display mt-4 text-2xl font-bold text-slate-900 dark:text-white">Pengajuan Terkirim!</h1>
+            <h2 className="font-display mt-4 text-2xl font-bold text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
             <p className="ui-text-muted mt-2 text-sm">
               Materi <span className="font-semibold">{selectedMedia?.name}</span> dari tenant{' '}
               <span className="font-semibold">{tenant?.name}</span> sudah kami terima.
@@ -457,7 +477,7 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 1: Pilih media ─── */}
             {step === 1 && (
               <div className="p-5 sm:p-6">
-                <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Pilih Jenis Media Promosi</h1>
+                <h2 ref={stepHeadingRef} tabIndex={-1} className="font-display text-xl font-bold text-slate-900 focus:outline-none dark:text-white">Pilih Jenis Media Promosi</h2>
                 <p className="ui-text-muted mt-1 text-sm">Pilih media tempat materi Anda akan dipasang.</p>
 
                 <div className="mt-5 space-y-2">
@@ -530,7 +550,7 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 2: Data tenant ─── */}
             {step === 2 && (
               <div className="p-5 sm:p-6">
-                <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Data Tenant & PIC</h1>
+                <h2 ref={stepHeadingRef} tabIndex={-1} className="font-display text-xl font-bold text-slate-900 focus:outline-none dark:text-white">Data Tenant &amp; PIC</h2>
                 <p className="ui-text-muted mt-1 text-sm">
                   Materi untuk <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedMedia?.name}</span>.
                 </p>
@@ -568,8 +588,9 @@ export default function PromoUploadWizard() {
                         onChange={(e) => { setPicName(e.target.value); setFieldErrors((er) => ({ ...er, pic_name: '' })); }}
                         className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.pic_name ? true : undefined}
+                        aria-describedby={fieldErrors.pic_name ? 'err-pic_name' : undefined}
                       />
-                      {fieldErrors.pic_name && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_name}</p>}
+                      {fieldErrors.pic_name && <p id="err-pic_name" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_name}</p>}
                     </div>
                     <div>
                       <label htmlFor="pic-phone" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -586,8 +607,9 @@ export default function PromoUploadWizard() {
                         onChange={(e) => { setPicPhone(e.target.value); setFieldErrors((er) => ({ ...er, pic_phone: '' })); }}
                         className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_phone ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.pic_phone ? true : undefined}
+                        aria-describedby={fieldErrors.pic_phone ? 'err-pic_phone' : undefined}
                       />
-                      {fieldErrors.pic_phone && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_phone}</p>}
+                      {fieldErrors.pic_phone && <p id="err-pic_phone" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_phone}</p>}
                     </div>
                   </div>
 
@@ -627,8 +649,9 @@ export default function PromoUploadWizard() {
                       onChange={(e) => { setCampaignName(e.target.value); setFieldErrors((er) => ({ ...er, campaign_name: '' })); }}
                       className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.campaign_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.campaign_name ? true : undefined}
+                      aria-describedby={fieldErrors.campaign_name ? 'err-campaign_name' : undefined}
                     />
-                    {fieldErrors.campaign_name && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.campaign_name}</p>}
+                    {fieldErrors.campaign_name && <p id="err-campaign_name" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.campaign_name}</p>}
                   </div>
 
                   <div>
@@ -644,8 +667,9 @@ export default function PromoUploadWizard() {
                       onChange={(e) => { setMaterialTitle(e.target.value); setFieldErrors((er) => ({ ...er, material_title: '' })); }}
                       className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_title ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.material_title ? true : undefined}
+                      aria-describedby={fieldErrors.material_title ? 'err-material_title' : undefined}
                     />
-                    {fieldErrors.material_title && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_title}</p>}
+                    {fieldErrors.material_title && <p id="err-material_title" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_title}</p>}
                   </div>
 
                   <div>
@@ -661,8 +685,9 @@ export default function PromoUploadWizard() {
                       onChange={(e) => { setMaterialDescription(e.target.value); setFieldErrors((er) => ({ ...er, material_description: '' })); }}
                       className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_description ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.material_description ? true : undefined}
+                      aria-describedby={fieldErrors.material_description ? 'err-material_description' : undefined}
                     />
-                    {fieldErrors.material_description && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_description}</p>}
+                    {fieldErrors.material_description && <p id="err-material_description" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_description}</p>}
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -676,11 +701,12 @@ export default function PromoUploadWizard() {
                         onChange={(e) => { setMaterialType(e.target.value); setFieldErrors((er) => ({ ...er, material_type: '' })); }}
                         className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_type ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.material_type ? true : undefined}
+                        aria-describedby={fieldErrors.material_type ? 'err-material_type' : undefined}
                       >
                         <option value="">Pilih jenis materi…</option>
                         {MATERIAL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                       </select>
-                      {fieldErrors.material_type && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_type}</p>}
+                      {fieldErrors.material_type && <p id="err-material_type" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_type}</p>}
                     </div>
                     <div>
                       <label htmlFor="media-target" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -695,8 +721,9 @@ export default function PromoUploadWizard() {
                         onChange={(e) => { setMediaTarget(e.target.value); setFieldErrors((er) => ({ ...er, media_target: '' })); }}
                         className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.media_target ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.media_target ? true : undefined}
+                        aria-describedby={fieldErrors.media_target ? 'err-media_target' : undefined}
                       />
-                      {fieldErrors.media_target && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media_target}</p>}
+                      {fieldErrors.media_target && <p id="err-media_target" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media_target}</p>}
                     </div>
                   </div>
 
@@ -765,7 +792,7 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 3: Kirim materi (unggah / tautan) ─── */}
             {step === 3 && selectedMedia && (
               <div className="p-5 sm:p-6">
-                <h1 className="font-display text-xl font-bold text-slate-900 dark:text-white">Kirim Materi</h1>
+                <h2 ref={stepHeadingRef} tabIndex={-1} className="font-display text-xl font-bold text-slate-900 focus:outline-none dark:text-white">Kirim Materi</h2>
                 <p className="ui-text-muted mt-1 text-sm">
                   Kirim materi untuk <span className="font-semibold">{selectedMedia.name}</span>
                   {formatsLabel && <> (format {formatsLabel}{selectedMedia.size_spec ? ` · ukuran ${selectedMedia.size_spec}` : ''})</>}.
@@ -863,9 +890,10 @@ export default function PromoUploadWizard() {
                       onChange={(e) => { setLinkUrl(e.target.value); setLinkError(''); setFieldErrors((er) => ({ ...er, link_url: '' })); }}
                       className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${linkError || fieldErrors.link_url ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={linkError || fieldErrors.link_url ? true : undefined}
+                      aria-describedby={linkError || fieldErrors.link_url ? 'err-link_url' : undefined}
                     />
                     {(linkError || fieldErrors.link_url) && (
-                      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                      <p id="err-link_url" className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
                         <X className="h-3.5 w-3.5" aria-hidden="true" />
                         {linkError || fieldErrors.link_url}
                       </p>
