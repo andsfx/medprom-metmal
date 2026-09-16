@@ -406,7 +406,7 @@ export default function PromoUploadWizard() {
     <AppShell
       title="Ajukan Materi"
       back
-      backTo={step === 1 ? '/' : undefined}
+      onBack={() => (step === 1 ? navigate('/') : setStep((s) => (s === 3 ? 2 : 1) as Step))}
       hideTabBar
     >
       <div className="mx-auto max-w-2xl px-4 py-5">

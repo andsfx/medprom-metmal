@@ -16,13 +16,16 @@ interface TopAppBarProps {
   back?: boolean;
   /** Tujuan tombol kembali; bawaan: satu langkah mundur di riwayat. */
   backTo?: string;
+  /** Handler kembali kustom. Dipakai alur berlangkah agar mundur ke langkah
+   * sebelumnya, bukan keluar dari alur lewat riwayat peramban. */
+  onBack?: () => void;
   /** Slot aksi di kanan bar. */
   actions?: ReactNode;
   /** Elemen yang digulir untuk memicu elevasi; bawaan window. */
   scrollTargetId?: string;
 }
 
-export default function TopAppBar({ title, back, backTo, actions, scrollTargetId }: TopAppBarProps) {
+export default function TopAppBar({ title, back, backTo, onBack, actions, scrollTargetId }: TopAppBarProps) {
   const navigate = useNavigate();
   const [elevated, setElevated] = useState(false);
 
@@ -41,7 +44,7 @@ export default function TopAppBar({ title, back, backTo, actions, scrollTargetId
       {back && (
         <button
           type="button"
-          onClick={() => (backTo ? navigate(backTo) : navigate(-1))}
+          onClick={() => (onBack ? onBack() : backTo ? navigate(backTo) : navigate(-1))}
           className="app-pressable ui-focus-ring -ml-1 inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-700 hover:bg-[var(--surface-hover)] dark:text-slate-200"
           aria-label="Kembali"
         >

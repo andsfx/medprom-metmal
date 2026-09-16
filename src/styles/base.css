@@ -223,6 +223,12 @@ body {
   }
 }
 
+/* Layar tanpa tab bar (alur berlangkah) tidak menyisakan ruang untuknya,
+ * cukup safe area perangkat. */
+.app-scroll[data-tabbar='off'] {
+  padding-bottom: var(--safe-bottom);
+}
+
 /* Top app bar — sticky, buram, terangkat saat konten lewat di belakangnya. */
 .app-bar {
   position: sticky;

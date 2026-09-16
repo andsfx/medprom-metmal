@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 import AppShell from '../AppShell';
@@ -60,5 +60,24 @@ describe('AppShell', () => {
     renderShell('/ajukan');
     expect(screen.getByRole('link', { name: 'Katalog' })).not.toHaveAttribute('aria-current');
     expect(screen.getByRole('link', { name: 'Ajukan' })).toHaveAttribute('aria-current', 'page');
+  });
+
+  it('onBack → tombol kembali memakai handler kustom, bukan riwayat peramban', () => {
+    // Regresi: alur berlangkah harus mundur ke langkah sebelumnya, bukan
+    // keluar dari alur lewat navigate(-1).
+    let dipanggil = 0;
+    renderShell('/ajukan', { back: true, onBack: () => { dipanggil += 1; } });
+    fireEvent.click(screen.getByRole('button', { name: 'Kembali' }));
+    expect(dipanggil).toBe(1);
+  });
+
+  it('tanpa tab bar → area gulir tidak menyisakan ruang tab bar', () => {
+    renderShell('/ajukan', { hideTabBar: true });
+    expect(document.querySelector('.app-scroll')).toHaveAttribute('data-tabbar', 'off');
+  });
+
+  it('dengan tab bar → area gulir ditandai aktif', () => {
+    renderShell();
+    expect(document.querySelector('.app-scroll')).toHaveAttribute('data-tabbar', 'on');
   });
 });

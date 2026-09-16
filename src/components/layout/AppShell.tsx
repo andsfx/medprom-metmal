@@ -19,6 +19,8 @@ interface AppShellProps {
   back?: boolean;
   /** Tujuan tombol kembali. */
   backTo?: string;
+  /** Handler kembali kustom (mis. memundurkan langkah wizard). */
+  onBack?: () => void;
   /** Aksi kanan app bar. */
   actions?: ReactNode;
   /** Sembunyikan tab bar (mis. alur wizard yang fokus). */
@@ -30,6 +32,7 @@ export default function AppShell({
   title,
   back,
   backTo,
+  onBack,
   actions,
   hideTabBar,
 }: AppShellProps) {
@@ -39,6 +42,7 @@ export default function AppShell({
         title={title}
         back={back}
         backTo={backTo}
+        onBack={onBack}
         actions={actions}
         scrollTargetId={SCROLL_ID}
       />
