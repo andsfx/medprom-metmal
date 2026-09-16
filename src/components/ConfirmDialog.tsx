@@ -50,15 +50,15 @@ export function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, subj
       aria-labelledby="confirm-dialog-title"
       onClick={(e) => { if (e.target === e.currentTarget && !isSubmitting) onClose(); }}
     >
-      <div className="ui-dashboard-surface w-full max-w-md p-6">
+      <div className="ui-card w-full max-w-md p-6">
         <div className="mb-5 flex items-start justify-between">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-900/30">
+          <div className="flex h-12 w-12 items-center justify-center rounded-md bg-red-100 dark:bg-red-900/30">
             <AlertTriangle className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
           </div>
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-70 dark:hover:bg-slate-700"
+            className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 disabled:cursor-not-allowed disabled:opacity-70 dark:hover:bg-slate-700"
             aria-label="Tutup"
           >
             <X className="h-4 w-4" />
@@ -69,7 +69,7 @@ export function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, subj
         <p className="mt-2 text-sm leading-relaxed text-slate-600 dark:text-slate-300">{message}</p>
 
         {subject && (
-          <p className="mt-4 rounded-xl border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-800 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-200">
+          <p className="mt-4 rounded-md border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-800 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-200">
             {subject}
           </p>
         )}
@@ -78,14 +78,14 @@ export function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, subj
           <button
             onClick={onClose}
             disabled={isSubmitting}
-            className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
+            className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700"
           >
             {cancelLabel}
           </button>
           <button
             onClick={handleConfirm}
             disabled={isSubmitting}
-            className="inline-flex items-center justify-center gap-2 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+            className="inline-flex items-center justify-center gap-2 rounded-md bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {isSubmitting ? 'Memproses…' : confirmLabel}
           </button>

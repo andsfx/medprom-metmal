@@ -45,7 +45,7 @@ export default function MySubmissionsPage() {
   }, []);
 
   return (
-    <div className="ui-dashboard-page min-h-screen">
+    <div className="ui-page min-h-screen">
       <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
         <div className="mb-6 flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300">
@@ -57,7 +57,7 @@ export default function MySubmissionsPage() {
           </span>
         </div>
 
-        <div className="ui-dashboard-surface overflow-hidden">
+        <div className="ui-card overflow-hidden">
           <div className="border-b border-slate-100 bg-gradient-to-r from-brand-primary-50/60 to-transparent px-5 py-4 dark:border-slate-700 dark:from-brand-primary-950/30">
             <h1 className="font-display text-lg font-bold text-slate-900 dark:text-white">Riwayat Pengajuan</h1>
             <p className="mt-0.5 text-xs ui-text-muted">
@@ -83,7 +83,7 @@ export default function MySubmissionsPage() {
               <div className="ui-empty-panel px-6 py-10">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada pengajuan dari perangkat ini.</p>
                 <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda dari halaman beranda.</p>
-                <Link to="/" className="ui-btn-primary mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition">
+                <Link to="/" className="ui-btn-primary mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
                   Ajukan Materi
                 </Link>
               </div>
@@ -92,7 +92,7 @@ export default function MySubmissionsPage() {
             {!loading && rows.length > 0 && (
               <ul className="space-y-3">
                 {rows.map((r) => (
-                  <li key={r.id} className="ui-dashboard-control rounded-xl p-4">
+                  <li key={r.id} className="ui-control rounded-md p-4">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
@@ -108,7 +108,7 @@ export default function MySubmissionsPage() {
                       <StatusBadge status={r.status} />
                     </div>
                     {r.review_notes && (
-                      <p className="mt-3 rounded-lg bg-slate-50 p-2.5 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
+                      <p className="mt-3 rounded-md bg-slate-50 p-2.5 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
                         <span className="font-semibold">Catatan TR: </span>{r.review_notes}
                       </p>
                     )}

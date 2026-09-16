@@ -41,10 +41,10 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <div className="ui-dashboard-page flex min-h-screen items-center justify-center px-4">
+    <div className="ui-page flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
-          <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-primary-600">
+          <span className="flex h-12 w-12 items-center justify-center rounded-md bg-brand-primary-600">
             <Megaphone className="h-6 w-6 text-white" aria-hidden="true" />
           </span>
           <h1 className="font-display mt-3 text-xl font-bold text-slate-900 dark:text-white">Login Staf</h1>
@@ -53,7 +53,7 @@ export default function AdminLoginPage() {
 
         <form
           onSubmit={onSubmit}
-          className={`ui-dashboard-surface p-6 ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}
+          className={`ui-admin-card p-6 ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}
           noValidate
         >
           <div className="space-y-4">
@@ -65,7 +65,7 @@ export default function AdminLoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                 placeholder="nama@metmal.co.id"
                 required
               />
@@ -79,7 +79,7 @@ export default function AdminLoginPage() {
                   autoComplete="current-password"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
-                  className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 pr-10 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2.5 pr-10 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                   required
                 />
                 <button
@@ -95,7 +95,7 @@ export default function AdminLoginPage() {
           </div>
 
           {error && (
-            <p className="mt-4 flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-300" role="alert">
+            <p className="mt-4 flex items-center gap-1.5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-xs font-medium text-red-700 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-300" role="alert">
               <Lock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {error}
             </p>
@@ -104,7 +104,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-semibold transition"
+            className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-4 py-3 text-sm font-semibold transition"
           >
             {loading
               ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -116,7 +116,7 @@ export default function AdminLoginPage() {
         {/* Petunjuk kredensial tahap pengembangan — matikan dengan
             VITE_PROMO_SHOW_DEV_LOGIN='0' sebelum dipakai publik. */}
         {isDevLoginHintEnabled() && (
-          <div className="ui-dashboard-surface mt-4 border border-amber-300/70 p-4 dark:border-amber-600/40">
+          <div className="ui-admin-card mt-4 border border-amber-300/70 p-4 dark:border-amber-600/40">
             <p className="flex items-center gap-1.5 text-xs font-semibold text-amber-800 dark:text-amber-300">
               <KeyRound className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               Akun demo (tahap pengembangan)
@@ -137,7 +137,7 @@ export default function AdminLoginPage() {
                       setPw(DEV_LOGIN_PASSWORD);
                       setError('');
                     }}
-                    className="ui-dashboard-control w-full rounded-lg px-2.5 py-2 text-left transition hover:border-brand-primary-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500"
+                    className="ui-control w-full rounded-md px-2.5 py-2 text-left transition hover:border-brand-primary-400 focus:outline-none focus:ring-2 focus:ring-[#007a78]"
                   >
                     <span className="block font-mono text-[11px] font-medium text-slate-800 dark:text-slate-100">
                       {acc.email}

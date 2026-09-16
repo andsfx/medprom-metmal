@@ -361,9 +361,9 @@ export default function PromoUploadWizard() {
   // ─── Layar sukses ───
   if (submitState === 'success') {
     return (
-      <div className="ui-dashboard-page min-h-screen">
+      <div className="ui-page min-h-screen">
         <div className="mx-auto max-w-2xl px-4 py-10 sm:py-16">
-          <div className="ui-dashboard-surface p-8 text-center">
+          <div className="ui-card p-8 text-center">
             <CheckCircle2 className="mx-auto h-14 w-14 text-green-600 dark:text-green-400" aria-hidden="true" />
             <h1 className="font-display mt-4 text-2xl font-bold text-slate-900 dark:text-white">Pengajuan Terkirim!</h1>
             <p className="ui-text-muted mt-2 text-sm">
@@ -371,7 +371,7 @@ export default function PromoUploadWizard() {
               <span className="font-semibold">{tenant?.name}</span> sudah kami terima.
               Tim Tenant Relations akan meninjau pengajuan Anda.
             </p>
-            <div className="ui-dashboard-control mx-auto mt-5 inline-flex items-center gap-2 rounded-xl px-4 py-2.5">
+            <div className="ui-control mx-auto mt-5 inline-flex items-center gap-2 rounded-md px-4 py-2.5">
               <span className="text-xs ui-text-muted">Nomor pengajuan</span>
               <span className="font-mono text-sm font-bold tracking-widest text-brand-primary-700 dark:text-brand-primary-300">{ticketId}</span>
             </div>
@@ -384,14 +384,14 @@ export default function PromoUploadWizard() {
             </p>
             <div className="mt-6 flex flex-wrap justify-center gap-3">
               {statusToken && (
-                <Link to={`/status/${statusToken}`} className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition">
+                <Link to={`/status/${statusToken}`} className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition">
                   Lihat Status Pengajuan
                 </Link>
               )}
-              <Link to="/riwayat" className="ui-dashboard-control inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <Link to="/riwayat" className="ui-control inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                 Lihat Riwayat
               </Link>
-              <Link to="/" className="ui-dashboard-control inline-flex items-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <Link to="/" className="ui-control inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                 Kembali ke Beranda
               </Link>
             </div>
@@ -402,7 +402,7 @@ export default function PromoUploadWizard() {
   }
 
   return (
-    <div className="ui-dashboard-page min-h-screen">
+    <div className="ui-page min-h-screen">
       <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
@@ -419,50 +419,48 @@ export default function PromoUploadWizard() {
           </span>
         </div>
 
-        {/* Stepper */}
-        <ol className="mb-6 flex items-center gap-2" aria-label="Langkah pengajuan">
+        {/* Stepper — langkah bernomor editorial */}
+        <nav className="mb-8 flex items-center gap-4 sm:gap-6" aria-label="Langkah pengajuan">
           {STEPS.map((s, i) => {
             const n = (i + 1) as Step;
             const active = n === step;
             const done = n < step;
             return (
-              <li key={s.label} className="flex flex-1 items-center gap-2">
+              <div key={s.label} className={`flex items-center gap-2 transition ${active || done ? '' : 'opacity-40'}`}>
                 <span
                   aria-current={active ? 'step' : undefined}
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                    done
-                      ? 'bg-brand-primary-600 text-white'
-                      : active
-                        ? 'border-2 border-brand-primary-600 text-brand-primary-700 dark:text-brand-primary-300'
-                        : 'border border-slate-300 text-slate-400 dark:border-slate-600 dark:text-slate-500'
+                  className={`ui-number shrink-0 text-2xl sm:text-3xl tabular-nums ${
+                    done ? '' : active ? '' : ''
                   }`}
                 >
-                  {done ? <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> : n}
+                  {String(n).padStart(2, '0')}
                 </span>
-                <span className={`hidden text-xs font-semibold sm:block ${active ? 'text-slate-900 dark:text-white' : 'text-slate-400 dark:text-slate-500'}`}>
+                <span className={`hidden text-xs font-semibold tracking-wide uppercase sm:inline ${active ? 'text-slate-900' : 'text-slate-400'}`}>
                   {s.label}
                 </span>
-                {i < STEPS.length - 1 && <span className="h-px flex-1 bg-slate-200 dark:bg-slate-700" aria-hidden="true" />}
-              </li>
+                {i < STEPS.length - 1 && (
+                  <span className="hidden text-sm text-slate-300 sm:inline" aria-hidden="true">·</span>
+                )}
+              </div>
             );
           })}
-        </ol>
+        </nav>
 
         {loading && (
-          <div className="ui-dashboard-surface flex items-center justify-center gap-3 p-10" role="status">
+          <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
             <span className="text-sm ui-text-muted">Memuat katalog media…</span>
           </div>
         )}
         {loadError && (
-          <div className="ui-alert-panel p-4" role="alert">
+          <div className="ui-alert p-4" role="alert">
             <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat katalog media.</p>
             <p className="mt-1 text-xs text-red-700 dark:text-red-300">Muat ulang halaman atau coba lagi sebentar.</p>
           </div>
         )}
 
         {!loading && !loadError && (
-          <div className="ui-dashboard-surface overflow-hidden">
+          <div className="ui-card overflow-hidden">
             {/* ─── Langkah 1: Pilih media ─── */}
             {step === 1 && (
               <div className="p-5 sm:p-6">
@@ -473,10 +471,10 @@ export default function PromoUploadWizard() {
                   {mediaTypes.map((m) => (
                     <label
                       key={m.slug}
-                      className={`flex cursor-pointer items-start gap-3 rounded-xl border p-3.5 transition ${
+                      className={`flex cursor-pointer items-start gap-3 rounded-md border p-3.5 transition ${
                         selectedSlug === m.slug
-                          ? 'border-brand-primary-500 bg-brand-primary-50 dark:border-brand-primary-400 dark:bg-brand-primary-950/40'
-                          : 'border-slate-200 hover:border-brand-primary-300 dark:border-slate-700 dark:hover:border-brand-primary-700'
+                          ? 'ring-2 ring-[#007a78] bg-white dark:ring-1 dark:ring-[#33a8a5] dark:bg-slate-800'
+                          : 'border-slate-200 hover:border-stone-400 dark:border-slate-700 dark:hover:border-slate-500'
                       }`}
                     >
                       <input
@@ -528,7 +526,7 @@ export default function PromoUploadWizard() {
                   type="button"
                   onClick={goStep2}
                   disabled={!selectedSlug}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition"
+                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
                 >
                   Lanjut — Data Tenant
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -575,7 +573,7 @@ export default function PromoUploadWizard() {
                         maxLength={100}
                         autoComplete="name"
                         onChange={(e) => { setPicName(e.target.value); setFieldErrors((er) => ({ ...er, pic_name: '' })); }}
-                        className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_name ? 'border-red-300 dark:border-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.pic_name ? true : undefined}
                       />
                       {fieldErrors.pic_name && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_name}</p>}
@@ -593,7 +591,7 @@ export default function PromoUploadWizard() {
                         autoComplete="tel"
                         placeholder="08xx xxxx xxxx"
                         onChange={(e) => { setPicPhone(e.target.value); setFieldErrors((er) => ({ ...er, pic_phone: '' })); }}
-                        className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_phone ? 'border-red-300 dark:border-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_phone ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.pic_phone ? true : undefined}
                       />
                       {fieldErrors.pic_phone && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_phone}</p>}
@@ -610,7 +608,7 @@ export default function PromoUploadWizard() {
                       value={installationDate}
                       min={leadInfo.earliest || undefined}
                       onChange={(e) => { setInstallationDate(e.target.value); setFieldErrors((er) => ({ ...er, installation_date: '' })); }}
-                      className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
+                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
                     />
                     <p className="mt-1 text-xs ui-text-muted">
                       Permintaan tanggal bersifat harapan — jadwal final ditentukan Mall (lihat ketentuan media).
@@ -634,7 +632,7 @@ export default function PromoUploadWizard() {
                       maxLength={150}
                       placeholder="Contoh: Promo Akhir Tahun"
                       onChange={(e) => { setCampaignName(e.target.value); setFieldErrors((er) => ({ ...er, campaign_name: '' })); }}
-                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.campaign_name ? 'border-red-300 dark:border-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.campaign_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.campaign_name ? true : undefined}
                     />
                     {fieldErrors.campaign_name && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.campaign_name}</p>}
@@ -651,7 +649,7 @@ export default function PromoUploadWizard() {
                       maxLength={200}
                       placeholder="Contoh: Spanduk Diskon 50%"
                       onChange={(e) => { setMaterialTitle(e.target.value); setFieldErrors((er) => ({ ...er, material_title: '' })); }}
-                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_title ? 'border-red-300 dark:border-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_title ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.material_title ? true : undefined}
                     />
                     {fieldErrors.material_title && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_title}</p>}
@@ -668,7 +666,7 @@ export default function PromoUploadWizard() {
                       rows={3}
                       placeholder="Penjelasan singkat isi materi promosi Anda."
                       onChange={(e) => { setMaterialDescription(e.target.value); setFieldErrors((er) => ({ ...er, material_description: '' })); }}
-                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_description ? 'border-red-300 dark:border-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_description ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.material_description ? true : undefined}
                     />
                     {fieldErrors.material_description && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_description}</p>}
@@ -683,7 +681,7 @@ export default function PromoUploadWizard() {
                         id="material-type"
                         value={materialType}
                         onChange={(e) => { setMaterialType(e.target.value); setFieldErrors((er) => ({ ...er, material_type: '' })); }}
-                        className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_type ? 'border-red-300 dark:border-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_type ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.material_type ? true : undefined}
                       >
                         <option value="">Pilih jenis materi…</option>
@@ -702,7 +700,7 @@ export default function PromoUploadWizard() {
                         maxLength={200}
                         placeholder={selectedMedia?.location_note || 'Contoh: Atrium 1'}
                         onChange={(e) => { setMediaTarget(e.target.value); setFieldErrors((er) => ({ ...er, media_target: '' })); }}
-                        className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.media_target ? 'border-red-300 dark:border-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.media_target ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.media_target ? true : undefined}
                       />
                       {fieldErrors.media_target && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media_target}</p>}
@@ -719,7 +717,7 @@ export default function PromoUploadWizard() {
                         type="date"
                         value={airStartDate}
                         onChange={(e) => { setAirStartDate(e.target.value); setFieldErrors((er) => ({ ...er, air_start_date: '', air_end_date: '' })); }}
-                        className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                       />
                       {fieldErrors.air_start_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_start_date}</p>}
                     </div>
@@ -732,7 +730,7 @@ export default function PromoUploadWizard() {
                         type="date"
                         value={airEndDate}
                         onChange={(e) => { setAirEndDate(e.target.value); setFieldErrors((er) => ({ ...er, air_end_date: '' })); }}
-                        className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                       />
                       {fieldErrors.air_end_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
                     </div>
@@ -749,7 +747,7 @@ export default function PromoUploadWizard() {
                       rows={4}
                       placeholder={selectedMedia?.category === 'social' ? 'Tulis caption media sosial Anda di sini…' : 'Permintaan atau keterangan tambahan…'}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                     />
                     {selectedMedia?.category === 'social' && (
                       <p className="mt-1 text-xs ui-text-muted">Caption wajib menyebutkan lokasi lantai tenant Anda.</p>
@@ -760,7 +758,7 @@ export default function PromoUploadWizard() {
                 <button
                   type="button"
                   onClick={goStep3}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition"
+                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
                 >
                   Lanjut — Kirim Materi
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -782,7 +780,7 @@ export default function PromoUploadWizard() {
                 </p>
 
                 {/* Ringkasan */}
-                <dl className="ui-dashboard-control mt-4 grid gap-x-6 gap-y-2 rounded-xl p-4 text-xs sm:grid-cols-2">
+                <dl className="ui-control mt-4 grid gap-x-6 gap-y-2 rounded-md p-4 text-xs sm:grid-cols-2">
                   <div className="flex gap-2">
                     <dt className="shrink-0 font-semibold ui-text-muted">Tenant:</dt>
                     <dd className="text-slate-900 dark:text-white">{tenant?.name}</dd>
@@ -820,10 +818,10 @@ export default function PromoUploadWizard() {
                     type="button"
                     aria-pressed={sourceMode === 'link'}
                     onClick={() => { setSourceMode('link'); setFileError(''); }}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
                       sourceMode === 'link'
-                        ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
-                        : 'border-slate-200 text-slate-600 hover:border-brand-primary-300 dark:border-slate-700 dark:text-slate-300'
+                        ? 'ring-2 ring-[#007a78] bg-white text-[#006260] dark:ring-1 dark:ring-[#33a8a5] dark:bg-slate-800 dark:text-brand-primary-400'
+                        : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
                     }`}
                   >
                     <Link2 className="h-4 w-4" aria-hidden="true" />
@@ -833,10 +831,10 @@ export default function PromoUploadWizard() {
                     type="button"
                     aria-pressed={sourceMode === 'upload'}
                     onClick={() => { setSourceMode('upload'); setLinkError(''); }}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
                       sourceMode === 'upload'
-                        ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
-                        : 'border-slate-200 text-slate-600 hover:border-brand-primary-300 dark:border-slate-700 dark:text-slate-300'
+                        ? 'ring-2 ring-[#007a78] bg-white text-[#006260] dark:ring-1 dark:ring-[#33a8a5] dark:bg-slate-800 dark:text-brand-primary-400'
+                        : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
                     }`}
                   >
                     <Upload className="h-4 w-4" aria-hidden="true" />
@@ -844,7 +842,7 @@ export default function PromoUploadWizard() {
                   </button>
                 </div>
                 ) : (
-                  <p className="mt-5 flex items-start gap-1.5 rounded-xl bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
+                  <p className="mt-5 flex items-start gap-1.5 rounded-md bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
                     <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     Kanal unggah berkas sedang tidak diaktifkan pada instance ini — silakan kirim
                     tautan materi Anda.
@@ -870,7 +868,7 @@ export default function PromoUploadWizard() {
                       maxLength={500}
                       placeholder="https://drive.google.com/…"
                       onChange={(e) => { setLinkUrl(e.target.value); setLinkError(''); setFieldErrors((er) => ({ ...er, link_url: '' })); }}
-                      className={`ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${linkError || fieldErrors.link_url ? 'border-red-300 dark:border-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${linkError || fieldErrors.link_url ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={linkError || fieldErrors.link_url ? true : undefined}
                     />
                     {(linkError || fieldErrors.link_url) && (
@@ -890,10 +888,10 @@ export default function PromoUploadWizard() {
                   </label>
                   <label
                     htmlFor="file-input"
-                    className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-2xl border-2 border-dashed p-8 text-center transition ${
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-md border-2 border-dashed p-8 text-center transition ${
                       fileError
                         ? 'border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-950/20'
-                        : 'border-brand-primary-300 bg-brand-primary-50/40 hover:border-brand-primary-400 dark:border-brand-primary-700 dark:bg-brand-primary-950/20'
+                        : ''
                     }`}
                   >
                     <Upload className="h-8 w-8 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
@@ -923,7 +921,7 @@ export default function PromoUploadWizard() {
                   )}
 
                   {file && !fileError && (
-                    <div className="ui-dashboard-control mt-3 flex items-center gap-3 rounded-xl p-3">
+                    <div className="ui-control mt-3 flex items-center gap-3 rounded-md p-3">
                       <FileIcon mime={file.type} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{file.name}</p>
@@ -947,7 +945,7 @@ export default function PromoUploadWizard() {
                 {/* Kanal email — deck mengarahkan materi social media ke email
                     marketing; tautan pengajuan tetap dipakai untuk verifikasi. */}
                 {materialEmail && (
-                  <div className="ui-dashboard-control mt-4 rounded-xl p-4">
+                  <div className="ui-control mt-4 rounded-md p-4">
                     <p className="text-sm font-semibold text-slate-900 dark:text-white">
                       Materi social media juga dapat dikirim via email
                     </p>
@@ -992,7 +990,7 @@ export default function PromoUploadWizard() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={!materialReady || !termsAccepted || submitState === 'uploading'}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition"
+                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
                 >
                   {submitState === 'uploading' ? (
                     <>

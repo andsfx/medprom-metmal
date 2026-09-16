@@ -137,7 +137,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
   return (
     <div ref={containerRef}>
       {manualMode && (
-        <p className="mb-2 flex items-start gap-1.5 rounded-lg bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300" role="status">
+        <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300" role="status">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Daftar tenant sedang tidak dapat dimuat — ketik nama tenant Anda secara manual (sesuai papan nama).
         </p>
@@ -157,7 +157,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
           value={query}
           autoComplete="off"
           placeholder={manualMode ? 'Nama tenant Anda' : 'Ketik nama tenant min. 2 huruf, pilih dari daftar'}
-          className={`ui-dashboard-control w-full rounded-xl py-2.5 pl-9 ${selectedIdRef.current || query ? 'pr-9' : 'pr-3'} text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100 ${error ? 'border-red-300 dark:border-red-700' : ''}`}
+          className={`ui-control w-full rounded-md py-2.5 pl-9 ${selectedIdRef.current || query ? 'pr-9' : 'pr-3'} text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${error ? 'border-red-300 dark:border-red-700' : ''}`}
           onChange={(e) => {
             const next = e.target.value;
             if (manualMode) {
@@ -194,7 +194,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
           id={listboxId}
           role="listbox"
           aria-label="Daftar tenant"
-          className="ui-dashboard-surface absolute z-30 mt-1 max-h-64 w-full overflow-auto p-1 text-sm shadow-lg"
+          className="ui-card absolute z-30 mt-1 max-h-64 w-full overflow-auto p-1 text-sm shadow-lg"
         >
           {loading && tenants.length === 0 && (
             <li className="px-3 py-2 text-slate-500 dark:text-slate-300" role="status">Mencari tenant…</li>
@@ -205,7 +205,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
                 type="button"
                 onMouseEnter={() => setHighlighted(i)}
                 onClick={() => commitTenant(t)}
-                className={`flex w-full items-center justify-between gap-2 rounded-lg px-3 py-2 text-left transition ${
+                className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left transition ${
                   highlighted === i ? 'bg-brand-primary-50 dark:bg-brand-primary-950/40' : ''
                 }`}
               >

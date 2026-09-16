@@ -120,7 +120,7 @@ export default function SubmissionStatusPage() {
   }
 
   return (
-    <div className="ui-dashboard-page min-h-screen">
+    <div className="ui-page min-h-screen">
       <div className="mx-auto max-w-2xl px-4 py-6 sm:py-10">
         <div className="mb-6 flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-1 text-sm font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300">
@@ -133,19 +133,19 @@ export default function SubmissionStatusPage() {
         </div>
 
         {loading && (
-          <div className="ui-dashboard-surface flex items-center justify-center gap-3 p-10" role="status">
+          <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
             <span className="text-sm ui-text-muted">Memuat status pengajuan…</span>
           </div>
         )}
 
         {!loading && notFound && (
-          <div className="ui-alert-panel p-5" role="alert">
+          <div className="ui-alert p-5" role="alert">
             <p className="text-sm font-semibold text-red-800 dark:text-red-200">Pengajuan tidak ditemukan.</p>
             <p className="mt-1 text-xs text-red-700 dark:text-red-300">
               Periksa kembali tautan status Anda. Tautan ini hanya berlaku untuk satu pengajuan.
             </p>
-            <Link to="/riwayat" className="ui-btn-primary mt-4 inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition">
+            <Link to="/riwayat" className="ui-btn-primary mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
               Lihat Riwayat Perangkat
             </Link>
           </div>
@@ -153,7 +153,7 @@ export default function SubmissionStatusPage() {
 
         {!loading && data && (
           <div className="space-y-4">
-            <div className="ui-dashboard-surface overflow-hidden">
+            <div className="ui-card overflow-hidden">
               <div className="border-b border-slate-100 bg-gradient-to-r from-brand-primary-50/60 to-transparent px-5 py-4 dark:border-slate-700 dark:from-brand-primary-950/30">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
@@ -218,7 +218,7 @@ export default function SubmissionStatusPage() {
               {data.submission.review_notes && (
                 <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-700">
                   <p className="text-xs font-semibold ui-text-muted">Catatan Tim Tenant Relations</p>
-                  <p className="mt-1 rounded-lg bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
+                  <p className="mt-1 rounded-md bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
                     {data.submission.review_notes}
                   </p>
                 </div>
@@ -244,7 +244,7 @@ export default function SubmissionStatusPage() {
 
             {/* Pemasangan (FR-047) */}
             {data.installation && (
-              <div className="ui-dashboard-surface p-5">
+              <div className="ui-card p-5">
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white">Informasi Pemasangan</h2>
                 <dl className="mt-3 space-y-2 text-sm">
                   <div className="flex gap-2">
@@ -271,7 +271,7 @@ export default function SubmissionStatusPage() {
 
             {/* Form revisi — hanya saat status Perlu Revisi (FR-021) */}
             {data.submission.status === 'perlu_revisi' && (
-              <div className="ui-dashboard-surface p-5">
+              <div className="ui-card p-5">
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white">Kirim Materi Revisi</h2>
                 <p className="mt-1 text-xs ui-text-muted">
                   Perbaiki materi sesuai catatan di atas, lalu kirim ulang. Materi lama tetap tersimpan
@@ -283,7 +283,7 @@ export default function SubmissionStatusPage() {
                     type="button"
                     aria-pressed={revMode === 'link'}
                     onClick={() => { setRevMode('link'); setRevError(''); }}
-                    className={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
                       revMode === 'link'
                         ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
                         : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
@@ -295,7 +295,7 @@ export default function SubmissionStatusPage() {
                     type="button"
                     aria-pressed={revMode === 'upload'}
                     onClick={() => { setRevMode('upload'); setRevError(''); }}
-                    className={`flex-1 rounded-xl border px-3 py-2 text-sm font-semibold transition ${
+                    className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
                       revMode === 'upload'
                         ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
                         : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
@@ -318,7 +318,7 @@ export default function SubmissionStatusPage() {
                       maxLength={500}
                       placeholder="https://drive.google.com/…"
                       onChange={(e) => { setRevLink(e.target.value); setRevError(''); }}
-                      className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                     />
                   </div>
                 ) : (
@@ -328,7 +328,7 @@ export default function SubmissionStatusPage() {
                     </label>
                     <label
                       htmlFor="rev-file"
-                      className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border-2 border-dashed border-brand-primary-300 bg-brand-primary-50/40 p-5 text-sm font-medium text-slate-700 transition hover:border-brand-primary-400 dark:border-brand-primary-700 dark:bg-brand-primary-950/20 dark:text-slate-200"
+                      className="flex cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-dashed border-brand-primary-300 bg-brand-primary-50/40 p-5 text-sm font-medium text-slate-700 transition hover:border-brand-primary-400 dark:border-brand-primary-700 dark:bg-brand-primary-950/20 dark:text-slate-200"
                     >
                       <Upload className="h-5 w-5 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
                       {revFile ? revFile.name : 'Klik untuk memilih berkas'}
@@ -361,7 +361,7 @@ export default function SubmissionStatusPage() {
                     maxLength={1000}
                     value={revNotes}
                     onChange={(e) => setRevNotes(e.target.value)}
-                    className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                    className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
@@ -376,7 +376,7 @@ export default function SubmissionStatusPage() {
                   type="button"
                   onClick={handleRevision}
                   disabled={saving}
-                  className="ui-btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition"
+                  className="ui-btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
                 >
                   {saving ? (
                     <>
@@ -394,14 +394,14 @@ export default function SubmissionStatusPage() {
             )}
 
             {data.submission.status === 'disetujui' && !data.installation && (
-              <p className="ui-dashboard-control flex items-start gap-1.5 rounded-xl p-3 text-xs ui-text-muted">
+              <p className="ui-control flex items-start gap-1.5 rounded-md p-3 text-xs ui-text-muted">
                 <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 Materi Anda telah disetujui dan menunggu proses pemasangan oleh tim Mall.
               </p>
             )}
 
             {/* Riwayat status (FR-020) */}
-            <div className="ui-dashboard-surface p-5">
+            <div className="ui-card p-5">
               <h2 className="text-sm font-bold text-slate-900 dark:text-white">Riwayat Status</h2>
               <ol className="mt-3 space-y-3">
                 {data.history.map((h) => (
@@ -425,11 +425,11 @@ export default function SubmissionStatusPage() {
 
             {/* Riwayat versi materi (FR-030) */}
             {data.files.length > 0 && (
-              <div className="ui-dashboard-surface p-5">
+              <div className="ui-card p-5">
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white">Riwayat Versi Materi</h2>
                 <ul className="mt-3 space-y-2">
                   {data.files.map((f) => (
-                    <li key={f.id} className="flex items-start justify-between gap-3 rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
+                    <li key={f.id} className="flex items-start justify-between gap-3 rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
                       <div className="min-w-0">
                         <p className="font-semibold text-slate-800 dark:text-slate-100">
                           Versi {f.version}{f.version === 1 ? ' (awal)' : ''}

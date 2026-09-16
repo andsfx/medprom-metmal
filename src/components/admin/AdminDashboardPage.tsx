@@ -34,17 +34,18 @@ const ROLE_OPTIONS = ['admin', 'tenant_relation', 'superadmin'];
 
 function StatusBadge({ status }: { status: string }) {
   const cls: Record<string, string> = {
-    draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-    menunggu_review: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-    perlu_revisi: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
-    disetujui: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-    ditolak: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-    siap_dipasang: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
-    sudah_dipasang: 'bg-brand-primary-100 text-brand-primary-800 dark:bg-brand-primary-950/50 dark:text-brand-primary-300',
-    selesai: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
+    menunggu_review: 'bg-stone-100 text-stone-700',
+    sedang_ditinjau: 'bg-blue-50 text-blue-700',
+    disetujui: 'bg-green-50 text-green-700',
+    siap_dipasang: 'bg-[#e6f7f6] text-[#006260]',
+    sedang_dipasang: 'bg-[#e6f7f6] text-[#006260] ring-1 ring-inset ring-[#00918e]/30',
+    sudah_dipasang: 'bg-[#00918e] text-white',
+    ditolak: 'bg-red-50 text-red-700',
+    selesai: 'bg-stone-100 text-stone-600',
+    perlu_revisi: 'bg-amber-50 text-amber-700',
   };
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-bold ${cls[status] ?? cls.draft}`}>
+    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls[status] ?? 'bg-stone-100 text-stone-700'}`}>
       {STATUS_LABELS[status] ?? status}
     </span>
   );
@@ -244,24 +245,25 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
   return (
     <div>
-      {/* Ringkasan jumlah per status (FR-025) */}
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-7">
+      {/* Ringkasan jumlah per status */}
+      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
         {STATUS_ORDER.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => { setStatusFilter(statusFilter === s ? '' : s); setPage(1); }}
             aria-pressed={statusFilter === s}
-            className={`ui-dashboard-control rounded-xl px-3 py-2.5 text-left transition ${
-              statusFilter === s ? 'ring-2 ring-brand-primary-500' : ''
+            className={`ui-admin-card text-left p-3 transition ${
+              statusFilter === s ? 'ring-2 ring-[#007a78]' : ''
             }`}
+            aria-label={`${STATUS_LABELS[s]} ${summary[s] ?? 0}`}
           >
-            <p className="text-[11px] font-semibold ui-text-muted">{STATUS_LABELS[s]}</p>
-            <p className="mt-0.5 text-lg font-bold text-slate-900 dark:text-white">{summary[s] ?? 0}</p>
+            <p className="ui-number text-xl tabular-nums">{summary[s] ?? 0}</p>
+            <p className="mt-0.5 text-[11px] font-medium text-slate-500">{STATUS_LABELS[s]}</p>
           </button>
         ))}
       </div>
-      <p className="mb-3 text-xs ui-text-muted">Total {summaryTotal} pengajuan tercatat.</p>
+      <p className="mb-4 text-xs ui-text-muted">Total {summaryTotal} pengajuan tercatat.</p>
 
       {/* Filter bar */}
       <div className="mb-4 flex flex-wrap items-end gap-2">
@@ -273,7 +275,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             value={search}
             placeholder="Nomor pengajuan, tenant, atau judul materi"
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
 
@@ -283,7 +285,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             id="filter-status"
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="ui-dashboard-control rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>{s === '' ? 'Semua' : STATUS_LABELS[s]}</option>
@@ -297,7 +299,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             id="filter-media"
             value={mediaFilter}
             onChange={(e) => { setMediaFilter(e.target.value); setPage(1); }}
-            className="ui-dashboard-control max-w-48 rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control max-w-48 rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
           >
             <option value="">Semua</option>
             {mediaTypes.map((m) => <option key={m.slug} value={m.slug}>{m.name}</option>)}
@@ -312,7 +314,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             value={tenantFilter}
             placeholder="Nama tenant"
             onChange={(e) => { setTenantFilter(e.target.value); setPage(1); }}
-            className="ui-dashboard-control w-40 rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control w-40 rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
 
@@ -323,7 +325,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="ui-dashboard-control rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
 
@@ -334,7 +336,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="ui-dashboard-control rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
           />
         </div>
 
@@ -344,7 +346,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           type="button"
           onClick={handleExport}
           disabled={exporting}
-          className="ui-dashboard-control inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-60 dark:text-slate-200"
+          className="ui-control inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-60 dark:text-slate-200"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
           Unduh CSV
@@ -431,7 +433,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     <button
                       type="button"
                       onClick={() => openDetail(r)}
-                      className="ui-dashboard-control rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                      className="ui-control rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                     >
                       Detail
                     </button>
@@ -440,7 +442,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         type="button"
                         onClick={() => void handleDelete(r)}
                         aria-label={`Hapus pengajuan ${r.tenant_name}`}
-                        className="inline-flex items-center rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="inline-flex items-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
@@ -461,7 +463,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
             aria-label="Halaman sebelumnya"
-            className="ui-dashboard-control inline-flex items-center rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
+            className="ui-control inline-flex items-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -471,7 +473,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
             aria-label="Halaman berikutnya"
-            className="ui-dashboard-control inline-flex items-center rounded-lg px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
+            className="ui-control inline-flex items-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -487,7 +489,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           aria-labelledby="detail-title"
           onClick={(e) => { if (e.target === e.currentTarget) setDetail(null); }}
         >
-          <div className="ui-dashboard-surface max-h-[85vh] w-full max-w-2xl overflow-auto p-6">
+          <div className="ui-admin-card max-h-[85vh] w-full max-w-2xl overflow-auto p-6">
             <div className="mb-4 flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
@@ -506,7 +508,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   type="button"
                   onClick={() => setDetail(null)}
                   aria-label="Tutup"
-                  className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700"
+                  className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700"
                 >
                   <X className="h-4 w-4" />
                 </button>
@@ -663,7 +665,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ui-btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+                className="ui-btn-primary inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
               >
                 <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 Buka tautan materi
@@ -685,7 +687,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     href={wa}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ui-dashboard-control inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                    className="ui-control inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                   >
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
                     Kirim pesan WA
@@ -697,7 +699,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 onClick={() => { void navigator.clipboard?.writeText(
                   `${detail.tenant_name} — ${detail.media_type_slug}\nTautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`,
                 ); }}
-                className="ui-dashboard-control inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                className="ui-control inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
               >
                 <Copy className="h-4 w-4" aria-hidden="true" />
                 Salin tautan
@@ -716,7 +718,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     {allowedStatuses.map((s) => (
                       <label
                         key={s}
-                        className={`cursor-pointer rounded-xl border px-3.5 py-2 text-sm font-semibold transition ${
+                        className={`cursor-pointer rounded-md border px-3.5 py-2 text-sm font-semibold transition ${
                           newStatus === s
                             ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
                             : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
@@ -753,7 +755,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   maxLength={2000}
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
-                  className="ui-dashboard-control w-full rounded-xl px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                 />
 
                 {/* Catat pemasangan — hanya bila materi boleh dipasang (FR-040). */}
@@ -774,7 +776,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           maxLength={200}
                           placeholder={detail.media_target || 'Contoh: Atrium 1'}
                           onChange={(e) => setInstallLocation(e.target.value)}
-                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
                         />
                       </div>
                       <div>
@@ -784,7 +786,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           type="date"
                           value={installStart}
                           onChange={(e) => setInstallStart(e.target.value)}
-                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                         />
                       </div>
                       <div>
@@ -794,7 +796,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           type="date"
                           value={installEnd}
                           onChange={(e) => setInstallEnd(e.target.value)}
-                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -805,7 +807,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           value={installNotes}
                           maxLength={1000}
                           onChange={(e) => setInstallNotes(e.target.value)}
-                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                         />
                       </div>
                       <div className="sm:col-span-2">
@@ -820,7 +822,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           maxLength={500}
                           placeholder="https://drive.google.com/…"
                           onChange={(e) => setInstallProof(e.target.value)}
-                          className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
                         />
                       </div>
                     </div>
@@ -833,13 +835,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 {saveError && <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{saveError}</p>}
 
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
-                  <button type="button" onClick={() => setDetail(null)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+                  <button type="button" onClick={() => setDetail(null)} className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
                   {isInstallableStatus(detail.status) && (
                     <button
                       type="button"
                       onClick={() => void saveInstallation()}
                       disabled={saving || !installLocation.trim()}
-                      className="ui-dashboard-control inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-50 dark:text-slate-200"
+                      className="ui-control inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-50 dark:text-slate-200"
                     >
                       <Wrench className="h-4 w-4" aria-hidden="true" />
                       Catat Pemasangan
@@ -849,7 +851,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     type="button"
                     onClick={() => void saveStatus()}
                     disabled={saving}
-                    className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+                    className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                     Simpan Status
@@ -857,7 +859,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 </div>
               </div>
             ) : (
-              <p className="mt-4 rounded-xl bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
+              <p className="mt-4 rounded-md bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
                 Akun Tenant Relations hanya dapat melihat dan mengunduh — perubahan status oleh Admin.
               </p>
             )}
@@ -957,7 +959,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
         value={String(form?.[field] ?? '')}
         placeholder={placeholder}
         onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
-        className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
       />
     </div>
   );
@@ -969,7 +971,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           <button
             type="button"
             onClick={() => { setForm({ ...EMPTY_CATALOG_FORM }); setFormError(''); }}
-            className="ui-btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+            className="ui-btn-primary inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Tambah Media
@@ -994,7 +996,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
       {!loading && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((m) => (
-            <div key={m.id ?? m.slug} className={`ui-dashboard-surface p-4 ${m.is_active === false ? 'opacity-70' : ''}`}>
+            <div key={m.id ?? m.slug} className={`ui-admin-card p-4 ${m.is_active === false ? 'opacity-70' : ''}`}>
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{m.name}</p>
@@ -1019,7 +1021,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                       });
                       setFormError('');
                     }}
-                    className="ui-dashboard-control flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                    className="ui-control flex-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                   >
                     Edit
                   </button>
@@ -1027,7 +1029,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                     type="button"
                     onClick={() => void handleDelete(m)}
                     aria-label={`Hapus ${m.name}`}
-                    className="inline-flex items-center rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="inline-flex items-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
@@ -1047,12 +1049,12 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           aria-labelledby="catalog-form-title"
           onClick={(e) => { if (e.target === e.currentTarget) setForm(null); }}
         >
-          <form onSubmit={saveCatalog} className="ui-dashboard-surface max-h-[85vh] w-full max-w-2xl overflow-auto p-6">
+          <form onSubmit={saveCatalog} className="ui-admin-card max-h-[85vh] w-full max-w-2xl overflow-auto p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 id="catalog-form-title" className="text-lg font-bold text-slate-900 dark:text-white">
                 {form.id ? 'Edit Media' : 'Tambah Media'}
               </h2>
-              <button type="button" onClick={() => setForm(null)} aria-label="Tutup" className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700">
+              <button type="button" onClick={() => setForm(null)} aria-label="Tutup" className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1066,7 +1068,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                   id="cf-category"
                   value={form.category}
                   onChange={(e) => setForm((f) => (f ? { ...f, category: e.target.value } : f))}
-                  className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                 >
                   <option value="outdoor">Outdoor</option>
                   <option value="indoor">Indoor</option>
@@ -1085,7 +1087,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setForm((f) => (f ? { ...f, sort_order: parseInt(e.target.value, 10) || 0 } : f))}
-                  className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
             </div>
@@ -1097,7 +1099,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                 rows={5}
                 value={form.rules}
                 onChange={(e) => setForm((f) => (f ? { ...f, rules: e.target.value } : f))}
-                className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
 
@@ -1114,8 +1116,8 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
             {formError && <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{formError}</p>}
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setForm(null)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
-              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition">
+              <button type="button" onClick={() => setForm(null)} className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                 Simpan
               </button>
@@ -1203,7 +1205,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
         <button
           type="button"
           onClick={() => { setForm({ id: '', email: '', display_name: '', role: 'admin', password: '', is_active: true }); setFormError(''); }}
-          className="ui-btn-primary inline-flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition"
+          className="ui-btn-primary inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Tambah User
@@ -1256,7 +1258,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                       <button
                         type="button"
                         onClick={() => { setForm({ id: u.id, email: u.email, display_name: u.display_name, role: u.role, password: '', is_active: u.is_active }); setFormError(''); }}
-                        className="ui-dashboard-control rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                        className="ui-control rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                       >
                         Edit
                       </button>
@@ -1264,7 +1266,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                         type="button"
                         onClick={() => void handleDelete(u)}
                         aria-label={`Hapus user ${u.email}`}
-                        className="inline-flex items-center rounded-lg border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="inline-flex items-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
@@ -1285,12 +1287,12 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
           aria-labelledby="user-form-title"
           onClick={(e) => { if (e.target === e.currentTarget) setForm(null); }}
         >
-          <form onSubmit={saveUser} className="ui-dashboard-surface w-full max-w-md p-6">
+          <form onSubmit={saveUser} className="ui-admin-card w-full max-w-md p-6">
             <div className="mb-4 flex items-center justify-between">
               <h2 id="user-form-title" className="text-lg font-bold text-slate-900 dark:text-white">
                 {form.id ? 'Edit User' : 'Tambah User'}
               </h2>
-              <button type="button" onClick={() => setForm(null)} aria-label="Tutup" className="rounded-lg p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700">
+              <button type="button" onClick={() => setForm(null)} aria-label="Tutup" className="rounded-md p-1.5 text-slate-500 transition hover:bg-slate-100 dark:hover:bg-slate-700">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1305,7 +1307,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                     required
                     value={form.email}
                     onChange={(e) => setForm((f) => (f ? { ...f, email: e.target.value } : f))}
-                    className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                    className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
               )}
@@ -1317,7 +1319,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                   required
                   value={form.display_name}
                   onChange={(e) => setForm((f) => (f ? { ...f, display_name: e.target.value } : f))}
-                  className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
               <div>
@@ -1326,7 +1328,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                   id="uf-role"
                   value={form.role}
                   onChange={(e) => setForm((f) => (f ? { ...f, role: e.target.value } : f))}
-                  className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
                 >
                   {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
@@ -1342,7 +1344,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                   minLength={form.password ? 8 : undefined}
                   value={form.password}
                   onChange={(e) => setForm((f) => (f ? { ...f, password: e.target.value } : f))}
-                  className="ui-dashboard-control w-full rounded-lg px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-500 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
               {form.id && (
@@ -1361,8 +1363,8 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
             {formError && <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{formError}</p>}
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setForm(null)} className="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
-              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition">
+              <button type="button" onClick={() => setForm(null)} className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                 Simpan
               </button>
@@ -1404,7 +1406,7 @@ export default function AdminDashboardPage() {
 
   if (isLoading) {
     return (
-      <div className="ui-dashboard-page flex min-h-screen items-center justify-center" role="status">
+      <div className="ui-admin-page flex min-h-screen items-center justify-center" role="status">
         <Loader2 className="h-6 w-6 animate-spin text-brand-primary-600" aria-hidden="true" />
       </div>
     );
@@ -1412,21 +1414,21 @@ export default function AdminDashboardPage() {
 
   if (!user) {
     return (
-      <div className="ui-dashboard-page flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
+      <div className="ui-admin-page flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
         <Megaphone className="h-10 w-10 text-brand-primary-500" aria-hidden="true" />
         <p className="text-sm font-semibold text-slate-800 dark:text-white">Sesi berakhir atau belum login.</p>
-        <Link to="/login" className="ui-btn-primary rounded-xl px-5 py-2.5 text-sm font-semibold transition">Login</Link>
+        <Link to="/login" className="ui-btn-primary rounded-md px-5 py-2.5 text-sm font-semibold transition">Login</Link>
       </div>
     );
   }
 
   return (
-    <div className="ui-dashboard-page min-h-screen">
+    <div className="ui-admin-page min-h-screen">
       {/* Header */}
-      <header className="ui-dashboard-chrome sticky top-0 z-40 border-b">
+      <header className="ui-chrome sticky top-0 z-40 border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-brand-primary-600">
+            <span className="flex h-9 w-9 items-center justify-center rounded-md bg-brand-primary-600">
               <Megaphone className="h-5 w-5 text-white" aria-hidden="true" />
             </span>
             <div className="leading-tight">
@@ -1443,7 +1445,7 @@ export default function AdminDashboardPage() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="ui-dashboard-control inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-red-600 dark:text-slate-200"
+              className="ui-control inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-red-600 dark:text-slate-200"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               Logout
@@ -1462,10 +1464,10 @@ export default function AdminDashboardPage() {
               role="tab"
               aria-selected={tab === t.key}
               onClick={() => setTab(t.key)}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
                 tab === t.key
                   ? 'bg-brand-primary-600 text-white'
-                  : 'ui-dashboard-control text-slate-600 hover:text-brand-primary-700 dark:text-slate-300'
+                  : 'ui-control text-slate-600 hover:text-brand-primary-700 dark:text-slate-300'
               }`}
             >
               {t.key === 'users' && <UsersIcon className="mr-1.5 inline h-4 w-4" aria-hidden="true" />}

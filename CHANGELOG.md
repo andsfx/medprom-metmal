@@ -28,6 +28,19 @@ verifikasi rilis 1.3.0 di produksi.
   dirender; kode kredensial tetap ikut ter-bundle (flag hanya menggerbangi
   perenderan).
 
+### Dirapikan
+
+- **Desain visual penuh ditulis ulang — arah Editorial Kontras.**
+  Seluruh UI beralih dari pola hangat project event (Bricolage Grotesque + cream
+  paper + kartu bulat + tosca merata) ke bahasa editorial: Fraunces serif
+  display, putih bersih, garis hairline stone, radius tajam, tosca sangat hemat
+  (maks 2 sentuhan/viewport). Token dan utility yang dihapus: `--brand-paper`,
+  `--brand-card`, `--brand-card-light`, `--brand-secondary`/pink,
+  `ui-dashboard-*`. Token baru: `--surface-page`, `--surface-offset`,
+  `--ink-primary`, `--rule-color`, `.ui-number`, `.ui-rule`, `.ui-admin-card`.
+  Semua 7 komponen ditulis ulang; 18 berkas / 164 test tetap hijau. Rancangan:
+  `DESIGN.md` (baru).
+
 ### Diubah
 
 - `deploy/vps/docker-compose.yml`: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`,

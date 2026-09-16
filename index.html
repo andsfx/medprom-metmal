@@ -7,7 +7,7 @@
     <meta name="description" content="Ajukan dan unggah materi media promosi gerai Anda ke Tim Tenant Relations Metropolitan Mall Bekasi. Spanduk, LED, videotron, hingga media sosial — tertata dalam satu platform." />
 
     <!-- Theme color -->
-    <meta name="theme-color" content="#00918E" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#0f172a" media="(prefers-color-scheme: dark)" />
 
     <!-- Open Graph -->
@@ -20,31 +20,32 @@
     <!-- Favicon -->
     <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2300918E'/%3E%3Cpath d='M8 24V13l4-4 4 4 4-4 4 4v11z' fill='%23fff'/%3E%3C/svg%3E" />
 
-    <!-- Fonts — Geist (body) + Bricolage Grotesque (display) -->
+    <!-- Fonts — Fraunces (display) + Geist (body) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Geist:wght@400;500;600;700&display=swap" /></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Geist:wght@400;500;600;700&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Geist:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Geist:wght@400;500;600;700&display=swap" /></noscript>
 
     <style>
       /* Critical CSS: skeleton sebelum JS mount (root.render menggantikan #root) */
       #root > .app-skeleton { display: block; }
-      .app-skeleton { background: #f8f7f0; min-height: 100vh; color: #64748b; }
-      .app-skeleton .sk-nav { height: 56px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
-      .app-skeleton .sk-brand { width: 140px; height: 20px; border-radius: 6px; background: #e2e8f0; }
-      .app-skeleton .sk-hero { height: 240px; background: linear-gradient(180deg, #e6f7f6, #f8f7f0); display: flex; align-items: center; padding: 0 32px; }
+      .app-skeleton { background: #ffffff; min-height: 100vh; color: #64748b; }
+      .app-skeleton .sk-nav { height: 56px; border-bottom: 1px solid #e7e5e4; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
+      .app-skeleton .sk-brand { width: 140px; height: 20px; border-radius: 4px; background: #e7e5e4; }
+      .app-skeleton .sk-hero { height: 240px; background: #ffffff; display: flex; align-items: center; padding: 0 32px; }
       .app-skeleton .sk-hero-inner { width: min(520px, 80%); display: flex; flex-direction: column; gap: 14px; }
-      .app-skeleton .sk-title { height: 28px; border-radius: 6px; background: #99dfde; }
-      .app-skeleton .sk-sub { height: 16px; width: 70%; border-radius: 6px; background: #e2e8f0; }
+      .app-skeleton .sk-title { height: 28px; border-radius: 4px; background: #d6d3d1; width: 70%; }
+      .app-skeleton .sk-sub { height: 16px; width: 50%; border-radius: 4px; background: #e7e5e4; }
       .app-skeleton .sk-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; padding: 24px 32px; }
-      .app-skeleton .sk-card { height: 140px; border-radius: 16px; background: #e2e8f0; }
+      .app-skeleton .sk-card { height: 140px; border-radius: 8px; background: #fafaf9; border: 1px solid #e7e5e4; }
       @media (prefers-color-scheme: dark) {
-        .app-skeleton { background: #0e1612; }
+        .app-skeleton { background: #0f172a; color: #94a3b8; }
         .app-skeleton .sk-nav { border-bottom-color: #1e293b; }
-        .app-skeleton .sk-brand, .app-skeleton .sk-card, .app-skeleton .sk-sub { background: #1e293b; }
-        .app-skeleton .sk-hero { background: linear-gradient(135deg, #1e293b, #003230); }
-        .app-skeleton .sk-title { background: #003230; }
+        .app-skeleton .sk-brand, .app-skeleton .sk-sub { background: #1e293b; }
+        .app-skeleton .sk-card { background: #1e293b; border-color: #334155; }
+        .app-skeleton .sk-hero { background: #0f172a; }
+        .app-skeleton .sk-title { background: #1e293b; }
       }
       @media (prefers-reduced-motion: no-preference) {
         .app-skeleton .sk-brand, .app-skeleton .sk-title, .app-skeleton .sk-sub, .app-skeleton .sk-card { animation: sk-pulse 1.6s ease-in-out infinite; }
