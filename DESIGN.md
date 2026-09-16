@@ -41,14 +41,15 @@ Grotesque, kartu bulat soft-elevation, tosca+pink merata).
 Fraunces · variable · opsz 9–144 · wght 300–700
 ```
 
-Hanya untuk judul, hero, angka besar, dan label section. Pakai `opsz` otomatis:
+Hanya untuk judul halaman, judul section, dan angka statistik. Pakai `opsz`
+otomatis:
 semakin besar ukuran, semakin tajam kontras serif-nya. Variasi:
 
 | Gaya | Bobot | Konteks |
 |------|-------|---------|
-| `wght 700, opsz 48+` | Extra Bold | Hero H1, header halaman |
+| `wght 700, opsz 24+` | Bold | H1 halaman, judul panel, angka |
 | `wght 600, opsz 24+` | Semi Bold | Judul section, card title |
-| `wght 500` | Medium | Sub-judul, label angka besar |
+| `wght 500` | Medium | Sub-judul, label pendamping |
 | `wght 400` | Regular | Body pendek editorial (opsional) |
 
 Font body **bukan** Fraunces — Fraunces sebagai body akan terlalu dekoratif dan
@@ -70,18 +71,22 @@ Tidak perlu font ketiga. Dua saja: Fraunces untuk suara, Geist untuk kerja.
 
 | Token | Ukuran | Font | Konteks |
 |-------|--------|------|---------|
-| Hero H1 | `text-4xl sm:text-6xl` | Fraunces 700 | Hanya di `/` |
-| H2 section | `text-3xl sm:text-4xl` | Fraunces 600 | Judul section |
-| H3 card | `text-xl sm:text-2xl` | Fraunces 600 | Nama media, judul wizard |
-| H4 sub | `text-lg` | Fraunces 500 | Sub-judul panel |
-| Eyebrow | `text-[11px] tracking-[0.3em]` | Geist 600 UPPER | Label atas judul |
+| H1 halaman | `text-2xl sm:text-4xl` | Fraunces 700 | Hero `/`; satu per layar |
+| H2 section | `text-2xl sm:text-3xl` | Fraunces 600 | Judul section katalog |
+| H3 card | `text-xl` | Fraunces 700 | Nama media, judul panel |
+| H4 sub | `text-lg` | Fraunces 700 | Sub-judul panel, judul sheet |
+| Angka | `text-xl` + `.ui-number` | Fraunces 700 tosca | Angka ringkasan dashboard |
+| Eyebrow | `text-[11px] tracking-[0.2em]` | Geist 700 UPPER | Label atas judul |
 | Body | `text-base leading-relaxed` | Geist 400 | Prose, deskripsi |
 | Body-sm | `text-sm` | Geist 400 | Metadata, helper |
 | Caption | `text-xs` | Geist 400 | Footer, timestamp |
-| Number XL | `text-6xl sm:text-8xl` | Fraunces 700 | Angka statistik / langkah wizard |
 
-Admin memakai skala yang sama tetapi dibatasi: maksimal H3 (`text-2xl`) untuk
-judul halaman; tidak ada Hero H1 di dashboard.
+Admin memakai skala yang sama; judul halaman maksimal `text-2xl`.
+
+Tidak ada teks display di atas `text-4xl`. Arah **App Produk** menukar hero
+raksasa arah editorial dengan judul yang lebih rapat: kerapatan informasi
+lebih penting daripada drama tipografis, terutama karena layar ini dipakai
+berulang oleh staf dan tenant, bukan dibaca sekali seperti halaman kampanye.
 
 ### Leading & measure
 
@@ -117,14 +122,26 @@ Tosca (`#00918e`) adalah warna brand Metmal. Di medprom, penggunaannya
 |------------|-------------|
 | Link & navigasi aktif | Latar section penuh |
 | Focus ring | Badge lebar / chip solid |
-| Icon accent (1 per area) | Border dekoratif |
-| Angka besar (01, 02, …) | Background hover baris tabel |
-| CTA primer (solid fill) | Teks body / prose |
+| CTA primer (solid fill) | Border dekoratif |
+| Ikon metadata baris data | Background hover baris tabel |
+| Angka statistik (`.ui-number`) | Teks body / prose |
 | Checkmark / status sukses | Placeholder / disabled state |
 
-Satu area pandang (viewport) maksimal **dua** sentuhan tosca: satu struktural
-(link/focus/CTA) dan satu dekoratif (angka/icon). Lebih dari itu = terlalu
-ramai; editorial mengandalkan tinta, bukan warna.
+Bedakan dua jenis aksen, karena aturannya berbeda:
+
+- **Aksen struktural** — CTA, tautan aktif, focus ring, angka statistik.
+  Maksimal **satu per viewport** pada satu waktu. Ini yang menjaga halaman
+  tidak terasa ramai.
+- **Aksen ikon berulang** — ikon kecil pada baris metadata (ukuran, material,
+  harga, lokasi di kartu media). Boleh berulang mengikuti jumlah baris data,
+  karena polanya ditentukan data, bukan dekorasi bebas. Ukurannya kecil
+  (`h-4 w-4`) dan selalu mendampingi teks, bukan berdiri sendiri.
+
+Batasnya bukan angka mati, melainkan: **tosca tidak pernah menjadi permukaan,
+tidak pernah mewarnai teks paragraf, dan tidak pernah menghias section secara
+menyeluruh.** Aturan lama "maksimal dua sentuhan per viewport" ditulis untuk
+tata letak editorial tanpa kartu data; katalog media punya empat ikon per
+kartu, jadi angka itu tidak lagi dapat ditegakkan.
 
 CTA primer: `bg-[#007a78]` (tosca-600, AA 5.18:1 dengan putih) — solid, bukan
 outline, karena ini bukan elemen dekoratif.
@@ -216,14 +233,21 @@ measure teks tetap nyaman dengan serif display besar).
 
 Max-width admin: `max-w-7xl` (80rem, untuk mengakomodasi tabel lebar).
 
-## Nomor & Langkah
+## Angka & Statistik
 
-Nomor (`01`, `02`, `03`) adalah elemen visual kunci dalam arah editorial:
+Angka besar bernomor (`01`, `02`, `03`) **tidak dipakai lagi** — itu peninggalan
+arah editorial, dan sudah tidak ada satu pun di kode. Yang tersisa hanyalah
+angka statistik:
 
-- Fraunces 700, besar (`text-6xl sm:text-8xl`), tosca
-- Dipakai sebagai penanda langkah wizard, indeks kartu media, atau statistik
-- Bukan dekorasi kosong — selalu punya makna (urutan, jumlah, progres)
-- Dipasangkan dengan label kecil di bawahnya
+- Fraunces 700, `text-xl`, tosca, lewat kelas `.ui-number` (tabular)
+- Hanya di kartu ringkasan dashboard staf (jumlah pengajuan per status)
+- Selalu berpasangan dengan label kecil di bawahnya
+- Bukan dekorasi: angkanya adalah data yang dibaca staf
+
+Progres langkah wizard **bukan** angka besar, melainkan indikator bersegmen
+(lihat bagian Halaman/Layout Spesifik). Bila menambah elemen bernomor baru,
+ikuti pola `.ui-number` + label, jangan menghidupkan kembali angka display
+raksasa.
 
 ## Tipografi sebagai Hero
 
@@ -231,10 +255,10 @@ Halaman landing (`/`) tidak punya ilustrasi, foto, atau gradien — hanya
 tipografi dan whitespace. Struktur hero:
 
 ```
-EYEBROW (Geist 600 UPPER, tosca)
+EYEBROW (Geist 700 UPPER, tosca)
 ──────────────────────────────────  ← rule hairline
-H1 (Fraunces 700, text-4xl → sm:text-6xl)
-Subhead (Geist 400, text-base → sm:text-lg, slate-700, max-w-prose)
+H1 (Fraunces 700, text-2xl → sm:text-4xl)
+Subhead (Geist 400, text-base, muted, max-w-prose)
 [spasi]
 CTA primer + CTA sekunder (dua tombol)
 ```
@@ -426,7 +450,7 @@ Sisanya netral.
 - Header: nama platform + info user + logout
 - Tidak ada sidebar — layout horizontal: tab navigasi di atas konten
 - Tab: Pengajuan · Katalog Media · Pengguna (berdasarkan role)
-- Status summary: 8 kartu kecil dengan angka besar + label
+- Ringkasan status: kartu kecil dengan angka (`.ui-number`) + label
 - Tabel pengajuan: kolom ringkas, filter di atas
 
 ### `/login` — Login Staf
@@ -457,7 +481,8 @@ Sebelum mengirim perubahan UI publik:
 - [ ] Tidak ada `rounded-2xl`/`rounded-3xl` di komponen publik
 - [ ] Tidak ada `brand-secondary`/`brand-pink` di komponen medprom
 - [ ] Tidak ada `--brand-paper` (cream) — semua latar `white`/`stone-50`
-- [ ] Tosca hanya muncul sebagai aksen (maks 2 sentuhan/viewport non-admin)
+- [ ] Tosca tidak pernah jadi permukaan atau warna teks paragraf
+- [ ] Aksen struktural (CTA/link/angka) maksimal satu per viewport
 - [ ] Indikator progres wizard tampil di mobile dan desktop
 - [ ] Tabel admin scroll horizontal, bukan mengecilkan teks
 - [ ] Tab navigasi admin berfungsi di mobile

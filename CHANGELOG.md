@@ -141,13 +141,23 @@ verifikasi rilis 1.3.0 di produksi.
   tersisa hanya backup `.env.bak-*`). API restart, healthz OK.
 
 ### Diubah
-- **`DESIGN.md` diselaraskan dengan kode** setelah audit UI/UX: bagian mode
-  gelap (kini konsol staf saja, belum ada saklar publik), CTA primer/sekunder
-  dan kartu (radius dari token, bukan kelas utilitas), tabel admin, wizard
-  (indikator progres bersegmen, bukan angka besar), serta tiga invarian CSS
-  yang wajib dipertahankan agar hanya area konten yang menggulir. Checklist QA
-  ditambah tujuh butir: penguncian gulir, `--tap-min`, dialog wajib `Sheet`,
-  dan keseragaman radius.
+- **`DESIGN.md` diselaraskan dengan kode** setelah audit UI/UX. Yang diperbaiki
+  bukan hanya uraian yang kurang lengkap, melainkan klaim yang **bertentangan
+  dengan kode**:
+  - skala tipografi menyebut `text-6xl sm:text-8xl` untuk hero dan "Number XL",
+    padahal tidak ada satu pun pemakaian di kode — nilai sebenarnya
+    `text-2xl sm:text-4xl` untuk H1;
+  - bagian "Nomor & Langkah" menyatakan `01/02/03` adalah penanda langkah
+    wizard, padahal wizard memakai indikator progres bersegmen (bagian ini
+    diganti menjadi "Angka & Statistik");
+  - aturan "maksimal dua sentuhan tosca per viewport" bertabrakan dengan
+    katalog yang memakai empat ikon tosca per kartu. Aturan dipecah menjadi
+    aksen **struktural** (maksimal satu per viewport) dan aksen **ikon
+    berulang** (boleh mengikuti jumlah baris data);
+  - struktur hero, CTA primer/sekunder, kartu, tabel admin, mode gelap, dan
+    wizard diselaraskan; tiga invarian CSS pengunci gulir didokumentasikan.
+  Checklist QA ditambah tujuh butir: penguncian gulir, `--tap-min`, dialog
+  wajib `Sheet`, dan keseragaman radius.
 - `CACHE_VERSION` service worker dinaikkan `v1` → `v2` karena aset shell
   berubah pada rilis ini.
 
