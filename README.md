@@ -16,28 +16,40 @@ entri (feed dan story), sehingga totalnya 14 jenis media; 13 aktif, dan
 
 - Katalog media per kategori Outdoor, Indoor, dan Media Sosial, memuat ukuran,
   material, harga, serta ketentuan pemasangan tiap media.
-- Form pengajuan tiga tahap: pilih media, isi data tenant dan PIC, kirim
+- Form pengajuan tiga tahap: pilih media, isi data tenant/PIC/materi, kirim
   materi.
 - Nama tenant dipilih dari API tenant. Bila API tidak tersedia, form beralih ke
   isian nama manual.
 - Dua cara mengirim materi:
-  - **Kirim tautan** (kanonis) — Google Drive, Dropbox, atau WeTransfer untuk
-    materi berukuran besar maupun folder berisi banyak file. Tidak ada file yang
+  - **Kirim tautan** — Google Drive, Dropbox, atau WeTransfer untuk materi
+    berukuran besar maupun folder berisi banyak file. Tidak ada file yang
     tersimpan di server. Materi diverifikasi manual oleh tim Tenant Relations.
-  - **Unggah file** (legacy) — file dikirim langsung dari browser ke
-    penyimpanan objek, lalu diverifikasi server. Jalur ini hanya aktif bila
-    `VITE_PROMO_UPLOAD_MODE='1'`; lihat [Mode unggah legacy](#mode-unggah-legacy).
+  - **Unggah file** — file dikirim langsung dari browser, diverifikasi server
+    (signature byte + metadata), lalu disimpan di Google Drive mall. Batas 50MB.
 - Ketentuan lead time tiap media ditegakkan: tanggal pemasangan ditolak bila
   kurang dari ketentuan deck ("2 hari sebelum pemasangan" atau "3 hari kerja
   sebelum pemasangan"), baik di form maupun di server.
-- Nomor tiket setelah pengajuan terkirim, plus halaman Riwayat yang menampilkan
-  status dan catatan tim tanpa perlu akun.
+- **Nomor pengajuan** (`MP-YYMMDD-XXXXXX`) dan **tautan status ber-token** setelah
+  pengajuan terkirim. Halaman status menampilkan status terkini, catatan tim,
+  riwayat perubahan status, riwayat versi materi, dan informasi pemasangan —
+  tanpa perlu akun.
+- **Revisi materi**: ketika status materi **Perlu Revisi**, tenant dapat
+  mengirim ulang materi (tautan atau file) dari halaman status. Versi lama tetap
+  tersimpan untuk tim.
+- Halaman Riwayat per perangkat menampilkan status dan catatan tim.
 
 ### Sisi staf — perlu login
 
-- Daftar pengajuan dengan filter status, paginasi, dan detail per pengajuan.
-- Penetapan status: Menunggu, Disetujui, Ditolak, atau Terpasang, disertai
-  catatan yang langsung terlihat oleh tenant.
+- Ringkasan jumlah pengajuan per status (klik untuk memfilter), pencarian nomor
+  pengajuan/tenant/judul materi, filter status/media/tenant/rentang tanggal, dan
+  paginasi.
+- Detail pengajuan: informasi tenant/PIC/campaign, materi, riwayat versi file,
+  riwayat status, dan informasi pemasangan.
+- Penetapan status mengikuti alur 8 tahap PRD: Menunggu Review, Perlu Revisi,
+  Disetujui, Ditolak, Siap Dipasang, Sudah Dipasang, Selesai. Komentar wajib saat
+  meminta revisi, alasan wajib saat menolak.
+- Pencatatan pemasangan (media/lokasi, tanggal, catatan, tautan bukti) — hanya
+  untuk materi yang sudah disetujui.
 - Pengelolaan katalog media: harga, ukuran, ketentuan, dan status aktif.
 - Ekspor CSV siap dibuka di Excel.
 - Pengelolaan akun staf.
@@ -57,22 +69,22 @@ flowchart LR
   T[Tenant / Browser] -->|HTTPS| V["Frontend — Vercel<br/>React 19 + Vite"]
   V -->|"REST /api/v1"| A["API — VPS<br/>Express 4"]
   A --> P[("Postgres 16")]
-  A -.->|"unggah/verifikasi/hapus<br/>(legacy, di balik flag)"| D[("Google Drive<br/>5TB akun media promosi")]
+  A -.->|"unggah/verifikasi/hapus"| D[("Google Drive<br/>5TB akun media promosi")]
   A -->|"lookup tenant"| M["API tenant"]
-  T -.->|"tautan materi (kanonis)<br/>Drive/Dropbox/WeTransfer"| A
+  T -.->|"tautan materi<br/>Drive/Dropbox/WeTransfer"| A
 ```
 
 - Frontend berjalan di Vercel sebagai SPA; seluruh path di-rewrite ke
   `index.html`.
 - API dan Postgres berjalan di VPS melalui Docker Compose, diproksi Caddy ke
   `127.0.0.1:3002`.
-- **Kanal kanonis** adalah tautan: tenant menyimpan materinya di penyimpanan
-  sendiri dan mengirim URL; tim Tenant Relations memverifikasi manual. Tidak ada
-  berkas tenant yang masuk ke storage mall pada jalur ini.
-- Jalur unggah (garis putus-putus) masih tersedia untuk memproses data lama dan
-  penyimpanan Drive akun `mediapromosi.metmalbekasi@gmail.com` (Google One 5TB)
-  tetap dipakai selama transisi. Unggahan diverifikasi di server (signature byte
-  + ukuran) SEBELUM ditulis ke Drive sehingga file tidak valid tidak pernah
+- **Kirim tautan** adalah kanal bawaan: tenant menyimpan materinya di
+  penyimpanan sendiri dan mengirim URL; tim Tenant Relations memverifikasi
+  manual. Tidak ada berkas tenant yang masuk ke storage mall pada jalur ini.
+- **Unggah berkas** adalah kanal setara untuk tenant yang ingin mengirim berkas
+  langsung; penyimpanan Drive akun `mediapromosi.metmalbekasi@gmail.com`
+  (Google One 5TB) dipakai. Unggahan diverifikasi di server (signature byte +
+  ukuran) SEBELUM ditulis ke Drive sehingga file tidak valid tidak pernah
   memenuhi storage.
 - Sesi staf memakai JWT pada cookie lintas origin (`SameSite=None; Secure`).
 
@@ -81,7 +93,7 @@ flowchart LR
 Untuk mode unggah, server memeriksa
 
 1. rate limit 10 pengajuan per jam per IP
-2. field wajib (+ telepon, format tanggal, media aktif)
+2. field wajib PRD (+ telepon, format tanggal, media aktif, persetujuan ketentuan)
 3. drive_file_id benar-benar ada di Drive (milik akun app, bukan tenant lain —
    scope OAuth `drive.file`)
 4. metadata Drive: ukuran ≤ 50MB
@@ -101,29 +113,57 @@ Perhitungan hari kerja hanya mengecualikan Sabtu dan Minggu — tabel hari libur
 nasional belum tersedia, sehingga tanggal pasang yang jatuh pada hari libur
 nasional belum ditolak.
 
+## Alur status pengajuan
+
+Status mengikuti PRD dan ditegakkan di server (bukan hanya di UI):
+
+```
+Menunggu Review ──┬─→ Perlu Revisi ──→ Menunggu Review   (revisi materi)
+                  ├─→ Disetujui ──┬─→ Siap Dipasang ──→ Sudah Dipasang ──→ Selesai
+                  │               └─→ Sudah Dipasang
+                  └─→ Ditolak  (final)
+```
+
+- Transisi di luar alur ini ditolak `400` — termasuk lompatan seperti
+  Menunggu Review → Sudah Dipasang.
+- **Komentar wajib** saat meminta revisi; **alasan wajib** saat menolak.
+- Setiap perubahan status dicatat di `promo_submission_history` (siapa, kapan,
+  komentar), dan terlihat tenant di halaman status.
+- Materi yang disetujui tidak dapat diubah lagi tanpa alur baru.
+
+Setiap pengajuan mendapat **nomor** (`MP-YYMMDD-XXXXXX`) dan **token status**
+acak 32 karakter. Halaman `/status/:token` adalah satu-satunya cara tenant
+melihat status tanpa akun; token tidak dapat ditebak dan pesan untuk token salah
+diseragamkan agar tidak membocorkan keberadaan pengajuan.
+
 ## Struktur
 
 ```
 src/                      Frontend React (Vite + Tailwind v4)
-  components/promo/       Katalog, form pengajuan, riwayat, pemilih tenant
+  components/promo/       Katalog, form pengajuan, riwayat, halaman status token, pemilih tenant
   components/admin/       Login dan dashboard staf
-  utils/                  promoApi, adminApi, fingerprint, leadTime, whatsapp
+  utils/                  promoApi, adminApi, fingerprint, leadTime, statusFlow, whatsapp
   lib/rest.ts             Klien REST
 server/
   schema.sql              Skema database
   src/routes/             promo (publik), admin (staf), auth
   src/drive.js            Upload, verifikasi, delete, metadata — Google Drive REST v3
   src/lib/leadTime.js     Lead time (cermin src/utils/leadTime.ts)
+  src/lib/statusFlow.js   Alur status 8 tahap (cermin src/utils/statusFlow.ts)
+  src/lib/identifiers.js  Nomor pengajuan + token status
   src/auth.js             JWT, bcrypt, kontrol role
   scripts/                seed-media-types, create-admin
 scripts/                  db-migrate, drive-auth, drive-sweep, verifikasi produksi (Playwright)
 __tests__/api/            Test route server
 deploy/vps/               docker-compose, .env.example, panduan deploy
+docs/                     Rencana + log eksekusi (PLAN_YYYY-MM-DD_HH-mm.md)
 ```
 
 `src/utils/leadTime.ts` dan `server/src/lib/leadTime.js` adalah **cermin yang
-disengaja** (proyek ini belum punya paket bersama). Keduanya dikunci oleh test
-kontrak `__tests__/api/lead-time.test.js`, sehingga perubahannya harus selalu
+disengaja** (proyek ini belum punya paket bersama), begitu pula
+`src/utils/statusFlow.ts` ↔ `server/src/lib/statusFlow.js`. Keduanya dikunci oleh
+test kontrak (`__tests__/api/lead-time.test.js`,
+`__tests__/api/status-flow.test.js`), sehingga perubahannya harus selalu
 berpasangan.
 
 ## Menjalankan di lokal
@@ -186,31 +226,33 @@ Poster: JPEG; Videotron/Integrasia/Media Sosial: JPEG/MP4) dan menyebut
 substrat fisik untuk media cetak (Flexi, sticker vinyl) — bukan format file.
 Format cetak di atas adalah kebijakan operasional platform, bukan klaim deck.
 
-Batas unggahan 50MB. Untuk materi yang lebih besar, gunakan mode kirim tautan.
+Batas unggahan 50MB. Untuk materi yang lebih besar, gunakan kanal kirim tautan.
 Materi media sosial juga dapat dikirim via email ke `marketing@malmetropolitan.com`
 (lihat ketentuan tiap media).
 
-## Mode unggah legacy
+## Kanal pengiriman materi
 
-Kanal kanonis platform adalah **kirim tautan**; mode unggah dipertahankan hanya
-untuk masa transisi dan memproses pengajuan lama. Secara default tenant melihat
-antarmuka tautan saja — pengalih mode unggah dan area unggah tidak dirender.
+Dua kanal, keduanya resmi:
 
-Untuk menyalakannya (hanya bila benar-benar diperlukan):
+- **Kirim tautan** (bawaan) — tenant menyimpan materi di penyimpanan sendiri
+  (Drive/Dropbox/WeTransfer) dan mengirim URL. Tidak ada berkas yang tersimpan
+  di server; tim Tenant Relations memverifikasi manual.
+- **Unggah berkas** — berkas dikirim langsung, diverifikasi server, lalu
+  disimpan di Google Drive mall.
+
+Kanal unggah menyala secara bawaan. Instance yang **belum** punya kredensial
+Google Drive dapat mematikannya agar tombolnya tidak tampil:
 
 ```bash
-# .env — nilai '1' mengaktifkan jalur unggah
-VITE_PROMO_UPLOAD_MODE=1
+# .env — nilai '0' menyembunyikan kanal unggah
+VITE_PROMO_UPLOAD_MODE=0
 ```
 
-Flag ini sengaja **tidak** dicantumkan di `.env.example` agar tidak ikut
-tersalin saat deploy baru. Perlu diketahui: kode unggah tetap ikut ter-bundle
-karena mode sumber adalah state React — flag hanya menggerbangi perenderan UI,
-bukan menghapus kode dari bundel.
-
-Rencana pensiun bertahap: server menolak `drive_file_id` → `POST /drive/upload`
-mengembalikan `410 Gone` → arsip berkas legacy dibuat → baru kolom Drive
-dihapus.
+Tanpa kredensial Drive, `POST /drive/upload` memang sudah membalas `503`
+(fail-closed — lihat `driveReady` di `server/src/drive.js`); flag ini hanya
+mencegah tenant menekan tombol yang pasti gagal. Perlu diketahui: kode unggah
+tetap ikut ter-bundle karena mode sumber adalah state React — flag hanya
+menggerbangi perenderan UI, bukan menghapus kode dari bundel.
 
 ## Deploy
 
