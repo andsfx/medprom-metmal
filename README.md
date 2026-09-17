@@ -186,10 +186,12 @@ npm run dev:api               # API      → http://localhost:3001
 npm run dev                   # Frontend → http://localhost:5173
 ```
 
-`db:migrate` dan `db:seed` aman dijalankan berulang. Seed menyelaraskan dua
-kolom yang bersumber langsung dari deck — `accepted_formats` dan `rules` —
-sehingga koreksi ketentuan ikut tersebar ke instance yang sudah jalan. Harga,
-lokasi, dan kolom lain hasil penyuntingan admin tidak ditimpa.
+`db:migrate` dan `db:seed` aman dijalankan berulang. Seed menyelaraskan
+**seluruh kolom yang dikelola seed** — termasuk `price_note`, `location_note`,
+`rules`, dan `image_path` — sehingga koreksi dari deck ikut tersebar ke instance
+yang sudah jalan. Konsekuensinya: penyuntingan admin atas kolom-kolom itu akan
+ditimpa saat seed dijalankan; seed adalah sumber kebenaran untuk katalog yang
+berasal dari deck.
 
 ## Perintah
 

@@ -196,7 +196,7 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
 | `server/src/lib/identifiers.js` | Nomor pengajuan `MP-YYMMDD-XXXXXX` + token status acak |
 | `server/src/lib/leadTime.js` | Cermin aturan lead time |
 | `server/schema.sql` | Sumber migrasi (7 tabel + index); remap status lama → 8 nilai PRD |
-| `server/scripts/seed-media-types.mjs` | Katalog deck — `ON CONFLICT` menyinkron `accepted_formats` + `rules` |
+| `server/scripts/seed-media-types.mjs` | Katalog deck — `ON CONFLICT` menyinkron SELURUH kolom yang dikelola seed (termasuk `price_note`, `location_note`, `image_path`) |
 | `vitest.config.ts` | Konfigurasi test (terpisah dari `vite.config.ts`) |
 | `vercel.json` | Rewrite SPA `/(.*)` → `/index.html` |
 

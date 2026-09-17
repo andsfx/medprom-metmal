@@ -251,8 +251,11 @@ raksasa.
 
 ## Tipografi sebagai Hero
 
-Halaman landing (`/`) tidak punya ilustrasi, foto, atau gradien — hanya
-tipografi dan whitespace. Struktur hero:
+Halaman landing (`/`) tidak punya ilustrasi dekoratif, foto latar, atau gradien
+— hanya tipografi dan whitespace. Satu-satunya gambar adalah **foto contoh
+media** pada kartu katalog (dan thumbnail di langkah 1 wizard), yang diekspor
+dari deck 2026: gambar informatif, bukan hiasan. Rasio dikunci 4:3 dengan
+`width`/`height` eksplisit agar tidak ada pergeseran tata letak. Struktur hero:
 
 ```
 EYEBROW (Geist 700 UPPER, tosca)
@@ -263,7 +266,7 @@ Subhead (Geist 400, text-base, muted, max-w-prose)
 CTA primer + CTA sekunder (dua tombol)
 ```
 
-Tidak ada hero image, illustration, atau background color selain putih. Tosca
+Tidak ada hero image atau background color selain putih. Tosca
 hanya di eyebrow teks + rule, bukan sebagai blok warna.
 
 ## Kerangka Aplikasi (App Shell)
