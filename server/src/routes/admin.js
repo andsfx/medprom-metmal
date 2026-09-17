@@ -415,8 +415,8 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
     const { rows } = await db.query(
       `INSERT INTO promo_media_types
         (slug, category, name, size_spec, material_spec, accepted_formats,
-         price_note, location_note, rules, is_active, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         price_note, location_note, rules, image_path, is_active, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        RETURNING id`,
       [
         slug,
@@ -428,6 +428,7 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
         sanitize(d.price_note || '', 200),
         sanitize(d.location_note || '', 300),
         sanitize(d.rules || '', 5000),
+        sanitize(d.image_path || '', 200),
         d.is_active === false ? false : true,
         parseInt(String(d.sort_order ?? '0'), 10) || 0,
       ],
@@ -482,6 +483,7 @@ router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next)
       price_note: sanitize(d.price_note || '', 200),
       location_note: sanitize(d.location_note || '', 300),
       rules: sanitize(d.rules || '', 5000),
+      image_path: sanitize(d.image_path || '', 200),
     };
     for (const [key, value] of Object.entries(fields)) {
       if (!value) continue;

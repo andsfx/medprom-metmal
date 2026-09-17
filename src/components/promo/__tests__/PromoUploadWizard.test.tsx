@@ -42,7 +42,7 @@ const MEDIA: PromoMediaType[] = [
   {
     slug: 'videotron', category: 'indoor', name: 'Videotron',
     size_spec: '800 x 600 px', material_spec: 'JPEG/MP4',
-    accepted_formats: 'JPEG,MP4', price_note: 'Rp 600rb/hari',
+    accepted_formats: 'JPEG,MP4', image_path: '', price_note: 'Rp 600rb/hari',
     location_note: '', rules: 'Aturan videotron.', sort_order: 10,
   },
   {
@@ -355,7 +355,7 @@ describe('PromoUploadWizard — kanal email media sosial', () => {
   const MEDIA_SOCIAL: PromoMediaType[] = [{
     slug: 'sosmed-feed', category: 'social', name: 'Feed Instagram/Fanpage/TikTok',
     size_spec: '800 x 800 px', material_spec: 'JPEG/MP4',
-    accepted_formats: 'JPEG,PNG,MP4', price_note: 'Free', location_note: '',
+    accepted_formats: 'JPEG,PNG,MP4', image_path: '', price_note: 'Free', location_note: '',
     rules: 'Materi promosi harus clean image.\nMateri juga dapat dikirim via email ke marketing@malmetropolitan.com.',
     sort_order: 13,
   }];

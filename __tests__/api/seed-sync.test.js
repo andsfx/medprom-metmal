@@ -49,7 +49,7 @@ describe('seed-media-types — sync rules', () => {
     // yang lupa ditambahkan ke ON CONFLICT langsung ketahuan.
     const KOLOM = [
       'category', 'name', 'size_spec', 'material_spec', 'accepted_formats',
-      'price_note', 'location_note', 'rules', 'is_active', 'sort_order',
+      'price_note', 'location_note', 'rules', 'image_path', 'is_active', 'sort_order',
     ];
     for (const kolom of KOLOM) {
       expect(sql, `${kolom} harus diset dari EXCLUDED`).toContain(`${kolom} = EXCLUDED.${kolom}`);

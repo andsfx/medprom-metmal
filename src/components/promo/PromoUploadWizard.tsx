@@ -498,6 +498,19 @@ export default function PromoUploadWizard() {
                         onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
                         className="mt-1 h-4 w-4 accent-[var(--brand-tosca)]"
                       />
+                      {/* Foto contoh — dekoratif: nama media sudah ada di sebelahnya,
+                       * jadi sengaja alt="" agar pembaca layar tidak mengulang. */}
+                      {m.image_path && (
+                        <img
+                          src={m.image_path}
+                          alt=""
+                          width={800}
+                          height={600}
+                          loading="lazy"
+                          decoding="async"
+                          className="h-12 w-16 shrink-0 rounded-[var(--radius-control)] object-cover sm:h-14 sm:w-[74px]"
+                        />
+                      )}
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold text-slate-900 dark:text-white">{m.name}</span>

@@ -20,14 +20,14 @@ const MEDIA: PromoMediaType[] = [
   {
     slug: 'spanduk', category: 'outdoor', name: 'Spanduk',
     size_spec: '0.9 M x 6.0 M', material_spec: 'Flexi 280gr',
-    accepted_formats: 'JPEG,PDF', price_note: 'Rp. 70.000,-/hari',
+    accepted_formats: 'JPEG,PDF', image_path: '/media/spanduk.webp', price_note: 'Rp. 70.000,-/hari',
     location_note: 'Sisi Pintu Tol Bekasi Barat',
     rules: 'Harga belum termasuk PPN.\nMinimal sewa 1 minggu.', sort_order: 1,
   },
   {
     slug: 'sosmed-feed', category: 'social', name: 'Feed Instagram/Fanpage/TikTok',
     size_spec: '800 x 800 px', material_spec: 'JPEG/MP4',
-    accepted_formats: 'JPEG,MP4', price_note: 'Free',
+    accepted_formats: 'JPEG,MP4', image_path: '', price_note: 'Free',
     location_note: '', rules: 'Caption wajib sebut lantai tenant.', sort_order: 13,
   },
 ];
@@ -82,5 +82,21 @@ describe('PromoLandingPage', () => {
     renderLanding();
 
     expect(await screen.findByText(/Gagal memuat katalog media/i)).toBeInTheDocument();
+  });
+
+  it('menampilkan foto contoh dengan alt deskriptif, tanpa img bila kosong', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA);
+    renderLanding();
+    await screen.findByText('Spanduk');
+
+    const foto = screen.getByAltText('Contoh pemasangan Spanduk') as HTMLImageElement;
+    expect(foto).toBeInTheDocument();
+    expect(foto).toHaveAttribute('src', '/media/spanduk.webp');
+    // Dimensi eksplisit mencegah pergeseran tata letak (CLS).
+    expect(foto).toHaveAttribute('width', '800');
+    expect(foto).toHaveAttribute('height', '600');
+
+    // Media tanpa image_path tidak boleh menyisakan <img> kosong.
+    expect(screen.queryByAltText('Contoh pemasangan Feed Instagram/Fanpage/TikTok')).not.toBeInTheDocument();
   });
 });

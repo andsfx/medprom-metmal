@@ -157,7 +157,7 @@ router.get('/media-types', async (_req, res, next) => {
   try {
     const { rows } = await db.query(
       `SELECT slug, category, name, size_spec, material_spec, accepted_formats,
-              price_note, location_note, rules, sort_order
+              price_note, location_note, rules, image_path, sort_order
        FROM promo_media_types
        WHERE is_active = true
        ORDER BY sort_order, name`,

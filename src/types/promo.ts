@@ -7,6 +7,8 @@ export interface PromoMediaType {
   size_spec: string;
   material_spec: string;
   accepted_formats: string;
+  /** Path foto contoh media ('/media/<slug>.webp'); '' = tanpa foto. */
+  image_path: string;
   price_note: string;
   location_note: string;
   rules: string;

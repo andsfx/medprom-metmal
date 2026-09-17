@@ -19,6 +19,19 @@ function MediaCard({ media }: { media: PromoMediaType }) {
   const [rulesOpen, setRulesOpen] = useState(false);
   return (
     <article className="ui-card flex flex-col p-5">
+      {/* Foto contoh dari deck 2026 — mempercepat tenant mengenali medianya.
+       * Rasio dikunci 4:3 agar tinggi kartu tidak melompat saat gambar tiba. */}
+      {media.image_path && (
+        <img
+          src={media.image_path}
+          alt={`Contoh pemasangan ${media.name}`}
+          width={800}
+          height={600}
+          loading="lazy"
+          decoding="async"
+          className="mb-4 aspect-[4/3] w-full rounded-[var(--radius-control)] object-cover"
+        />
+      )}
       <div className="flex items-start justify-between gap-3">
         <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">{media.name}</h3>
       </div>

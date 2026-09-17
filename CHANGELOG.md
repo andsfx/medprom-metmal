@@ -9,6 +9,16 @@ Penyelarasan kebijakan dokumentasi + perbaikan jalur deploy yang ditemukan saat
 verifikasi rilis 1.3.0 di produksi.
 
 ### Ditambahkan
+- **Foto contoh tiap media promosi, diekspor dari deck 2026.** Deck
+  "MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026" sudah memuat foto tiap media
+  (hal. 2-14). Foto itu diekstrak per halaman dari deck, dipangkas ke 4:3, dan
+  dikonversi ke WebP (14 berkas, ~910 KB) di `public/media/`. Kini tampil di
+  kartu katalog (rasio dikunci 4:3 + `width`/`height` agar tidak ada pergeseran
+  tata letak) dan sebagai thumbnail di langkah 1 wizard.
+- Kolom `image_path` pada `promo_media_types` (migrasi idempotent), ikut
+  disinkronkan seed, dan disertakan API publik maupun admin. Media tanpa foto
+  tetap dirender tanpa `<img>` kosong.
+
 
 - **Platform kini PWA yang dapat dipasang** (`display: standalone`).
   `public/manifest.webmanifest` (ikon any 192/512 + maskable 512, pintasan

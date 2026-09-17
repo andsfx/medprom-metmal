@@ -17,3 +17,7 @@ client_secret*.json
 *-token.json
 scripts/drive-auth.mjs
 scripts/drive-sweep.mjs
+
+# Scratch kerja lokal (render deck, baseline visual) — jangan ikut versi
+.tmp/
+.baseline-visual.json

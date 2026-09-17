@@ -26,6 +26,7 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const MEDIA_TYPES = [
   {
     slug: 'spanduk', category: 'outdoor', name: 'Spanduk',
+    image_path: '/media/spanduk.webp',
     size_spec: '0.9 M x 6.0 M', material_spec: 'Flexi 280gr',
     accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 70.000,-/hari',
     location_note: 'Sisi Pintu Tol Bekasi Barat', sort_order: 1,
@@ -41,6 +42,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'big-banner', category: 'outdoor', name: 'Big Banner',
+    image_path: '/media/big-banner.webp',
     size_spec: '5 x 10 M', material_spec: 'Flexi 280gr',
     accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 160.000,-/hari',
     location_note: 'Sisi Pintu Tol Bekasi Barat', sort_order: 2,
@@ -56,6 +58,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'umbul-umbul', category: 'outdoor', name: 'Umbul-Umbul',
+    image_path: '/media/umbul-umbul.webp',
     size_spec: '0.9 x 4.8 M', material_spec: 'Flexi 440gr',
     accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 288.000,-/hari/16 tiang',
     location_note: 'Area Parkir Timur, Lobby Utara 2 dan Lobby Utara 1', sort_order: 3,
@@ -73,6 +76,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'boom-gate', category: 'outdoor', name: 'Boom Gate',
+    image_path: '/media/boom-gate.webp',
     size_spec: '45 x 100 cm', material_spec: 'Sticker di Impraboard',
     accepted_formats: 'JPEG,PNG,PDF', price_note: '',
     location_note: 'Area Parkir Timur dan Parkir Gedung (16 unit tersedia)', sort_order: 4,
@@ -86,6 +90,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'led-banner', category: 'outdoor', name: 'LED Banner',
+    image_path: '/media/led-banner.webp',
     size_spec: '600 x 1350 pixel', material_spec: 'JPEG',
     accepted_formats: 'JPEG', price_note: 'Gratis (syarat: tenant baru atau peserta program promo)',
     location_note: 'Area depan mall, Jl. AH Yani', sort_order: 5,
@@ -99,6 +104,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'digital-poster', category: 'indoor', name: 'Digital Poster',
+    image_path: '/media/digital-poster.webp',
     size_spec: '1920 x 1080 Pixel (Portrait)', material_spec: 'JPEG',
     accepted_formats: 'JPEG', price_note: 'Gratis',
     location_note: 'Atrium 1 (dekat tenant Optik Melawai), Pintu Utara 1 (hadap pintu masuk), Koridor Lantai Dasar (samping Momoiro), Lantai 1 (depan OB Fit), Lantai 1, 2, & 3 (samping eskalator Atrium 2)',
@@ -115,6 +121,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'sticker-eskalator', category: 'indoor', name: 'Sticker Eskalator',
+    image_path: '/media/sticker-eskalator.webp',
     size_spec: '65 x 800 CM', material_spec: 'Sticker Vynil Indoor laminating doff (Transparancy 80%-90%)',
     accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 6.700.000,-/sisi/bulan',
     location_note: '', sort_order: 7,
@@ -130,6 +137,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'sticker-lift', category: 'indoor', name: 'Sticker Lift',
+    image_path: '/media/sticker-lift.webp',
     size_spec: '90 x 205 CM', material_spec: 'Sticker Vynil',
     accepted_formats: 'JPEG,PNG,PDF', price_note: [
       'Rp. 3.630.000,-/sisi/bulan (Lift Sisi Luar)',
@@ -147,6 +155,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'vertical-banner', category: 'indoor', name: 'Vertical Banner',
+    image_path: '/media/vertical-banner.webp',
     size_spec: '200 x 800 CM', material_spec: 'Flexi Indoor laminating doff',
     accepted_formats: 'JPEG,PNG,PDF', price_note: '- (Belum tersedia)',
     location_note: '', sort_order: 9, is_active: false,
@@ -160,6 +169,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'videotron', category: 'indoor', name: 'Videotron',
+    image_path: '/media/videotron.webp',
     size_spec: '800 x 600 Pixel (Landscape)', material_spec: 'JPEG/MP4, durasi 30 detik',
     accepted_formats: 'JPEG,PNG,MP4',
     price_note: [
@@ -179,6 +189,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'parapet', category: 'indoor', name: 'Parapet',
+    image_path: '/media/parapet.webp',
     size_spec: '512 x 2.624 Pixel (Landscape)', material_spec: 'JPEG/MP4, durasi 30 detik',
     accepted_formats: 'JPEG,PNG,MP4', price_note: 'Gratis (sementara, khusus tenant baru)',
     location_note: '', sort_order: 11,
@@ -192,6 +203,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'videotron-integrasia', category: 'indoor', name: 'Videotron Integrasia',
+    image_path: '/media/videotron-integrasia.webp',
     size_spec: '4 x 8m Horizontal (Resolusi 1025 x 1025)', material_spec: 'JPEG/MP4, durasi 15 detik',
     accepted_formats: 'JPEG,PNG,MP4',
     price_note: [
@@ -212,6 +224,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'sosmed-feed', category: 'social', name: 'Feed Instagram/Fanpage/TikTok',
+    image_path: '/media/sosmed-feed.webp',
     size_spec: '800 x 800 Pixel (Square)', material_spec: 'JPEG/MP4',
     accepted_formats: 'JPEG,PNG,MP4', price_note: 'Gratis',
     location_note: '', sort_order: 13,
@@ -231,6 +244,7 @@ const MEDIA_TYPES = [
   },
   {
     slug: 'sosmed-story', category: 'social', name: 'IG Story/Reels',
+    image_path: '/media/sosmed-story.webp',
     size_spec: '1080 x 1920 Pixel', material_spec: 'JPEG/MP4',
     accepted_formats: 'JPEG,PNG,MP4', price_note: 'Gratis',
     location_note: '', sort_order: 14,
@@ -264,8 +278,8 @@ try {
     const { rows } = await pool.query(
       `INSERT INTO promo_media_types
         (slug, category, name, size_spec, material_spec, accepted_formats,
-         price_note, location_note, rules, is_active, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         price_note, location_note, rules, image_path, is_active, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (slug) DO UPDATE
          SET category = EXCLUDED.category,
              name = EXCLUDED.name,
@@ -275,6 +289,7 @@ try {
              price_note = EXCLUDED.price_note,
              location_note = EXCLUDED.location_note,
              rules = EXCLUDED.rules,
+             image_path = EXCLUDED.image_path,
              is_active = EXCLUDED.is_active,
              sort_order = EXCLUDED.sort_order,
              updated_at = now()
@@ -282,17 +297,19 @@ try {
                 promo_media_types.size_spec, promo_media_types.material_spec,
                 promo_media_types.accepted_formats, promo_media_types.price_note,
                 promo_media_types.location_note, promo_media_types.rules,
+                promo_media_types.image_path,
                 promo_media_types.is_active, promo_media_types.sort_order)
                IS DISTINCT FROM
                (EXCLUDED.category, EXCLUDED.name,
                 EXCLUDED.size_spec, EXCLUDED.material_spec,
                 EXCLUDED.accepted_formats, EXCLUDED.price_note,
                 EXCLUDED.location_note, EXCLUDED.rules,
+                EXCLUDED.image_path,
                 EXCLUDED.is_active, EXCLUDED.sort_order)
        RETURNING id, (xmax = 0) AS is_insert`,
       [
         m.slug, m.category, m.name, m.size_spec, m.material_spec,
-        m.accepted_formats, m.price_note, m.location_note, m.rules,
+        m.accepted_formats, m.price_note, m.location_note, m.rules, m.image_path,
         m.is_active === false ? false : true, m.sort_order,
       ],
     );

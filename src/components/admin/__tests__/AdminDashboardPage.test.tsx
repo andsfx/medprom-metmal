@@ -225,7 +225,7 @@ describe('AdminDashboardPage', () => {
   it('menandai pengajuan yang masuk lebih lambat dari lead time media', async () => {
     mockedFetchMediaTypes.mockResolvedValue([{
       slug: 'videotron', category: 'indoor', name: 'Videotron',
-      size_spec: '', material_spec: '', accepted_formats: 'JPEG',
+      size_spec: '', material_spec: '', accepted_formats: 'JPEG', image_path: '',
       price_note: '', location_note: '',
       rules: 'Materi promosi akan diberikan oleh Tenant kepada Mall 3 hari kerja sebelum pemasangan.',
       sort_order: 10,
@@ -247,7 +247,7 @@ describe('AdminDashboardPage', () => {
   it('tidak menandai pengajuan yang tanggalnya sudah aman', async () => {
     mockedFetchMediaTypes.mockResolvedValue([{
       slug: 'videotron', category: 'indoor', name: 'Videotron',
-      size_spec: '', material_spec: '', accepted_formats: 'JPEG',
+      size_spec: '', material_spec: '', accepted_formats: 'JPEG', image_path: '',
       price_note: '', location_note: '',
       rules: 'Materi promosi akan diberikan oleh Tenant kepada Mall 3 hari kerja sebelum pemasangan.',
       sort_order: 10,

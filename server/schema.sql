@@ -84,6 +84,9 @@ CREATE TABLE IF NOT EXISTS promo_submissions (
 );
 
 -- Migrasi idempotent untuk DB yang sudah jalan sebelum kolom ini ada.
+-- Foto contoh tiap media (diekspor dari deck 2026, hal. 2-14). Kosong = tanpa foto.
+ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS image_path TEXT DEFAULT '';
+
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS source_type TEXT NOT NULL DEFAULT 'upload';
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS link_url TEXT DEFAULT '';
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS drive_file_id TEXT DEFAULT '';
