@@ -387,7 +387,7 @@ export default function PromoUploadWizard() {
           <div className="ui-card p-8 text-center">
             <CheckCircle2 className="mx-auto h-14 w-14 text-green-600 dark:text-green-400" aria-hidden="true" />
             <h2 className="font-display mt-4 text-2xl font-bold text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
-            <p className="ui-text-muted mt-2 text-sm">
+            <p className="ui-body ui-text-muted mt-2">
               Materi <span className="font-semibold">{selectedMedia?.name}</span> dari tenant{' '}
               <span className="font-semibold">{tenant?.name}</span> sudah kami terima.
               Tim Tenant Relations akan meninjau pengajuan Anda.
@@ -477,8 +477,8 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 1: Pilih media ─── */}
             {step === 1 && (
               <div className="p-5 sm:p-6">
-                <h2 ref={stepHeadingRef} tabIndex={-1} className="font-display text-xl font-bold text-slate-900 focus:outline-none dark:text-white">Pilih Jenis Media Promosi</h2>
-                <p className="ui-text-muted mt-1 text-sm">Pilih media tempat materi Anda akan dipasang.</p>
+                <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section text-slate-900 focus:outline-none dark:text-white">Pilih Jenis Media Promosi</h2>
+                <p className="ui-body ui-text-muted mt-2">Pilih media tempat materi Anda akan dipasang.</p>
 
                 <div className="mt-5 space-y-2">
                   {mediaTypes.map((m) => (
@@ -501,7 +501,7 @@ export default function PromoUploadWizard() {
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
                           <span className="text-sm font-semibold text-slate-900 dark:text-white">{m.name}</span>
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                             {CATEGORY_LABELS[m.category] ?? m.category}
                           </span>
                         </span>
@@ -520,7 +520,7 @@ export default function PromoUploadWizard() {
                               <ChevronDown className={`h-3.5 w-3.5 transition-transform ${rulesOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                             </button>
                             {rulesOpen && (
-                              <ul className="mt-1.5 space-y-1 text-[11px] leading-relaxed text-slate-600 dark:text-slate-300">
+                              <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                                 {m.rules.split('\n').filter(Boolean).map((line, i) => (
                                   <li key={i}>• {line}</li>
                                 ))}
@@ -550,8 +550,8 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 2: Data tenant ─── */}
             {step === 2 && (
               <div className="p-5 sm:p-6">
-                <h2 ref={stepHeadingRef} tabIndex={-1} className="font-display text-xl font-bold text-slate-900 focus:outline-none dark:text-white">Data Tenant &amp; PIC</h2>
-                <p className="ui-text-muted mt-1 text-sm">
+                <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section text-slate-900 focus:outline-none dark:text-white">Data Tenant &amp; PIC</h2>
+                <p className="ui-body ui-text-muted mt-2">
                   Materi untuk <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedMedia?.name}</span>.
                 </p>
 
@@ -792,8 +792,8 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 3: Kirim materi (unggah / tautan) ─── */}
             {step === 3 && selectedMedia && (
               <div className="p-5 sm:p-6">
-                <h2 ref={stepHeadingRef} tabIndex={-1} className="font-display text-xl font-bold text-slate-900 focus:outline-none dark:text-white">Kirim Materi</h2>
-                <p className="ui-text-muted mt-1 text-sm">
+                <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section text-slate-900 focus:outline-none dark:text-white">Kirim Materi</h2>
+                <p className="ui-body ui-text-muted mt-2">
                   Kirim materi untuk <span className="font-semibold">{selectedMedia.name}</span>
                   {formatsLabel && <> (format {formatsLabel}{selectedMedia.size_spec ? ` · ukuran ${selectedMedia.size_spec}` : ''})</>}.
                   Pilih salah satu cara: unggah berkas ke penyimpanan Mall, atau kirim tautan milik Anda.
@@ -1027,7 +1027,7 @@ export default function PromoUploadWizard() {
                     </>
                   )}
                 </button>
-                <p className="mt-3 flex items-center justify-center gap-1.5 text-center text-[11px] ui-text-muted">
+                <p className="ui-body mt-3 flex items-center justify-center gap-1.5 text-center ui-text-muted">
                   <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
                   {sourceMode === 'upload'
                     ? 'File tersimpan aman dan hanya dilihat tim Tenant Relations.'

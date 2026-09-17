@@ -63,6 +63,28 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Hierarki judul terbalik / tidak seragam.** Terukur di peramban: `/login`
+  memakai `<h1>` 14px (lebih kecil daripada teks isinya), wizard punya `<h1>`
+  16px tetapi `<h2>` 20px, dan di halaman katalog `<h1>` dan `<h2>` sama-sama
+  24px pada layar kecil sehingga levelnya tidak terbaca. Ditambah satu `<h2>`
+  berukuran 24px di antara `<h2>` lain yang 30px pada satu halaman yang sama.
+  Kini tiap peran teks punya satu ukuran tetap (`--text-meta` 12 · `--text-dense`
+  14 · `--text-body` 16 · `--text-title` 18 · `--text-section` 20 · `--text-screen`
+  24). Terverifikasi: setiap layar tepat satu `<h1>`, dan ukuran judul **turun
+  monoton** (h1 > h2 > h3) di seluruh rute pada 390px maupun 1440px.
+- **Teks di bawah ambang baca.** 13 elemen di wizard berukuran 10px, dan 11px
+  dipakai luas untuk label serta lencana. Seluruh teks kini **minimal 12px**;
+  teks isi naik ke 16px agar sesuai lantai baca yang nyaman.
+- **Lebar baca berlebih.** Paragraf penjelas di halaman riwayat mencapai
+  **116ch** dan halaman status **100ch** di desktop — jauh di atas rentang
+  nyaman 45–75 karakter, sehingga mata sulit berpindah baris. Keduanya kini
+  dibatasi (`--measure`, 65ch), terukur menjadi 33–74ch.
+- **Jarak judul ke teks isi tidak seragam.** Jarak 4px, 8px, dan 12px bercampur
+  antar-halaman untuk hubungan yang sama. Diseragamkan menjadi satu nilai.
+- **Judul panjang menggantung satu kata.** Judul kini memakai `text-wrap:
+  balance`, teks isi `text-wrap: pretty`, sehingga baris terakhir tidak lagi
+  menyisakan satu kata.
+
 - **Wizard tidak menggulir ke atas saat pindah langkah.** Pengguna yang
   menggulir jauh di langkah 1 mendarat di tengah halaman pada langkah 2 —
   terukur judul langkah 2 berada **639px di atas layar**, sehingga pengguna

@@ -152,7 +152,7 @@ export default function SubmissionStatusPage() {
                     <p className="font-mono text-sm font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
                       {data.submission.submission_number}
                     </p>
-                    <h2 className="font-display mt-1 text-lg font-bold text-slate-900 dark:text-white">
+                    <h2 className="ui-title-card mt-1 text-slate-900 dark:text-white">
                       {data.submission.material_title || data.submission.media_type_slug}
                     </h2>
                     <p className="mt-0.5 text-xs ui-text-muted">
@@ -237,7 +237,7 @@ export default function SubmissionStatusPage() {
             {/* Pemasangan (FR-047) */}
             {data.installation && (
               <div className="ui-card p-5">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Informasi Pemasangan</h2>
+                <h2 className="ui-title-card text-slate-900 dark:text-white">Informasi Pemasangan</h2>
                 <dl className="mt-3 space-y-2 text-sm">
                   <div className="flex gap-2">
                     <dt className="w-28 shrink-0 font-semibold ui-text-muted">Lokasi</dt>
@@ -264,8 +264,8 @@ export default function SubmissionStatusPage() {
             {/* Form revisi — hanya saat status Perlu Revisi (FR-021) */}
             {data.submission.status === 'perlu_revisi' && (
               <div className="ui-card p-5">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Kirim Materi Revisi</h2>
-                <p className="mt-1 text-xs ui-text-muted">
+                <h2 className="ui-title-card text-slate-900 dark:text-white">Kirim Materi Revisi</h2>
+                <p className="mt-2 text-xs ui-text-muted">
                   Perbaiki materi sesuai catatan di atas, lalu kirim ulang. Materi lama tetap tersimpan
                   sebagai versi sebelumnya.
                 </p>
@@ -394,7 +394,7 @@ export default function SubmissionStatusPage() {
 
             {/* Riwayat status (FR-020) */}
             <div className="ui-card p-5">
-              <h2 className="text-sm font-bold text-slate-900 dark:text-white">Riwayat Status</h2>
+              <h2 className="ui-title-card text-slate-900 dark:text-white">Riwayat Status</h2>
               <ol className="mt-3 space-y-3">
                 {data.history.map((h) => (
                   <li key={h.id} className="flex gap-3">
@@ -418,7 +418,7 @@ export default function SubmissionStatusPage() {
             {/* Riwayat versi materi (FR-030) */}
             {data.files.length > 0 && (
               <div className="ui-card p-5">
-                <h2 className="text-sm font-bold text-slate-900 dark:text-white">Riwayat Versi Materi</h2>
+                <h2 className="ui-title-card text-slate-900 dark:text-white">Riwayat Versi Materi</h2>
                 <ul className="mt-3 space-y-2">
                   {data.files.map((f) => (
                     <li key={f.id} className="flex items-start justify-between gap-3 rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
@@ -444,7 +444,7 @@ export default function SubmissionStatusPage() {
               </div>
             )}
 
-            <p className="flex items-start gap-1.5 px-1 text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">
+            <p className="ui-prose ui-body flex items-start gap-1.5 px-1 text-slate-600 dark:text-slate-300">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               Simpan tautan halaman ini. Siapa pun yang memiliki tautan dapat melihat status pengajuan,
               jadi jangan bagikan ke pihak yang tidak berkepentingan.

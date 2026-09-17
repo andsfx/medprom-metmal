@@ -124,6 +124,56 @@ body {
   color: var(--ink-primary);
 }
 
+/* ─── Skala tipografi per peran ───
+ * Mencegah nilai ad-hoc: satu peran, satu pemanggil. */
+.ui-title-screen { /* h1 — nama layar */
+  font-family: var(--font-display);
+  font-size: var(--text-screen);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  /* `balance` mencegah baris judul menggantung satu kata (widow) — diminta
+   * ui-ux-pro-max (html-tailwind) dan baseline-ui. */
+  text-wrap: balance;
+}
+
+.ui-title-section { /* h2 — judul bagian */
+  font-family: var(--font-display);
+  font-size: var(--text-section);
+  font-weight: 700;
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+.ui-title-card { /* h3 — kartu, butir, sub-judul */
+  font-family: var(--font-body);
+  font-size: var(--text-title);
+  font-weight: 600;
+  line-height: var(--leading-tight);
+  text-wrap: balance;
+}
+
+.ui-body { /* teks isi */
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  text-wrap: pretty;
+}
+
+.ui-dense { /* peran padat — baris data, lencana, sel tabel */
+  font-size: var(--text-dense);
+  line-height: 1.45;
+}
+
+.ui-meta { /* metadata, label, cap */
+  font-size: var(--text-meta);
+  line-height: 1.4;
+}
+
+/* Lebar baca: teks penjelas multi-baris tidak boleh lebih dari ~65 karakter.
+   Terukur sebelum perubahan: 116ch (riwayat) dan 100ch (status) di desktop. */
+.ui-prose {
+  max-width: var(--measure);
+}
+
 /* ─── Focus ─── */
 
 .ui-focus-ring {
@@ -324,7 +374,7 @@ body {
   justify-content: center;
   gap: 0.125rem;
   min-height: var(--tap-min);
-  font-size: 0.6875rem;
+  font-size: var(--text-meta);
   font-weight: 500;
   color: var(--ink-muted);
   transition: color 150ms ease;

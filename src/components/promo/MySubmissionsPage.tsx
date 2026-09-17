@@ -25,7 +25,7 @@ function StatusBadge({ status }: { status: string }) {
   };
   const cfg = map[status] ?? map.menunggu_review!;
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold ${cfg.cls}`}>
+    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${cfg.cls}`}>
       {cfg.icon}
       {STATUS_LABELS[status] ?? status}
     </span>
@@ -48,7 +48,7 @@ export default function MySubmissionsPage() {
   return (
     <AppShell title="Riwayat Pengajuan">
       <div className="mx-auto max-w-2xl px-4 py-5">
-        <p className="mb-4 flex items-start gap-1.5 text-[11px] leading-relaxed ui-text-muted">
+        <p className="ui-prose ui-body mb-4 flex items-start gap-1.5 ui-text-muted">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Riwayat terikat pada browser/perangkat ini — mengganti perangkat atau membersihkan data
           browser akan menghilangkan akses ke riwayat.
@@ -81,7 +81,7 @@ export default function MySubmissionsPage() {
                         <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
                           {r.submission_number}
                         </p>
-                        <p className="mt-0.5 text-sm font-semibold text-slate-900 dark:text-white">
+                        <p className="ui-title-card mt-0.5 ui-text-strong">
                           {r.material_title || r.media_type_slug}
                         </p>
                         <p className="mt-0.5 text-xs ui-text-muted">

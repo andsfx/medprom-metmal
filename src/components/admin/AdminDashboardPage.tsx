@@ -260,7 +260,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             aria-label={`${STATUS_LABELS[s]} ${summary[s] ?? 0}`}
           >
             <p className="ui-number text-xl tabular-nums">{summary[s] ?? 0}</p>
-            <p className="mt-0.5 text-[11px] font-medium text-slate-500">{STATUS_LABELS[s]}</p>
+            <p className="mt-0.5 text-xs font-medium text-slate-500">{STATUS_LABELS[s]}</p>
           </button>
         ))}
       </div>
@@ -406,7 +406,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   {r.installation_date && <p className="text-xs ui-text-muted">pasang: {r.installation_date}</p>}
                   {leadTimeRisk(r) && (
                     <span
-                      className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                      className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
                       title={leadTimeRisk(r)}
                     >
                       <AlertTriangle className="h-3 w-3" aria-hidden="true" />
@@ -717,7 +717,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           className="sr-only"
                         />
                         {STATUS_LABELS[s] ?? s}
-                        {s === detail.status && <span className="ml-1 text-[10px] font-normal ui-text-muted">(sekarang)</span>}
+                        {s === detail.status && <span className="ml-1 text-xs font-normal ui-text-muted">(sekarang)</span>}
                       </label>
                     ))}
                   </div>
@@ -984,9 +984,9 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{m.name}</p>
-                  <p className="text-[11px] ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category} · /{m.slug}</p>
+                  <p className="text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category} · /{m.slug}</p>
                 </div>
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold ${m.is_active === false ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
+                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${m.is_active === false ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
                   {m.is_active === false ? 'Nonaktif' : 'Aktif'}
                 </span>
               </div>
@@ -1218,7 +1218,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                   <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">{u.display_name}</td>
                   <td className="px-3 py-3 text-slate-700 dark:text-slate-300">{u.email}</td>
                   <td className="px-3 py-3">
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
                       {u.role}
                     </span>
                   </td>
@@ -1396,14 +1396,14 @@ export default function AdminDashboardPage() {
               <Megaphone className="h-5 w-5 text-white" aria-hidden="true" />
             </span>
             <div className="leading-tight">
-              <h1 className="text-sm font-bold text-slate-900 dark:text-white">Media Promosi — Admin</h1>
-              <p className="text-[11px] ui-text-muted">Metropolitan Mall Bekasi</p>
+              <h1 className="text-base font-bold text-slate-900 dark:text-white">Media Promosi — Admin</h1>
+              <p className="text-xs ui-text-muted">Metropolitan Mall Bekasi</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-xs font-semibold text-slate-900 dark:text-white">{user.display_name}</p>
-              <p className="text-[11px] ui-text-muted">{user.role}</p>
+              <p className="text-xs ui-text-muted">{user.role}</p>
             </div>
             <Link to="/" className="text-xs font-medium text-slate-600 transition hover:text-brand-primary-700 dark:text-slate-300">Beranda</Link>
             <button

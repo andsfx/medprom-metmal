@@ -1,5 +1,5 @@
 /**
- * Top app bar — judul kontekstual + aksi balik.
+ * Top app bar â€” judul kontekstual + aksi balik.
  *
  * Terangkat (`data-elevated`) begitu konten menggulir di belakangnya; ini
  * penanda kedalaman yang dipakai aplikasi asli, menggantikan garis statis.
@@ -54,7 +54,7 @@ export default function TopAppBar({ title, back, backTo, onBack, actions, scroll
 
       <div className="min-w-0 flex-1">
         {title ? (
-          <h1 className="truncate text-base font-semibold text-slate-900 dark:text-white">{title}</h1>
+          <h1 className="ui-title-screen truncate text-slate-900 dark:text-white">{title}</h1>
         ) : (
           <span className="font-display text-base font-bold text-slate-900 dark:text-white">
             Media Promosi

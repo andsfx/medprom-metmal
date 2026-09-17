@@ -137,7 +137,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
   return (
     <div ref={containerRef}>
       {manualMode && (
-        <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300" role="status">
+        <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300" role="status">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Daftar tenant sedang tidak dapat dimuat — ketik nama tenant Anda secara manual (sesuai papan nama).
         </p>

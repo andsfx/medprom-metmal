@@ -125,13 +125,13 @@ export default function PromoLandingPage() {
     >
       {/* Hero — padat, langsung ke aksi (bukan halaman pembuka panjang) */}
       <section className="mx-auto max-w-6xl px-4 pb-6 pt-6 sm:pb-10 sm:pt-10">
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-primary-600">
+        <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-primary-600">
           Tenant Relations · 2026
         </p>
-        <h1 className="font-display mt-2 text-2xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
+        <h1 className="font-display mt-2 text-3xl font-bold leading-tight tracking-tight text-slate-900 sm:text-4xl">
           Ajukan Materi Promosi Tenant Anda
         </h1>
-        <p className="ui-text-muted mt-2 max-w-lg text-sm leading-relaxed">
+        <p className="ui-body ui-text-muted mt-2 max-w-lg">
           Kirim materi media promosi — spanduk, LED, videotron, hingga media sosial —
           langsung ke Tim Tenant Relations. Status pengajuan bisa dipantau kapan saja.
         </p>
@@ -192,8 +192,8 @@ export default function PromoLandingPage() {
       {/* Kontak */}
       <section className="border-t border-stone-200 py-12">
         <div className="mx-auto max-w-6xl px-4">
-          <h2 className="font-display text-2xl font-semibold text-slate-900">Butuh Bantuan?</h2>
-          <p className="ui-text-muted mt-1 text-sm">Hubungi kontak Tenant Relations / Marcom kami:</p>
+          <h2 className="font-display text-2xl font-semibold text-slate-900 sm:text-3xl">Butuh Bantuan?</h2>
+          <p className="ui-body ui-text-muted mt-1">Hubungi kontak Tenant Relations / Marcom kami:</p>
           <div className="mt-5 grid gap-4 sm:grid-cols-2">
             {CONTACTS.map((c) => (
               <div key={c.label} className="ui-card p-5">

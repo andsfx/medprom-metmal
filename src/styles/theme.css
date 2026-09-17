@@ -9,6 +9,27 @@
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
 
+  /* ─── Skala teks per PERAN (bukan per angka) ───
+   * Terukur di peramban sebelum perubahan: h1 app bar 16px sementara isi 20px
+   * (hierarki terbalik), dan h2 seasal 30px vs 24px. Satu peran = satu ukuran,
+   * sehingga judul tidak bisa lagi lebih kecil daripada isinya.
+   * Diukur pada 390px; `sm:` menaikkan peran layar/judul di layar lebar. */
+  --text-meta: 0.75rem; /* 12px — label, cap; batas bawah (ui-ux-pro-max: jangan < 12px) */
+  --text-dense: 0.875rem; /* 14px — peran PADAT: baris data & lencana (impeccable mengizinkan
+                             * pengecualian peran padat dari lantai 1rem) */
+  --text-body: 1rem; /* 16px — dasar teks isi (impeccable: lantai 1rem) */
+  --text-title: 1.125rem; /* 18px — judul kartu/butir */
+  --text-section: 1.25rem; /* 20px — judul bagian (h2) */
+  --text-screen: 1.5rem; /* 24px — nama layar & judul halaman (h1) */
+  /* Skala modular 12-14-16-18-20-24; langkah >=2px, tidak ada seri. */
+
+  --leading-tight: 1.2;
+  --leading-body: 1.6;
+
+  /* Lebar baca nyaman — ~65 karakter. Terukur sebelum perubahan: paragraf
+   * riwayat 116ch dan status 100ch di desktop, jauh di atas ambang nyaman. */
+  --measure: 65ch;
+
   /* ─── Surfaces (white / stone, bukan cream) ─── */
   --surface-page: #ffffff;
   --surface-offset: #fafaf9;

@@ -124,7 +124,7 @@ export default function AdminLoginPage() {
             </p>
             <p className="mt-1 text-xs ui-text-muted">
               Klik salah satu akun untuk mengisi form. Password semua akun:{' '}
-              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-[11px] text-slate-800 dark:bg-slate-800 dark:text-slate-100">
+              <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs text-slate-800 dark:bg-slate-800 dark:text-slate-100">
                 {DEV_LOGIN_PASSWORD}
               </code>
             </p>
@@ -140,10 +140,10 @@ export default function AdminLoginPage() {
                     }}
                     className="ui-control app-pressable ui-focus-ring w-full rounded-md px-2.5 py-2 text-left transition hover:border-brand-primary-400"
                   >
-                    <span className="block font-mono text-[11px] font-medium text-slate-800 dark:text-slate-100">
+                    <span className="block font-mono text-xs font-medium text-slate-800 dark:text-slate-100">
                       {acc.email}
                     </span>
-                    <span className="mt-0.5 block text-[11px] ui-text-muted">
+                    <span className="mt-0.5 block text-xs ui-text-muted">
                       {acc.roleLabel} — {acc.note}
                     </span>
                   </button>
