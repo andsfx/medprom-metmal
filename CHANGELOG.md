@@ -63,6 +63,16 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Info jumlah unit Boom Gate terbaca sebagai harga.** Baris Harga kartu Boom
+  Gate berisi "Total 16 Unit" — itu kapasitas pemasangan, bukan tarif. Kini
+  terbaca "Area Parkir Timur dan Parkir Gedung (16 unit tersedia)" pada baris
+  Lokasi; kolom Harga dikosongkan karena deck tidak menyebut tarifnya.
+- **Seed tidak menyinkronkan sebagian besar kolom media.** Klausa ON CONFLICT
+  hanya memperbarui accepted_formats dan rules (lalu price_note), sehingga
+  perubahan name/size_spec/material_spec/location_note/is_active/sort_order di
+  seed tidak pernah sampai ke DB - edit tampak berhasil tapi katalog tidak
+  berubah. Kini seluruh kolom yang dikelola seed disinkronkan.
+
 - **Ganti 38 warna heksadesimal arbitrer di komponen dengan token semantik.**
   `ring-[#007a78]` (27x) → `ring-brand-primary-600`, `text-[#006260]` →
   `text-brand-primary-700`, `ring-[#00918e]/30` → `ring-brand-primary-500/30`,

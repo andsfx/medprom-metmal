@@ -74,8 +74,8 @@ const MEDIA_TYPES = [
   {
     slug: 'boom-gate', category: 'outdoor', name: 'Boom Gate',
     size_spec: '45 x 100 cm', material_spec: 'Sticker di Impraboard',
-    accepted_formats: 'JPEG,PNG,PDF', price_note: 'Total 16 Unit',
-    location_note: 'Area Parkir Timur dan Parkir Gedung', sort_order: 4,
+    accepted_formats: 'JPEG,PNG,PDF', price_note: '',
+    location_note: 'Area Parkir Timur dan Parkir Gedung (16 unit tersedia)', sort_order: 4,
     rules: [
       'Pemasangan dilakukan oleh Tenant.',
       '1 tenant hanya diperkenankan memasang 1 materi.',
@@ -267,13 +267,28 @@ try {
          price_note, location_note, rules, is_active, sort_order)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT (slug) DO UPDATE
-         SET accepted_formats = EXCLUDED.accepted_formats,
+         SET category = EXCLUDED.category,
+             name = EXCLUDED.name,
+             size_spec = EXCLUDED.size_spec,
+             material_spec = EXCLUDED.material_spec,
+             accepted_formats = EXCLUDED.accepted_formats,
              price_note = EXCLUDED.price_note,
+             location_note = EXCLUDED.location_note,
              rules = EXCLUDED.rules,
+             is_active = EXCLUDED.is_active,
+             sort_order = EXCLUDED.sort_order,
              updated_at = now()
-         WHERE promo_media_types.accepted_formats IS DISTINCT FROM EXCLUDED.accepted_formats
-            OR promo_media_types.price_note IS DISTINCT FROM EXCLUDED.price_note
-            OR promo_media_types.rules IS DISTINCT FROM EXCLUDED.rules
+         WHERE (promo_media_types.category, promo_media_types.name,
+                promo_media_types.size_spec, promo_media_types.material_spec,
+                promo_media_types.accepted_formats, promo_media_types.price_note,
+                promo_media_types.location_note, promo_media_types.rules,
+                promo_media_types.is_active, promo_media_types.sort_order)
+               IS DISTINCT FROM
+               (EXCLUDED.category, EXCLUDED.name,
+                EXCLUDED.size_spec, EXCLUDED.material_spec,
+                EXCLUDED.accepted_formats, EXCLUDED.price_note,
+                EXCLUDED.location_note, EXCLUDED.rules,
+                EXCLUDED.is_active, EXCLUDED.sort_order)
        RETURNING id, (xmax = 0) AS is_insert`,
       [
         m.slug, m.category, m.name, m.size_spec, m.material_spec,
