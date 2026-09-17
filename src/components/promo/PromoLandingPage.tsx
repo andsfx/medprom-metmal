@@ -47,7 +47,14 @@ function MediaCard({ media }: { media: PromoMediaType }) {
             <Tag className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
             <div>
               <dt className="sr-only">Harga</dt>
-              <dd className="font-semibold text-slate-900 dark:text-slate-100">{media.price_note}</dd>
+              {/* Satu tarif per baris: sebagian media punya beberapa tarif
+               * (per hari/7 hari/14 hari/30 hari) yang tak terbaca bila
+               * didorong jadi satu baris panjang. */}
+              <dd className="font-semibold text-slate-900 dark:text-slate-100">
+                {media.price_note.split('\n').map((line, i) => (
+                  <span key={i} className="block">{line}</span>
+                ))}
+              </dd>
             </div>
           </div>
         )}

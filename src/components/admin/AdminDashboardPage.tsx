@@ -379,6 +379,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             {loading && (
               <tr><td colSpan={7} className="px-3 py-10 text-center" role="status">
                 <Loader2 className="mx-auto h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
+                <span className="sr-only">Memuat pengajuan…</span>
               </td></tr>
             )}
             {!loading && rows.length === 0 && (
@@ -1367,11 +1368,11 @@ export default function AdminDashboardPage() {
     if (permissions.canManageUsers) list.push({ key: 'users', label: 'Pengguna' });
     return list;
   }, [permissions.canManageUsers]);
-
   if (isLoading) {
     return (
       <div className="ui-admin-page flex min-h-screen items-center justify-center" role="status">
         <Loader2 className="h-6 w-6 animate-spin text-brand-primary-600" aria-hidden="true" />
+        <span className="sr-only">Memuat…</span>
       </div>
     );
   }

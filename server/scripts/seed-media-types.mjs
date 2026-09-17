@@ -87,7 +87,7 @@ const MEDIA_TYPES = [
   {
     slug: 'led-banner', category: 'outdoor', name: 'LED Banner',
     size_spec: '600 x 1350 pixel', material_spec: 'JPEG',
-    accepted_formats: 'JPEG', price_note: 'Gratis (syarat tenant baru/join promo)',
+    accepted_formats: 'JPEG', price_note: 'Gratis (syarat: tenant baru atau peserta program promo)',
     location_note: 'Area depan mall, Jl. AH Yani', sort_order: 5,
     rules: [
       'Fasilitas hanya diberikan kepada Tenant Baru atau tenant yang sedang join promo/join program dengan Mall.',
@@ -100,7 +100,7 @@ const MEDIA_TYPES = [
   {
     slug: 'digital-poster', category: 'indoor', name: 'Digital Poster',
     size_spec: '1920 x 1080 Pixel (Portrait)', material_spec: 'JPEG',
-    accepted_formats: 'JPEG', price_note: 'Free',
+    accepted_formats: 'JPEG', price_note: 'Gratis',
     location_note: 'Atrium 1 (dekat tenant Optik Melawai), Pintu Utara 1 (hadap pintu masuk), Koridor Lantai Dasar (samping Momoiro), Lantai 1 (depan OB Fit), Lantai 1, 2, & 3 (samping eskalator Atrium 2)',
     sort_order: 6,
     rules: [
@@ -131,7 +131,10 @@ const MEDIA_TYPES = [
   {
     slug: 'sticker-lift', category: 'indoor', name: 'Sticker Lift',
     size_spec: '90 x 205 CM', material_spec: 'Sticker Vynil',
-    accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 3.630.000,-/sisi/bulan (Lift Sisi Luar); Rp. 4.235.000,-/sisi/bulan (Lift Sisi Dalam)',
+    accepted_formats: 'JPEG,PNG,PDF', price_note: [
+      'Rp. 3.630.000,-/sisi/bulan (Lift Sisi Luar)',
+      'Rp. 4.235.000,-/sisi/bulan (Lift Sisi Dalam)',
+    ].join('\n'),
     location_note: '', sort_order: 8,
     rules: [
       'Harga belum termasuk PPN.',
@@ -159,7 +162,12 @@ const MEDIA_TYPES = [
     slug: 'videotron', category: 'indoor', name: 'Videotron',
     size_spec: '800 x 600 Pixel (Landscape)', material_spec: 'JPEG/MP4, durasi 30 detik',
     accepted_formats: 'JPEG,PNG,MP4',
-    price_note: 'Rp. 600.000,-/hari; Rp. 4.200.000,-/7 hari; Rp. 5.100.000,-/14 hari; Rp. 10.000.000,-/30 hari',
+    price_note: [
+      'Rp. 600.000,-/hari',
+      'Rp. 4.200.000,-/7 hari',
+      'Rp. 5.100.000,-/14 hari',
+      'Rp. 10.000.000,-/30 hari',
+    ].join('\n'),
     location_note: '', sort_order: 10,
     rules: [
       'Harga sudah termasuk PPN.',
@@ -172,7 +180,7 @@ const MEDIA_TYPES = [
   {
     slug: 'parapet', category: 'indoor', name: 'Parapet',
     size_spec: '512 x 2.624 Pixel (Landscape)', material_spec: 'JPEG/MP4, durasi 30 detik',
-    accepted_formats: 'JPEG,PNG,MP4', price_note: 'Free (Sementara khusus tenant baru)',
+    accepted_formats: 'JPEG,PNG,MP4', price_note: 'Gratis (sementara, khusus tenant baru)',
     location_note: '', sort_order: 11,
     rules: [
       'Harga sudah termasuk PPN.',
@@ -186,7 +194,12 @@ const MEDIA_TYPES = [
     slug: 'videotron-integrasia', category: 'indoor', name: 'Videotron Integrasia',
     size_spec: '4 x 8m Horizontal (Resolusi 1025 x 1025)', material_spec: 'JPEG/MP4, durasi 15 detik',
     accepted_formats: 'JPEG,PNG,MP4',
-    price_note: 'Weekday Rp. 1.800.000,-; Weekend Rp. 2.500.000,-; Weekly Rp. 10.000.000,-; Monthly Rp. 35.000.000,-',
+    price_note: [
+      'Hari kerja Rp. 1.800.000,-',
+      'Akhir pekan Rp. 2.500.000,-',
+      'Mingguan Rp. 10.000.000,-',
+      'Bulanan Rp. 35.000.000,-',
+    ].join('\n'),
     location_note: '', sort_order: 12,
     rules: [
       'Harga belum termasuk PPN, biaya admin Rp. 10.000 dan materai Rp. 10.000.',
@@ -200,7 +213,7 @@ const MEDIA_TYPES = [
   {
     slug: 'sosmed-feed', category: 'social', name: 'Feed Instagram/Fanpage/TikTok',
     size_spec: '800 x 800 Pixel (Square)', material_spec: 'JPEG/MP4',
-    accepted_formats: 'JPEG,PNG,MP4', price_note: 'Free',
+    accepted_formats: 'JPEG,PNG,MP4', price_note: 'Gratis',
     location_note: '', sort_order: 13,
     rules: [
       'Materi promosi harus clean image dan image promo, dilengkapi dengan caption (tulis di catatan pengajuan).',
@@ -219,7 +232,7 @@ const MEDIA_TYPES = [
   {
     slug: 'sosmed-story', category: 'social', name: 'IG Story/Reels',
     size_spec: '1080 x 1920 Pixel', material_spec: 'JPEG/MP4',
-    accepted_formats: 'JPEG,PNG,MP4', price_note: 'Free',
+    accepted_formats: 'JPEG,PNG,MP4', price_note: 'Gratis',
     location_note: '', sort_order: 14,
     rules: [
       'Materi promosi harus clean image dan image promo, dilengkapi dengan caption (tulis di catatan pengajuan).',
@@ -255,9 +268,11 @@ try {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        ON CONFLICT (slug) DO UPDATE
          SET accepted_formats = EXCLUDED.accepted_formats,
+             price_note = EXCLUDED.price_note,
              rules = EXCLUDED.rules,
              updated_at = now()
          WHERE promo_media_types.accepted_formats IS DISTINCT FROM EXCLUDED.accepted_formats
+            OR promo_media_types.price_note IS DISTINCT FROM EXCLUDED.price_note
             OR promo_media_types.rules IS DISTINCT FROM EXCLUDED.rules
        RETURNING id, (xmax = 0) AS is_insert`,
       [

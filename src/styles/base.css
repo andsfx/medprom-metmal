@@ -82,6 +82,12 @@ body {
 
 /* ─── Buttons ─── */
 
+/* Tailwind v4 tidak lagi memberi `cursor: pointer` pada <button> (checklist
+ * skill ui-ux-pro-max). Kembalikan secara global; pengecualian `:disabled`
+ * karena tombol yang tak bisa diklik tak boleh berlagak bisa diklik. */
+button:not(:disabled) {
+  cursor: pointer;
+}
 .ui-btn-primary {
   /* Radius dari token, bukan utilitas: tombol yang lupa membawa kelas radius
    * tetap seragam dengan kontrol lain. */
