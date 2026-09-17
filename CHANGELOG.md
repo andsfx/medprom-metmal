@@ -63,6 +63,11 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Test kontrak seed diperketat.** Test lama mengunci perilaku lewat dua
+  potongan string SQL, sehingga kolom lain bisa diam-diam tertinggal. Kini
+  menguji kesepuluh kolom yang dikelola seed - kolom baru yang lupa
+  didaftarkan ke ON CONFLICT akan langsung gagal.
+
 - **Info jumlah unit Boom Gate terbaca sebagai harga.** Baris Harga kartu Boom
   Gate berisi "Total 16 Unit" — itu kapasitas pemasangan, bukan tarif. Kini
   terbaca "Area Parkir Timur dan Parkir Gedung (16 unit tersedia)" pada baris

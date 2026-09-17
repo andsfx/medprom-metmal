@@ -36,17 +36,25 @@ beforeEach(() => {
 });
 
 describe('seed-media-types — sync rules', () => {
-  it('upsert menyelaraskan accepted_formats DAN rules', async () => {
+  it('upsert menyelaraskan SELURUH kolom yang dikelola seed', async () => {
     await import('../../server/scripts/seed-media-types.mjs');
 
     const upserts = queries.filter((q) => q.sql.includes('INSERT INTO promo_media_types'));
     expect(upserts.length).toBeGreaterThan(0);
 
     const sql = upserts[0].sql;
-    expect(sql).toContain('accepted_formats = EXCLUDED.accepted_formats');
-    expect(sql).toContain('rules = EXCLUDED.rules');
-    // Guard idempotensi harus mempertimbangkan kedua kolom.
-    expect(sql).toContain('promo_media_types.rules IS DISTINCT FROM EXCLUDED.rules');
+    // Setiap kolom yang dikelola seed harus ikut disinkronkan, bukan hanya
+    // sebagian: koreksi harga/lokasi/ketentuan dari deck harus sampai ke
+    // instance yang sudah jalan. Daftar ini sengaja lengkap supaya kolom baru
+    // yang lupa ditambahkan ke ON CONFLICT langsung ketahuan.
+    const KOLOM = [
+      'category', 'name', 'size_spec', 'material_spec', 'accepted_formats',
+      'price_note', 'location_note', 'rules', 'is_active', 'sort_order',
+    ];
+    for (const kolom of KOLOM) {
+      expect(sql, `${kolom} harus diset dari EXCLUDED`).toContain(`${kolom} = EXCLUDED.${kolom}`);
+      expect(sql, `${kolom} harus ikut penjaga idempotensi`).toContain(`promo_media_types.${kolom}`);
+    }
   });
 
   it('mengirim 14 media dengan rules berisi email kanal social media', async () => {
