@@ -90,6 +90,9 @@
   --color-brand-primary-900: #003230;
   --color-brand-primary-950: #001a18;
 
+  /* Aksen tosca terang — dipadankan dengan --brand-tosca-soft. */
+  --color-brand-soft: #33a8a5;
+
   /* Editorial surfaces */
   --color-surface-page: #ffffff;
   --color-surface-offset: #fafaf9;

@@ -410,6 +410,15 @@ body {
   .app-pressable:active {
     transform: none;
   }
+  /* Animasi berulang dimatikan — status tetap terbaca karena setiap spinner
+   * di repo ini selalu didampingi teks ("Mengirim…", "Memuat riwayat…",
+   * "Unduh CSV"). `animate-pulse` skeleton menyisakan kartu statis; ikon
+   * Loader2 menyisakan ikon statis. Regangan ini hidup di base.css (tak
+   * berlapis), sehingga menang atas utility Tailwind yang tinggal di @layer. */
+  .animate-spin,
+  .animate-pulse {
+    animation: none;
+  }
 }
 
 /* Sheet — bottom sheet di mobile, dialog terpusat di desktop. */

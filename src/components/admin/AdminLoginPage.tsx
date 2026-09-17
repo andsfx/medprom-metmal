@@ -66,7 +66,7 @@ export default function AdminLoginPage() {
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                 placeholder="nama@metmal.co.id"
                 required
               />
@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
                   autoComplete="current-password"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
-                  className="ui-control w-full rounded-md px-3 py-2.5 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2.5 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                   required
                 />
                 <button

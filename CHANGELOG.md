@@ -63,6 +63,18 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Ganti 38 warna heksadesimal arbitrer di komponen dengan token semantik.**
+  `ring-[#007a78]` (27x) → `ring-brand-primary-600`, `text-[#006260]` →
+  `text-brand-primary-700`, `ring-[#00918e]/30` → `ring-brand-primary-500/30`,
+  `bg-[#e6f7f6]` → `bg-brand-primary-50`, ditambah token baru
+  `--color-brand-soft` untuk `dark:ring-[#33a8a5]`. Semua nilai sama persis —
+  terukur di peramban: 961 elemen di 5 layar, hasil terhitungnya identik.
+- **Hormati `prefers-reduced-motion` untuk spinner dan skeleton.** 17 ikon
+  `animate-spin` dan `animate-pulse` sebelumnya berputar tak terbatas walau
+  pengguna meminta gerak dikurangi. Kini `animation: none` lewat blok
+  `reduced-motion` yang sudah ada di `base.css` — status tetap terbaca karena
+  setiap spinner selalu didampingi teks ("Mengirim…", "Memuat riwayat…").
+
 - **Nama layar konsol staf membungkus tiga baris di ponsel.** Setelah judulnya
   dinaikkan ke peran nama layar, "Media Promosi — Admin" memecah jadi tiga baris
   pada lebar 390px dan mendorong header setinggi 130px. Di bawah 640px judul itu

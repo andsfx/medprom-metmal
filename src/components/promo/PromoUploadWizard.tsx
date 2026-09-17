@@ -486,7 +486,7 @@ export default function PromoUploadWizard() {
                       key={m.slug}
                       className={`flex cursor-pointer items-start gap-3 rounded-md border p-3.5 transition ${
                         selectedSlug === m.slug
-                          ? 'ring-2 ring-[#007a78] bg-white dark:ring-1 dark:ring-[#33a8a5] dark:bg-slate-800'
+                          ? 'ring-2 ring-brand-primary-600 bg-white dark:ring-1 dark:ring-brand-soft dark:bg-slate-800'
                           : 'border-slate-200 hover:border-stone-400 dark:border-slate-700 dark:hover:border-slate-500'
                       }`}
                     >
@@ -586,7 +586,7 @@ export default function PromoUploadWizard() {
                         maxLength={100}
                         autoComplete="name"
                         onChange={(e) => { setPicName(e.target.value); setFieldErrors((er) => ({ ...er, pic_name: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.pic_name ? true : undefined}
                         aria-describedby={fieldErrors.pic_name ? 'err-pic_name' : undefined}
                       />
@@ -605,7 +605,7 @@ export default function PromoUploadWizard() {
                         autoComplete="tel"
                         placeholder="08xx xxxx xxxx"
                         onChange={(e) => { setPicPhone(e.target.value); setFieldErrors((er) => ({ ...er, pic_phone: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_phone ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_phone ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.pic_phone ? true : undefined}
                         aria-describedby={fieldErrors.pic_phone ? 'err-pic_phone' : undefined}
                       />
@@ -623,7 +623,7 @@ export default function PromoUploadWizard() {
                       value={installationDate}
                       min={leadInfo.earliest || undefined}
                       onChange={(e) => { setInstallationDate(e.target.value); setFieldErrors((er) => ({ ...er, installation_date: '' })); }}
-                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
+                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
                     />
                     <p className="mt-1 text-xs ui-text-muted">
                       Permintaan tanggal bersifat harapan — jadwal final ditentukan Mall (lihat ketentuan media).
@@ -647,7 +647,7 @@ export default function PromoUploadWizard() {
                       maxLength={150}
                       placeholder="Contoh: Promo Akhir Tahun"
                       onChange={(e) => { setCampaignName(e.target.value); setFieldErrors((er) => ({ ...er, campaign_name: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.campaign_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.campaign_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.campaign_name ? true : undefined}
                       aria-describedby={fieldErrors.campaign_name ? 'err-campaign_name' : undefined}
                     />
@@ -665,7 +665,7 @@ export default function PromoUploadWizard() {
                       maxLength={200}
                       placeholder="Contoh: Spanduk Diskon 50%"
                       onChange={(e) => { setMaterialTitle(e.target.value); setFieldErrors((er) => ({ ...er, material_title: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_title ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_title ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.material_title ? true : undefined}
                       aria-describedby={fieldErrors.material_title ? 'err-material_title' : undefined}
                     />
@@ -683,7 +683,7 @@ export default function PromoUploadWizard() {
                       rows={3}
                       placeholder="Penjelasan singkat isi materi promosi Anda."
                       onChange={(e) => { setMaterialDescription(e.target.value); setFieldErrors((er) => ({ ...er, material_description: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_description ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_description ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={fieldErrors.material_description ? true : undefined}
                       aria-describedby={fieldErrors.material_description ? 'err-material_description' : undefined}
                     />
@@ -699,7 +699,7 @@ export default function PromoUploadWizard() {
                         id="material-type"
                         value={materialType}
                         onChange={(e) => { setMaterialType(e.target.value); setFieldErrors((er) => ({ ...er, material_type: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_type ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_type ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.material_type ? true : undefined}
                         aria-describedby={fieldErrors.material_type ? 'err-material_type' : undefined}
                       >
@@ -719,7 +719,7 @@ export default function PromoUploadWizard() {
                         maxLength={200}
                         placeholder={selectedMedia?.location_note || 'Contoh: Atrium 1'}
                         onChange={(e) => { setMediaTarget(e.target.value); setFieldErrors((er) => ({ ...er, media_target: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.media_target ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.media_target ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                         aria-invalid={fieldErrors.media_target ? true : undefined}
                         aria-describedby={fieldErrors.media_target ? 'err-media_target' : undefined}
                       />
@@ -737,7 +737,7 @@ export default function PromoUploadWizard() {
                         type="date"
                         value={airStartDate}
                         onChange={(e) => { setAirStartDate(e.target.value); setFieldErrors((er) => ({ ...er, air_start_date: '', air_end_date: '' })); }}
-                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                       />
                       {fieldErrors.air_start_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_start_date}</p>}
                     </div>
@@ -750,7 +750,7 @@ export default function PromoUploadWizard() {
                         type="date"
                         value={airEndDate}
                         onChange={(e) => { setAirEndDate(e.target.value); setFieldErrors((er) => ({ ...er, air_end_date: '' })); }}
-                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                       />
                       {fieldErrors.air_end_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
                     </div>
@@ -767,7 +767,7 @@ export default function PromoUploadWizard() {
                       rows={4}
                       placeholder={selectedMedia?.category === 'social' ? 'Tulis caption media sosial Anda di sini…' : 'Permintaan atau keterangan tambahan…'}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                     />
                     {selectedMedia?.category === 'social' && (
                       <p className="mt-1 text-xs ui-text-muted">Caption wajib menyebutkan lokasi lantai tenant Anda.</p>
@@ -840,7 +840,7 @@ export default function PromoUploadWizard() {
                     onClick={() => { setSourceMode('link'); setFileError(''); }}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
                       sourceMode === 'link'
-                        ? 'ring-2 ring-[#007a78] bg-white text-[#006260] dark:ring-1 dark:ring-[#33a8a5] dark:bg-slate-800 dark:text-brand-primary-400'
+                        ? 'ring-2 ring-brand-primary-600 bg-white text-brand-primary-700 dark:ring-1 dark:ring-brand-soft dark:bg-slate-800 dark:text-brand-primary-400'
                         : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
                     }`}
                   >
@@ -853,7 +853,7 @@ export default function PromoUploadWizard() {
                     onClick={() => { setSourceMode('upload'); setLinkError(''); }}
                     className={`flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
                       sourceMode === 'upload'
-                        ? 'ring-2 ring-[#007a78] bg-white text-[#006260] dark:ring-1 dark:ring-[#33a8a5] dark:bg-slate-800 dark:text-brand-primary-400'
+                        ? 'ring-2 ring-brand-primary-600 bg-white text-brand-primary-700 dark:ring-1 dark:ring-brand-soft dark:bg-slate-800 dark:text-brand-primary-400'
                         : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
                     }`}
                   >
@@ -888,7 +888,7 @@ export default function PromoUploadWizard() {
                       maxLength={500}
                       placeholder="https://drive.google.com/…"
                       onChange={(e) => { setLinkUrl(e.target.value); setLinkError(''); setFieldErrors((er) => ({ ...er, link_url: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100 ${linkError || fieldErrors.link_url ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${linkError || fieldErrors.link_url ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
                       aria-invalid={linkError || fieldErrors.link_url ? true : undefined}
                       aria-describedby={linkError || fieldErrors.link_url ? 'err-link_url' : undefined}
                     />

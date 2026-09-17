@@ -38,9 +38,9 @@ function StatusBadge({ status }: { status: string }) {
     menunggu_review: 'bg-stone-100 text-stone-700',
     sedang_ditinjau: 'bg-blue-50 text-blue-700',
     disetujui: 'bg-green-50 text-green-700',
-    siap_dipasang: 'bg-[#e6f7f6] text-[#006260]',
-    sedang_dipasang: 'bg-[#e6f7f6] text-[#006260] ring-1 ring-inset ring-[#00918e]/30',
-    sudah_dipasang: 'bg-[#00918e] text-white',
+    siap_dipasang: 'bg-brand-primary-50 text-brand-primary-700',
+    sedang_dipasang: 'bg-brand-primary-50 text-brand-primary-700 ring-1 ring-inset ring-brand-primary-500/30',
+    sudah_dipasang: 'bg-brand-primary-500 text-white',
     ditolak: 'bg-red-50 text-red-700',
     selesai: 'bg-stone-100 text-stone-600',
     perlu_revisi: 'bg-amber-50 text-amber-700',
@@ -255,7 +255,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             onClick={() => { setStatusFilter(statusFilter === s ? '' : s); setPage(1); }}
             aria-pressed={statusFilter === s}
             className={`ui-admin-card text-left p-3 transition ${
-              statusFilter === s ? 'ring-2 ring-[#007a78]' : ''
+              statusFilter === s ? 'ring-2 ring-brand-primary-600' : ''
             }`}
             aria-label={`${STATUS_LABELS[s]} ${summary[s] ?? 0}`}
           >
@@ -739,7 +739,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   maxLength={2000}
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
-                  className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                 />
 
                 {/* Catat pemasangan — hanya bila materi boleh dipasang (FR-040). */}
@@ -943,7 +943,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
         value={String(form?.[field] ?? '')}
         placeholder={placeholder}
         onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
-        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
       />
     </div>
   );
@@ -1073,7 +1073,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                 rows={5}
                 value={form.rules}
                 onChange={(e) => setForm((f) => (f ? { ...f, rules: e.target.value } : f))}
-                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
               />
             </div>
 
@@ -1271,7 +1271,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                     required
                     value={form.email}
                     onChange={(e) => setForm((f) => (f ? { ...f, email: e.target.value } : f))}
-                    className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                    className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
               )}
@@ -1283,7 +1283,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                   required
                   value={form.display_name}
                   onChange={(e) => setForm((f) => (f ? { ...f, display_name: e.target.value } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
               <div>
@@ -1308,7 +1308,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                   minLength={form.password ? 8 : undefined}
                   value={form.password}
                   onChange={(e) => setForm((f) => (f ? { ...f, password: e.target.value } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                 />
               </div>
               {form.id && (

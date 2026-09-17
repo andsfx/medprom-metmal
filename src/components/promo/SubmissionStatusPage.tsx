@@ -310,7 +310,7 @@ export default function SubmissionStatusPage() {
                       maxLength={500}
                       placeholder="https://drive.google.com/…"
                       onChange={(e) => { setRevLink(e.target.value); setRevError(''); }}
-                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                     />
                   </div>
                 ) : (
@@ -353,7 +353,7 @@ export default function SubmissionStatusPage() {
                     maxLength={1000}
                     value={revNotes}
                     onChange={(e) => setRevNotes(e.target.value)}
-                    className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#007a78] dark:bg-slate-800 dark:text-slate-100"
+                    className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                   />
                 </div>
 
