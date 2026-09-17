@@ -21,6 +21,7 @@ import {
   fetchAdminSubmissions, fetchAdminSummary, fetchAdminSubmissionDetail,
   updateSubmissionStatus, recordInstallation, deleteSubmission,
   fetchAdminMediaTypes, createMediaType, updateMediaType, deleteMediaType,
+  uploadMediaImage, deleteMediaImage,
   downloadExportCsv, fetchAdminUsers, createUser, updateUser, deleteUser,
   type MediaTypeInput,
 } from '../../utils/adminApi';
@@ -868,6 +869,7 @@ interface CatalogFormState {
   price_note: string;
   location_note: string;
   rules: string;
+  image_path: string;
   is_active: boolean;
   sort_order: number;
 }
@@ -875,7 +877,7 @@ interface CatalogFormState {
 const EMPTY_CATALOG_FORM: CatalogFormState = {
   id: '', slug: '', category: 'outdoor', name: '', size_spec: '', material_spec: '',
   accepted_formats: 'JPEG', price_note: '', location_note: '', rules: '',
-  is_active: true, sort_order: 0,
+  image_path: '', is_active: true, sort_order: 0,
 };
 
 function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConfirmDelete: (id: string, subject: string) => Promise<boolean> }) {
@@ -885,6 +887,8 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
   const [form, setForm] = useState<CatalogFormState | null>(null);
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [unggahGambar, setUnggahGambar] = useState(false);
+  const [galatGambar, setGalatGambar] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -911,6 +915,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
         size_spec: form.size_spec, material_spec: form.material_spec,
         accepted_formats: form.accepted_formats, price_note: form.price_note,
         location_note: form.location_note, rules: form.rules,
+        image_path: form.image_path,
         is_active: form.is_active, sort_order: form.sort_order,
       };
       if (form.id) await updateMediaType(form.id, input);
@@ -921,6 +926,38 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
       setFormError(err instanceof Error ? err.message : 'Gagal menyimpan media type.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Unggah foto baru untuk media yang sedang dibuka (butuh id yang sudah ada). */
+  async function handleGantiGambar(berkas: File) {
+    if (!form?.id) return;
+    setUnggahGambar(true);
+    setGalatGambar('');
+    try {
+      const imagePath = await uploadMediaImage(form.id, berkas);
+      setForm((f) => (f ? { ...f, image_path: imagePath } : f));
+      await load();
+    } catch (err) {
+      setGalatGambar(err instanceof Error ? err.message : 'Gagal mengunggah gambar.');
+    } finally {
+      setUnggahGambar(false);
+    }
+  }
+
+  /** Hapus foto katalog — kartu kembali tanpa gambar. */
+  async function handleHapusGambar() {
+    if (!form?.id) return;
+    setUnggahGambar(true);
+    setGalatGambar('');
+    try {
+      await deleteMediaImage(form.id);
+      setForm((f) => (f ? { ...f, image_path: '' } : f));
+      await load();
+    } catch (err) {
+      setGalatGambar(err instanceof Error ? err.message : 'Gagal menghapus gambar.');
+    } finally {
+      setUnggahGambar(false);
     }
   }
 
@@ -1002,6 +1039,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                         size_spec: m.size_spec, material_spec: m.material_spec,
                         accepted_formats: m.accepted_formats, price_note: m.price_note,
                         location_note: m.location_note, rules: m.rules,
+                        image_path: m.image_path || '',
                         is_active: m.is_active !== false, sort_order: m.sort_order,
                       });
                       setFormError('');
@@ -1055,6 +1093,63 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {textInput('Materi', 'material_spec', 'Flexi 280gr')}
               {textInput('Harga', 'price_note', 'Rp. 70.000,-/hari')}
               {textInput('Lokasi', 'location_note', 'Sisi Pintu Tol Bekasi Barat')}
+
+              {/* Foto katalog — hanya untuk media yang sudah tersimpan, karena
+               * unggahan butuh id. Media baru: simpan dulu, lalu ganti foto. */}
+              <div>
+                <span className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Foto Katalog</span>
+                {form.id ? (
+                  <div className="rounded-md border border-[var(--rule-color)] p-3 dark:border-slate-700">
+                    {form.image_path ? (
+                      <img
+                        src={form.image_path}
+                        alt={`Pratinjau foto ${form.name || 'media'}`}
+                        className="mb-2.5 aspect-[4/3] w-full max-w-[220px] rounded-[var(--radius-control)] object-cover"
+                      />
+                    ) : (
+                      <p className="mb-2.5 text-xs ui-text-muted">Belum ada foto — kartu katalog tampil tanpa gambar.</p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label
+                        htmlFor="cf-image"
+                        className={`ui-control inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 ${unggahGambar ? 'pointer-events-none opacity-50' : ''}`}
+                      >
+                        <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
+                        {form.image_path ? 'Ganti Foto' : 'Unggah Foto'}
+                      </label>
+                      <input
+                        id="cf-image"
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        className="sr-only"
+                        disabled={unggahGambar}
+                        onChange={(e) => {
+                          const f = e.target.files?.[0];
+                          e.target.value = '';
+                          if (f) void handleGantiGambar(f);
+                        }}
+                      />
+                      {form.image_path && (
+                        <button
+                          type="button"
+                          onClick={() => void handleHapusGambar()}
+                          disabled={unggahGambar}
+                          className="ui-control inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition disabled:opacity-50 dark:text-slate-200"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          Hapus Foto
+                        </button>
+                      )}
+                      {unggahGambar && <Loader2 className="h-4 w-4 animate-spin text-brand-primary-600" aria-hidden="true" />}
+                    </div>
+                    <p className="mt-1.5 text-xs ui-text-muted">JPEG, PNG, atau WebP — maks 4MB. Disarankan lanskap 4:3.</p>
+                    {galatGambar && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{galatGambar}</p>}
+                  </div>
+                ) : (
+                  <p className="text-xs ui-text-muted">Simpan media terlebih dahulu untuk mengunggah foto.</p>
+                )}
+              </div>
+
               <div>
                 <label htmlFor="cf-sort" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Urutan</label>
                 <input

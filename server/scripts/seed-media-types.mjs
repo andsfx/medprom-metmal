@@ -8,14 +8,22 @@
  * ("Instagram, Fanpage, dan Tiktok") menjadi dua entri: sosmed-feed dan
  * sosmed-story — total 14 slug.
  *
- * Idempotent. Baris yang sudah ada disinkronkan pada kolom `accepted_formats`
- * dan `rules` (dua kolom yang bersumber langsung dari deck); harga, lokasi,
- * dan penyesuaian lain hasil penyuntingan admin TIDAK ditimpa. Env: DATABASE_URL.
+ * Idempotent. Baris yang sudah ada disinkronkan pada SELURUH kolom yang
+ * dikelola seed (harga, lokasi, ketentuan, format, urutan, status aktif) —
+ * seed adalah sumber kebenaran katalog yang berasal dari deck.
+ *
+ * PENGECUALIAN: `image_path` TIDAK ditimpa, karena foto bisa diganti staf dari
+ * dashboard. Pakai `--reset-gambar` untuk mengembalikannya ke foto bawaan deck
+ * (sekaligus membersihkan berkas unggahan yang jadi yatim di volume).
+ *
+ * Env: DATABASE_URL, MEDIA_DIR (default /data/media).
  */
-import { resolve, dirname } from 'node:path';
+import { resolve, dirname, join, basename } from 'node:path';
+import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import 'dotenv/config';
 import pg from 'pg';
+import { MEDIA_DIR, hapusGambar } from '../src/media.js';
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..');
 
@@ -263,6 +271,10 @@ const MEDIA_TYPES = [
   },
 ];
 
+/** `--reset-gambar` mengembalikan image_path ke foto bawaan deck. Tanpa flag
+ *  ini, foto hasil unggahan staf TIDAK ditimpa seed. */
+const RESET_GAMBAR = process.argv.includes('--reset-gambar');
+
 const DATABASE_URL = process.env.DATABASE_URL || '';
 if (!DATABASE_URL) {
   console.error('✗ DATABASE_URL belum dikonfigurasi (salin .env.example → .env).');
@@ -281,7 +293,9 @@ try {
          price_note, location_note, rules, image_path, is_active, sort_order)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
        ON CONFLICT (slug) DO UPDATE
-         SET category = EXCLUDED.category,
+         SET image_path = CASE WHEN $13 THEN EXCLUDED.image_path
+                               ELSE promo_media_types.image_path END,
+             category = EXCLUDED.category,
              name = EXCLUDED.name,
              size_spec = EXCLUDED.size_spec,
              material_spec = EXCLUDED.material_spec,
@@ -289,7 +303,6 @@ try {
              price_note = EXCLUDED.price_note,
              location_note = EXCLUDED.location_note,
              rules = EXCLUDED.rules,
-             image_path = EXCLUDED.image_path,
              is_active = EXCLUDED.is_active,
              sort_order = EXCLUDED.sort_order,
              updated_at = now()
@@ -297,27 +310,49 @@ try {
                 promo_media_types.size_spec, promo_media_types.material_spec,
                 promo_media_types.accepted_formats, promo_media_types.price_note,
                 promo_media_types.location_note, promo_media_types.rules,
-                promo_media_types.image_path,
                 promo_media_types.is_active, promo_media_types.sort_order)
                IS DISTINCT FROM
                (EXCLUDED.category, EXCLUDED.name,
                 EXCLUDED.size_spec, EXCLUDED.material_spec,
                 EXCLUDED.accepted_formats, EXCLUDED.price_note,
                 EXCLUDED.location_note, EXCLUDED.rules,
-                EXCLUDED.image_path,
                 EXCLUDED.is_active, EXCLUDED.sort_order)
+            OR ($13 AND promo_media_types.image_path IS DISTINCT FROM EXCLUDED.image_path)
        RETURNING id, (xmax = 0) AS is_insert`,
       [
         m.slug, m.category, m.name, m.size_spec, m.material_spec,
         m.accepted_formats, m.price_note, m.location_note, m.rules, m.image_path,
-        m.is_active === false ? false : true, m.sort_order,
+        m.is_active === false ? false : true, m.sort_order, RESET_GAMBAR,
       ],
     );
     if (rows[0]?.is_insert) inserted += 1;
     else if (rows[0]) synced += 1;
   }
   const { rows: total } = await pool.query('SELECT COUNT(*)::int AS n FROM promo_media_types');
-  console.log(`✓ seed selesai: ${inserted} baru, ${synced} format disinkronkan, total ${total[0].n} media type (${MEDIA_TYPES.length} didefinisikan).`);
+
+  // --reset-gambar memindahkan penunjuk kembali ke foto deck, sehingga berkas
+  // unggahan lama menjadi yatim di volume. Bersihkan supaya volume tidak
+  // menumpuk gambar yang sudah tidak dirujuk siapa pun.
+  let dibersihkan = 0;
+  if (RESET_GAMBAR) {
+    const { rows: masihUnggahan } = await pool.query(
+      `SELECT image_path FROM promo_media_types WHERE image_path LIKE '/api/v1/media/%'`,
+    );
+    const dirujuk = new Set(masihUnggahan.map((r) => basename(r.image_path)));
+    let berkas = [];
+    try { berkas = await readdir(MEDIA_DIR); } catch { berkas = []; }
+    for (const nama of berkas) {
+      if (!dirujuk.has(nama)) {
+        await hapusGambar(nama);
+        dibersihkan += 1;
+      }
+    }
+  }
+
+  console.log(
+    `✓ seed selesai: ${inserted} baru, ${synced} format disinkronkan, ` +
+    `${dibersihkan} gambar yatim dibersihkan, total ${total[0].n} media type (${MEDIA_TYPES.length} didefinisikan).`,
+  );
 } catch (err) {
   console.error('✗ gagal seed:', err.message);
   process.exitCode = 1;

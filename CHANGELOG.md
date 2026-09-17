@@ -9,6 +9,17 @@ Penyelarasan kebijakan dokumentasi + perbaikan jalur deploy yang ditemukan saat
 verifikasi rilis 1.3.0 di produksi.
 
 ### Ditambahkan
+- **Gambar media promosi kini bisa diganti dari dashboard staf (CRUD).**
+  Di form Edit Media ada panel "Foto Katalog": pratinjau, tombol Ganti Foto,
+  dan Hapus Foto. Berkas disimpan di volume Docker `medprom_media` (repo
+  produksi read-only, jadi gambar tidak bisa ditulis ke sana), disajikan lewat
+  `GET /api/v1/media/:nama` dengan cache selamanya karena nama berkas memuat
+  sufiks acak. Format: JPEG/PNG/WebP, maks 4MB, diverifikasi magic bytes
+  SEBELUM ditulis — berkas yang isinya tidak cocok ditolak. Mengganti foto
+  menghapus berkas lama supaya tidak menumpuk.
+- `seed-media-types.mjs --reset-gambar` mengembalikan seluruh foto ke bawaan
+  deck, sekaligus membersihkan berkas unggahan yang jadi yatim di volume.
+
 - **Foto contoh tiap media promosi, diekspor dari deck 2026.** Deck
   "MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026" sudah memuat foto tiap media
   (hal. 2-14). Foto itu diekstrak per halaman dari deck, dipangkas ke 4:3, dan
@@ -239,6 +250,11 @@ verifikasi rilis 1.3.0 di produksi.
   tersisa hanya backup `.env.bak-*`). API restart, healthz OK.
 
 ### Diubah
+- **Seed tidak lagi menimpa `image_path`.** Foto bisa diganti staf, jadi seed
+  biasa membiarkan foto hasil unggahan tetap dipakai; hanya `--reset-gambar`
+  yang menimpanya. Konsekuensi: suntingan admin atas kolom katalog lain tetap
+  ditimpa seed (seed adalah sumber kebenaran katalog dari deck).
+
 - **`DESIGN.md` diselaraskan dengan kode** setelah audit UI/UX. Yang diperbaiki
   bukan hanya uraian yang kurang lengkap, melainkan klaim yang **bertentangan
   dengan kode**:

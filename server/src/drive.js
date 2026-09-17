@@ -365,7 +365,7 @@ router.post('/delete', requireRole(['superadmin', 'admin']), async (req, res, ne
  */
 const HEAD_BYTES = 32;
 
-function readMultipartFile(req) {
+export function readMultipartFile(req) {
   return new Promise((resolve) => {
     const contentType = String(req.headers['content-type'] || '');
     const boundaryMatch = contentType.match(/boundary=(?:"([^"]+)"|([^;]+))/i);

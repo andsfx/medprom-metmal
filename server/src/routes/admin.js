@@ -20,6 +20,11 @@ import bcrypt from 'bcryptjs';
 import { db } from '../db.js';
 import { requireRole, logActivity, READ_ROLES, STAFF_ROLES } from '../auth.js';
 import { deleteDriveFileOrThrow } from '../drive.js';
+import { readMultipartFile } from '../drive.js';
+import {
+  ALLOWED_IMAGE_MIME, MAX_IMAGE_BYTES, checkImageMagic, mediaFileName,
+  simpanGambar, hapusGambar, namaBerkasUnggahan, urlGambar,
+} from '../media.js';
 import { SUBMISSION_STATUSES, canTransition, isInstallableStatus } from '../lib/statusFlow.js';
 
 const router = Router();
@@ -535,6 +540,80 @@ router.post('/media-types/:id/delete', requireRole(STAFF_ROLES), async (req, res
 
     await db.query('DELETE FROM promo_media_types WHERE id = $1', [id]);
     logActivity(req.auth.user, 'delete_media_type', 'promo_media_type', id, { slug: existing.slug }, req);
+    return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─── POST /admin/media-types/:id/image — ganti foto katalog ─────
+// Multipart, satu field `file`. Berkas disimpan di volume MEDIA_DIR, BUKAN di
+// repo (repo read-only di produksi). Foto lama dihapus setelah yang baru
+// berhasil disimpan, supaya tidak ada berkas yatim bila unggahan gagal.
+router.post('/media-types/:id/image', requireRole(STAFF_ROLES), async (req, res, next) => {
+  try {
+    const id = String(req.params?.id || '').trim();
+    if (!id) return res.status(400).json({ success: false, error: 'ID media wajib diisi' });
+
+    const { rows } = await db.query(
+      'SELECT id, slug, image_path FROM promo_media_types WHERE id = $1 LIMIT 1',
+      [id],
+    );
+    const existing = rows[0] || null;
+    if (!existing) return res.status(404).json({ success: false, error: 'Media tidak ditemukan' });
+
+    const file = await readMultipartFile(req);
+    if (file.error) return res.status(400).json({ success: false, error: file.error });
+
+    const mime = String(file.contentType || '').split(';')[0].trim().toLowerCase();
+    if (!ALLOWED_IMAGE_MIME.includes(mime)) {
+      return res.status(400).json({ success: false, error: 'Format gambar harus JPEG, PNG, atau WebP.' });
+    }
+    if (file.length > MAX_IMAGE_BYTES) {
+      return res.status(400).json({ success: false, error: 'Gambar melebihi 4MB. Kompres dahulu.' });
+    }
+    const magic = checkImageMagic(file.head, mime);
+    if (!magic.ok) return res.status(400).json({ success: false, error: magic.error });
+
+    const nama = mediaFileName(existing.slug, mime);
+    await simpanGambar(nama, Buffer.concat(file.chunks, file.length));
+    const imagePath = urlGambar(nama);
+
+    await db.query('UPDATE promo_media_types SET image_path = $1, updated_at = now() WHERE id = $2', [imagePath, id]);
+
+    // Foto lama dihapus setelah DB menunjuk ke yang baru.
+    const lama = namaBerkasUnggahan(existing.image_path);
+    if (lama && lama !== nama) await hapusGambar(lama).catch(() => {});
+
+    logActivity(req.auth.user, 'update_media_image', 'promo_media_type', id,
+      { slug: existing.slug, mime, bytes: file.length }, req);
+    return res.json({ success: true, image_path: imagePath });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─── POST /admin/media-types/:id/image/delete — hapus foto ──────
+// Menghapus foto berarti katalog menampilkan kartu tanpa gambar; tidak ada
+// pengembalian otomatis ke foto bawaan deck (seed sengaja tidak menimpa
+// image_path). Jalankan seed dengan `--reset-gambar` bila ingin kembali.
+router.post('/media-types/:id/image/delete', requireRole(STAFF_ROLES), async (req, res, next) => {
+  try {
+    const id = String(req.params?.id || '').trim();
+    if (!id) return res.status(400).json({ success: false, error: 'ID media wajib diisi' });
+
+    const { rows } = await db.query(
+      'SELECT id, slug, image_path FROM promo_media_types WHERE id = $1 LIMIT 1',
+      [id],
+    );
+    const existing = rows[0] || null;
+    if (!existing) return res.status(404).json({ success: false, error: 'Media tidak ditemukan' });
+
+    const nama = namaBerkasUnggahan(existing.image_path);
+    if (nama) await hapusGambar(nama);
+
+    await db.query("UPDATE promo_media_types SET image_path = '', updated_at = now() WHERE id = $1", [id]);
+    logActivity(req.auth.user, 'delete_media_image', 'promo_media_type', id, { slug: existing.slug }, req);
     return res.json({ success: true });
   } catch (err) {
     return next(err);

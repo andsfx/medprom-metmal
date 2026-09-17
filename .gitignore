@@ -21,3 +21,6 @@ scripts/drive-sweep.mjs
 # Scratch kerja lokal (render deck, baseline visual) — jangan ikut versi
 .tmp/
 .baseline-visual.json
+
+# Berkas uji manual (cookie, gambar contoh) — jangan ikut versi
+.tmp-*

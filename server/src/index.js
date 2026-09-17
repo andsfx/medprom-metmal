@@ -13,6 +13,7 @@
  *   GET  /api/v1/promo/submissions/mine — riwayat per perangkat (publik)
  *   POST /api/v1/drive/upload           — upload file (publik, rate-limited)
  *   POST /api/v1/drive/delete           — hapus file (staff)
+ *   GET  /api/v1/media/:nama            — gambar katalog (publik)
  *   GET|POST /api/v1/admin/*           — dashboard staf (requireRole)
  *   GET  /healthz                      — health check (tanpa DB)
  *
@@ -35,6 +36,7 @@ import authRouter from './routes/auth.js';
 import promoRouter from './routes/promo.js';
 import adminRouter from './routes/admin.js';
 import driveRouter from './drive.js';
+import mediaRouter from './routes/media.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -63,6 +65,7 @@ app.use('/api/v1/auth', authRouter);
 app.use('/api/v1/promo', promoRouter);
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/v1/drive', driveRouter);
+app.use('/api/v1/media', mediaRouter);
 
 // Health check tanpa DB.
 app.get('/healthz', (_req, res) => {

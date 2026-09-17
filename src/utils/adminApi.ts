@@ -95,6 +95,7 @@ export interface MediaTypeInput {
   price_note?: string;
   location_note?: string;
   rules?: string;
+  image_path?: string;
   is_active?: boolean;
   sort_order?: number;
 }
@@ -108,6 +109,39 @@ export async function createMediaType(input: MediaTypeInput): Promise<string> {
 export async function updateMediaType(id: string, input: MediaTypeInput): Promise<void> {
   const result = await apiPost<{ success: boolean; error?: string }>(`/admin/media-types/${id}`, input);
   if (!result.success) throw new ApiError(result.error || 'Gagal menyimpan media type', 'APP');
+}
+
+/**
+ * Ganti foto katalog media (multipart, satu field `file`).
+ * Server memverifikasi magic bytes sebelum menyimpan ke volume media.
+ */
+export async function uploadMediaImage(id: string, file: File): Promise<string> {
+  const { promise, resolve, reject } = Promise.withResolvers<string>();
+  const xhr = new XMLHttpRequest();
+  xhr.open('POST', apiUrl(`/admin/media-types/${encodeURIComponent(id)}/image`));
+  xhr.withCredentials = true;
+  xhr.onload = () => {
+    let parsed: { success?: boolean; error?: string; image_path?: string } = {};
+    try { parsed = JSON.parse(xhr.responseText); } catch { /* body non-JSON */ }
+    if (xhr.status >= 200 && xhr.status < 300 && parsed.success) {
+      resolve(parsed.image_path || '');
+    } else {
+      reject(new ApiError(parsed.error || `Gagal mengunggah gambar (HTTP ${xhr.status})`, 'UPLOAD'));
+    }
+  };
+  xhr.onerror = () => reject(new ApiError('Gagal terhubung ke server', 'NETWORK'));
+  const form = new FormData();
+  form.append('file', file);
+  xhr.send(form);
+  return promise;
+}
+
+/** Hapus foto katalog (kartu kembali tanpa gambar). */
+export async function deleteMediaImage(id: string): Promise<void> {
+  const result = await apiPost<{ success: boolean; error?: string }>(
+    `/admin/media-types/${encodeURIComponent(id)}/image/delete`,
+  );
+  if (!result.success) throw new ApiError(result.error || 'Gagal menghapus gambar', 'APP');
 }
 
 export async function deleteMediaType(id: string): Promise<void> {

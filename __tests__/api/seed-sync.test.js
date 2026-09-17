@@ -49,12 +49,29 @@ describe('seed-media-types — sync rules', () => {
     // yang lupa ditambahkan ke ON CONFLICT langsung ketahuan.
     const KOLOM = [
       'category', 'name', 'size_spec', 'material_spec', 'accepted_formats',
-      'price_note', 'location_note', 'rules', 'image_path', 'is_active', 'sort_order',
+      'price_note', 'location_note', 'rules', 'is_active', 'sort_order',
     ];
     for (const kolom of KOLOM) {
       expect(sql, `${kolom} harus diset dari EXCLUDED`).toContain(`${kolom} = EXCLUDED.${kolom}`);
       expect(sql, `${kolom} harus ikut penjaga idempotensi`).toContain(`promo_media_types.${kolom}`);
     }
+
+    // image_path sengaja BUKAN penimpaan biasa: foto hasil unggahan staf tidak
+    // boleh dikembalikan ke foto bawaan deck setiap seed dijalankan. Hanya
+    // `--reset-gambar` (parameter $13) yang boleh menimpanya.
+    expect(sql, 'image_path wajib kondisional pada flag reset').toContain('CASE WHEN $13 THEN EXCLUDED.image_path');
+  });
+
+  it('tanpa --reset-gambar, image_path tidak ikut penjaga idempotensi', async () => {
+    await import('../../server/scripts/seed-media-types.mjs');
+    const sql = queries.find((q) => q.sql.includes('INSERT INTO promo_media_types')).sql;
+    // Kolom image_path tidak boleh muncul di daftar perbandingan baris, karena
+    // itu akan membuat foto unggahan dianggap "berbeda" lalu ditimpa.
+    const where = sql.slice(sql.indexOf('WHERE (promo_media_types.category'));
+    const daftarBanding = where.slice(0, where.indexOf('IS DISTINCT FROM'));
+    expect(daftarBanding).not.toContain('image_path');
+    // Flag reset juga harus jadi parameter terakhir yang dikirim.
+    expect(queries.find((q) => q.sql.includes('INSERT INTO promo_media_types')).params[12]).toBe(false);
   });
 
   it('mengirim 14 media dengan rules berisi email kanal social media', async () => {
