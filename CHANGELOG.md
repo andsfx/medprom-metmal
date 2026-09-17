@@ -63,6 +63,14 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Nama layar konsol staf membungkus tiga baris di ponsel.** Setelah judulnya
+  dinaikkan ke peran nama layar, "Media Promosi — Admin" memecah jadi tiga baris
+  pada lebar 390px dan mendorong header setinggi 130px. Di bawah 640px judul itu
+  kini turun satu langkah skala (24 -> 20px) sehingga menjadi dua baris dengan
+  header 89px; pada 1440px tetap 24px satu baris. Turunnya ukuran sengaja
+  dibatasi pada header konsol staf (`.ui-admin-title`) — judul app bar layar
+  tenant tetap 24px agar tidak seri dengan judul bagian 20px.
+
 - **Layar sukses wizard dan judul sheet berbagi ukuran dengan `<h1>`.** Di layar
   "Pengajuan Terkirim", judul app bar dan judul besar di dalam kartu sama-sama
   24px, dan teksnya memang sama persis sehingga terbaca sebagai pengulangan

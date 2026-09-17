@@ -136,6 +136,17 @@ body {
   text-wrap: balance;
 }
 
+/* Judul nama layar di header konsol staf turun satu langkah skala di bawah
+ * 640px: "Media Promosi — Admin" membungkus tiga baris di layar sempit dan
+ * mendorong app bar setinggi ~130px. Sengaja TIDAK diterapkan ke semua
+ * .ui-title-screen — di layar tenant, h1 app bar 24px harus tetap di atas h2
+ * 20px. Aturan ini harus tinggal di sini, bukan sebagai utility Tailwind
+ * `text-xl`: Tailwind v4 menaruh utility di @layer, sehingga kelas tak
+ * berlapis ini selalu menang. */
+@media (max-width: 639px) {
+  .ui-admin-title { font-size: var(--text-section); }
+}
+
 .ui-title-section { /* h2 — judul bagian */
   font-family: var(--font-display);
   font-size: var(--text-section);

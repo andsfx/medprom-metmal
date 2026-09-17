@@ -14,7 +14,7 @@
  * dependensi baru".
  */
 
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const SHELL_CACHE = `medprom-shell-${CACHE_VERSION}`;
 const ASSET_CACHE = `medprom-aset-${CACHE_VERSION}`;
 
