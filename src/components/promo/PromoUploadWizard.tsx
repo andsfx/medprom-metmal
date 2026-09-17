@@ -386,7 +386,7 @@ export default function PromoUploadWizard() {
         <div className="mx-auto max-w-2xl px-4 py-8">
           <div className="ui-card p-8 text-center">
             <CheckCircle2 className="mx-auto h-14 w-14 text-green-600 dark:text-green-400" aria-hidden="true" />
-            <h2 className="font-display mt-4 text-2xl font-bold text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
+            <h2 className="ui-title-section mt-4 text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
             <p className="ui-body ui-text-muted mt-2">
               Materi <span className="font-semibold">{selectedMedia?.name}</span> dari tenant{' '}
               <span className="font-semibold">{tenant?.name}</span> sudah kami terima.

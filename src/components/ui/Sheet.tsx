@@ -80,7 +80,7 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
         <div className="app-sheet-grip" aria-hidden="true" />
 
         <div className="flex items-center justify-between gap-3 border-b border-[var(--rule-color)] px-4 py-3 dark:border-slate-700">
-          <h2 className="truncate text-base font-semibold text-slate-900 dark:text-white">{title}</h2>
+          <h2 className="ui-title-card truncate text-slate-900 dark:text-white">{title}</h2>
           <button
             type="button"
             onClick={onClose}

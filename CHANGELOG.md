@@ -63,6 +63,17 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Layar sukses wizard dan judul sheet berbagi ukuran dengan `<h1>`.** Di layar
+  "Pengajuan Terkirim", judul app bar dan judul besar di dalam kartu sama-sama
+  24px, dan teksnya memang sama persis sehingga terbaca sebagai pengulangan
+  tanpa hierarki. Judul sheet pada dashboard staf (Detail Pengajuan, Tambah
+  Media, Tambah User) juga 16px - sama dengan `<h1>` layar. Keduanya kini
+  memakai peran yang lebih rendah daripada nama layar (20px dan 18px).
+- **Nama layar dashboard staf terlalu kecil.** `<h1>` "Media Promosi — Admin"
+  hanya 16px, lebih kecil daripada judul sheet di atasnya. Kini memakai peran
+  nama layar (24px), sama dengan app bar layar tenant, sehingga konsol staf dan
+  sisi tenant akhirnya memakai ukuran judul yang sama.
+
 - **Hierarki judul terbalik / tidak seragam.** Terukur di peramban: `/login`
   memakai `<h1>` 14px (lebih kecil daripada teks isinya), wizard punya `<h1>`
   16px tetapi `<h2>` 20px, dan di halaman katalog `<h1>` dan `<h2>` sama-sama
