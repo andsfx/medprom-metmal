@@ -12,7 +12,7 @@
 import { chromium } from 'playwright';
 
 const BASE = process.env.VERIFY_BASE || 'https://medprom-metmal.vercel.app';
-const API = process.env.VERIFY_API || 'https://promapi.andotherstori.my.id';
+const API = process.env.VERIFY_API || 'https://promapi.metmalcommunityspace.web.id';
 const EMAIL = process.env.VERIFY_EMAIL || 'tr@metmal.co.id';
 const PASSWORD = process.env.VERIFY_PASSWORD || '';
 const FINGERPRINT = process.env.VERIFY_FP || 'verify-fp-e2e-1';

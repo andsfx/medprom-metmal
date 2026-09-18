@@ -2,7 +2,7 @@
 # medprom-metmal — VPS stack (API saja; frontend di Vercel)
 #
 # Topologi:
-#   Caddy host (443, metmal.andotherstori.my.id dsb.)
+#   Caddy host (443, metmalcommunityspace.web.id dsb.)
 #     └─ reverse_proxy <subdomain> → 127.0.0.1:3002
 #          └─ api (node:20-alpine, server/src/index.js)
 #               └─ postgres 16 (volume pgdata)

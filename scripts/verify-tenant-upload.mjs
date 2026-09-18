@@ -11,7 +11,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 const BASE = process.env.VERIFY_BASE || 'https://medprom-metmal.vercel.app';
-const API = process.env.VERIFY_API || 'https://promapi.andotherstori.my.id';
+const API = process.env.VERIFY_API || 'https://promapi.metmalcommunityspace.web.id';
 const EMAIL = process.env.VERIFY_EMAIL || 'tr@metmal.co.id';
 const PASSWORD = process.env.VERIFY_PASSWORD || '';
 const results = [];

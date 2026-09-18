@@ -88,6 +88,18 @@ verifikasi rilis 1.3.0 di produksi.
   perenderan).
 
 ### Dirapikan
+- **Domain API pindah ke `promapi.metmalcommunityspace.web.id`.** Menggantikan
+  `promapi.andotherstori.my.id` di Caddyfile, README deploy, dan tiga script
+  verifikasi (`verify-admin-flow`, `verify-tenant-upload`, `preview-server`).
+  Tidak ada perubahan kode server: base URL ada di env frontend
+  (`VITE_API_URL`) dan konfigurasi Caddy, bukan di source.
+  `Caddyfile` kini memakai snippet bersama dan **tetap melayani domain lama
+  sebagai alias** — frontend yang masih memuat bundle lama (service worker
+  menyajikan shell dari cache) memanggil host itu, jadi alias baru boleh
+  dihapus setelah beberapa rilis.
+- **Contoh `CORS_ORIGIN` di `deploy/vps/.env.example` salah** — tertulis
+  `medprom.vercel.app`, padahal domain produksi `medprom-metmal.vercel.app`.
+  Contoh yang salah menghasilkan CORS 403 bila disalin apa adanya.
 
 - **Desain visual penuh ditulis ulang — arah Editorial Kontras.**
   Seluruh UI beralih dari pola hangat project event (Bricolage Grotesque + cream

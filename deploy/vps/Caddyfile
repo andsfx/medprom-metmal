@@ -11,9 +11,17 @@
 #     klien apa adanya, sehingga rate limit bisa dilewati dengan memalsukan
 #     header tersebut.
 #
+# Dua blok domain, satu origin API:
+#   * `promapi.metmalcommunityspace.web.id` — domain kanonik (baru).
+#   * `promapi.andotherstori.my.id` — alias transisi. JANGAN dihapus sebelum
+#     trafik lama benar-benar habis: frontend yang masih memuat bundle lama
+#     (service worker menyajikan shell dari cache) memanggil host ini, dan
+#     CORS_ORIGIN di .env hanya memutakhirkan origin frontend, bukan base URL
+#     yang sudah tertanam di bundle. Hapus setelah beberapa rilis.
+#
 # Terapkan: caddy validate --config /etc/caddy/Caddyfile && caddy reload --config /etc/caddy/Caddyfile
 
-promapi.andotherstori.my.id {
+(promapi_medprom) {
 	encode zstd gzip
 
 	header {
@@ -27,9 +35,22 @@ promapi.andotherstori.my.id {
 		# percaya nilai kiriman klien.
 		header_up X-Real-IP {remote_host}
 	}
+}
+
+promapi.metmalcommunityspace.web.id {
+	import promapi_medprom
 
 	log {
 		output file /var/log/caddy/medprom-api.log
+		format json
+	}
+}
+
+promapi.andotherstori.my.id {
+	import promapi_medprom
+
+	log {
+		output file /var/log/caddy/medprom-api-lama.log
 		format json
 	}
 }

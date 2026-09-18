@@ -15,8 +15,8 @@ TLS dan mem-proxy subdomain baru ke `127.0.0.1:3002`.
   `GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... node scripts/drive-auth.mjs`
   → buka URL, login akun mediapromosi, izinkan → isi `GOOGLE_REFRESH_TOKEN`
   di `.env` VPS. `DRIVE_ROOT_FOLDER_ID` opsional (kosong = root My Drive).
-- Domain: satu subdomain baru di `andotherstori.my.id` (mis.
-  `promapi.andotherstori.my.id`) — DNS A record → IP publik VPS.
+- Domain: subdomain di `metmalcommunityspace.web.id` (mis.
+  `promapi.metmalcommunityspace.web.id`) — DNS A record → IP publik VPS.
 
 ## 2. Taruh kode di VPS
 
@@ -95,9 +95,9 @@ Bloknya **berversi** di repo: `deploy/vps/Caddyfile`. Salin ke
 ## 6. Smoke test API
 
 ```bash
-curl -s https://promapi.andotherstori.my.id/healthz
+curl -s https://promapi.metmalcommunityspace.web.id/healthz
 # {"success":true,"data":{"status":"ok","db":true}}
-curl -s https://promapi.andotherstori.my.id/api/v1/promo/media-types | head -c 300
+curl -s https://promapi.metmalcommunityspace.web.id/api/v1/promo/media-types | head -c 300
 ```
 
 ## 7. Frontend → Vercel
@@ -106,7 +106,7 @@ curl -s https://promapi.andotherstori.my.id/api/v1/promo/media-types | head -c 3
 cd D:/Andy/medprom-metmal
 npm ci && npm run build
 vercel link            # project baru: medprom-metmal
-vercel env add VITE_API_URL production   # https://promapi.andotherstori.my.id
+vercel env add VITE_API_URL production   # https://promapi.metmalcommunityspace.web.id
 vercel env add VITE_TURNSTILE_SITE_KEY production   # sitekey publik Turnstile
 vercel --prod
 ```
@@ -141,18 +141,18 @@ docker compose up -d api
 
 # 3. Pastikan API sudah versi baru — tautan tidak valid harus ditolak dengan
 #    pesan tautan, bukan "drive_file_id wajib diisi" (API lama).
-curl -s -X POST https://promapi.andotherstori.my.id/api/v1/promo/submit \
+curl -s -X POST https://promapi.metmalcommunityspace.web.id/api/v1/promo/submit \
   -H 'Content-Type: application/json' \
   -d '{"media_type_slug":"sosmed-feed","tenant_name":"Cek Rilis","pic_name":"Cek","pic_phone":"081234567890","link_url":"bukan-url"}'
 # Harapan: {"success":false,"errors":["Tautan materi harus berupa URL http/https yang valid"]}
 # Pesan lain (mis. "drive_file_id wajib diisi") → API belum ter-update, JANGAN lanjut.
 
 # 4. Katalog harus sudah tersinkron dari deck (butuh `db:seed` terbaru)
-curl -s https://promapi.andotherstori.my.id/api/v1/promo/media-types \
+curl -s https://promapi.metmalcommunityspace.web.id/api/v1/promo/media-types \
   | grep -o '"accepted_formats":"[^"]*"' | head -3
 # Harapan: media cetak memuat JPEG,PNG,PDF (Digital Poster: JPEG saja)
 
-curl -s https://promapi.andotherstori.my.id/api/v1/promo/media-types \
+curl -s https://promapi.metmalcommunityspace.web.id/api/v1/promo/media-types \
   | grep -c 'marketing@malmetropolitan.com'
 # Harapan: 2 (sosmed-feed + sosmed-story). Angka 0 → seed belum dijalankan.
 

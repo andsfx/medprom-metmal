@@ -18,7 +18,7 @@ import { dirname } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DIST = join(ROOT, 'dist');
 const PORT = Number(process.argv[2] || 4173);
-const API = process.env.PREVIEW_API || 'https://promapi.andotherstori.my.id';
+const API = process.env.PREVIEW_API || 'https://promapi.metmalcommunityspace.web.id';
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
