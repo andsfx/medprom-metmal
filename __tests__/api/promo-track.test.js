@@ -172,10 +172,13 @@ describe('GET /promo/submissions/track', () => {
     expect(res.body.error).toMatch(/tidak ditemukan/i);
   });
 
-  it('meneruskan IP pengunjung ke verifikasi captcha', async () => {
+  it('meneruskan IP pengunjung dan action "track" ke verifikasi captcha', async () => {
     mockFound();
     await call({ number: 'MP-260918-A7K2QX', captcha: 'tok-1' });
 
-    expect(mockedVerify).toHaveBeenCalledWith('tok-1', '203.0.113.10');
+    expect(mockedVerify).toHaveBeenCalledWith('tok-1', {
+      remoteip: '203.0.113.10',
+      action: 'track',
+    });
   });
 });

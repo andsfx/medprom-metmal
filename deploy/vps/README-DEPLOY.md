@@ -174,9 +174,11 @@ cd D:/Andy/medprom-metmal && npm ci && npm run build && vercel --prod
   `docker compose up -d` (restart api). Selama kosong, pemilih tenant memakai
   fallback isian nama manual.
 - Captcha Turnstile: buat widget di dashboard Cloudflare, lalu isi
-  `TURNSTILE_SECRET_KEY` di `.env` VPS **dan** `VITE_TURNSTILE_SITE_KEY` di env
-  Vercel (build ulang). Tanpa secret key, verifikasi `/lacak` dilewati dan
-  server menulis peringatan saat boot.
+  `TURNSTILE_SECRET_KEY` **dan** `TURNSTILE_HOSTNAMES` (hostname frontend
+  produksi, dipisah koma; tanpa `localhost`) di `.env` VPS, serta
+  `VITE_TURNSTILE_SITE_KEY` di env Vercel (build ulang). Tanpa secret key,
+  verifikasi `/lacak` dilewati dan server menulis peringatan saat boot; secret
+  terisi tanpa allowlist hostname membuat verifikasi ditolak `503`.
 - Sweep file yatim (opsional): cron `0 4 * * *` (WIB) menjalankan
   `node scripts/drive-sweep.mjs --apply >> /var/log/medprom-sweep.log 2>&1`
   dari host yang punya env `GOOGLE_*` + `DATABASE_URL` → tanpa `--apply`

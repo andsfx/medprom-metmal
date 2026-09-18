@@ -26,6 +26,7 @@
  *                  lintas-origin browser (same-origin tidak lewat CORS)
  *   GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN — storage Google Drive (lihat drive.js)
  *   TURNSTILE_SECRET_KEY — captcha endpoint pelacakan (lihat lib/turnstile.js)
+ *   TURNSTILE_HOSTNAMES — daftar hostname frontend yang diizinkan (dipisah koma)
  *   COOKIE_SAMESITE / COOKIE_SECURE / COOKIE_DOMAIN — lihat auth.js
  */
 import 'dotenv/config';
@@ -39,7 +40,7 @@ import promoRouter from './routes/promo.js';
 import adminRouter from './routes/admin.js';
 import driveRouter from './drive.js';
 import mediaRouter from './routes/media.js';
-import { turnstileConfigured } from './lib/turnstile.js';
+import { turnstileConfigured, turnstileHostnamesConfigured } from './lib/turnstile.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -98,6 +99,8 @@ const server = app.listen(PORT, () => {
   console.log(`[api] REST server jalan di http://localhost:${PORT} (db: ${isDbReady() ? 'siap' : 'belum-siap'})`);
   if (!turnstileConfigured()) {
     console.warn('[api] TURNSTILE_SECRET_KEY kosong — verifikasi captcha endpoint pelacakan DILEWATI. Isi sebelum dipakai publik.');
+  } else if (!turnstileHostnamesConfigured()) {
+    console.warn('[api] TURNSTILE_HOSTNAMES kosong — verifikasi captcha akan DITOLAK (fail-closed). Isi daftar hostname frontend.');
   }
 });
 

@@ -34,27 +34,29 @@ describe('TurnstileWidget', () => {
     vi.stubEnv('VITE_TURNSTILE_SITE_KEY', '');
     const { renderWidget } = installTurnstile();
 
-    const { container } = render(<TurnstileWidget onToken={() => {}} />);
+    const { container } = render(<TurnstileWidget onToken={() => {}} action="track" />);
 
     expect(container).toBeEmptyDOMElement();
     expect(renderWidget).not.toHaveBeenCalled();
   });
 
-  it('sitekey ada → widget Turnstile dipasang dengan sitekey itu', async () => {
+  it('sitekey ada → widget Turnstile dipasang dengan sitekey dan action', async () => {
     const { renderWidget } = installTurnstile();
 
-    render(<TurnstileWidget onToken={() => {}} />);
+    render(<TurnstileWidget onToken={() => {}} action="track" />);
 
     await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(1));
     const options = renderWidget.mock.calls[0]![1];
     expect(options.sitekey).toBe(SITE_KEY);
+    // `action` ikut dipasang; server memverifikasinya (anti pakai-ulang token).
+    expect(options.action).toBe('track');
   });
 
   it('token dari callback diteruskan ke pemanggil', async () => {
     const { renderWidget } = installTurnstile();
     const onToken = vi.fn();
 
-    render(<TurnstileWidget onToken={onToken} />);
+    render(<TurnstileWidget onToken={onToken} action="track" />);
     await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(1));
 
     const options = renderWidget.mock.calls[0]![1];
@@ -67,7 +69,7 @@ describe('TurnstileWidget', () => {
     const { renderWidget } = installTurnstile();
     const onToken = vi.fn();
 
-    render(<TurnstileWidget onToken={onToken} />);
+    render(<TurnstileWidget onToken={onToken} action="track" />);
     await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(1));
 
     const options = renderWidget.mock.calls[0]![1];
@@ -80,7 +82,7 @@ describe('TurnstileWidget', () => {
     const { renderWidget, removeWidget } = installTurnstile();
     const onToken = vi.fn();
 
-    const { rerender } = render(<TurnstileWidget onToken={onToken} resetKey={0} />);
+    const { rerender } = render(<TurnstileWidget onToken={onToken} resetKey={0} action="track" />);
     await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(1));
 
     const options = renderWidget.mock.calls[0]![1];
@@ -88,7 +90,7 @@ describe('TurnstileWidget', () => {
     onToken.mockClear();
 
     // Pengiriman berikutnya menaikkan kunci: token sekali pakai harus dibuang.
-    rerender(<TurnstileWidget onToken={onToken} resetKey={1} />);
+    rerender(<TurnstileWidget onToken={onToken} resetKey={1} action="track" />);
 
     await waitFor(() => expect(renderWidget).toHaveBeenCalledTimes(2));
     expect(removeWidget).toHaveBeenCalledWith('widget-1');

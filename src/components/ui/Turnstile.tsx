@@ -60,9 +60,11 @@ interface TurnstileWidgetProps {
   onToken: (token: string) => void;
   /** Naikkan untuk memaksa token baru (token lama sudah terpakai/kedaluwarsa). */
   resetKey?: number;
+  /** Nama permukaan yang dilindungi; server memverifikasi nilainya. */
+  action: string;
 }
 
-export default function TurnstileWidget({ onToken, resetKey = 0 }: TurnstileWidgetProps) {
+export default function TurnstileWidget({ onToken, resetKey = 0, action }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -87,6 +89,7 @@ export default function TurnstileWidget({ onToken, resetKey = 0 }: TurnstileWidg
         if (cancelled || !window.turnstile || !containerRef.current) return;
         widgetId = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
+          action,
           theme: 'auto',
           language: 'auto',
           callback: (token: string) => onTokenRef.current(token),
@@ -101,7 +104,7 @@ export default function TurnstileWidget({ onToken, resetKey = 0 }: TurnstileWidg
       cancelled = true;
       if (widgetId && window.turnstile) window.turnstile.remove(widgetId);
     };
-  }, [siteKey, resetKey]);
+  }, [siteKey, resetKey, action]);
 
   if (!siteKey) return null;
 

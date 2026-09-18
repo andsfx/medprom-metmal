@@ -18,11 +18,14 @@ verifikasi rilis 1.3.0 di produksi.
   Karena pola nomor mudah ditebak, pengiriman dijaga **captcha Cloudflare
   Turnstile**: tombol Lacak terkunci sampai verifikasi selesai, dan server
   memverifikasi token ke Siteverify sebelum data apa pun dibaca (fail-closed
-  503 bila Siteverify tak terjangkau). Tautan masuk ditambahkan di tab bar
+  503 bila Siteverify tak terjangkau), mengikuti kontrak kanonik Cloudflare:
+  `success` **dan** `action` cocok (`'track'`) **dan** `hostname` termasuk
+  allowlist. Tautan masuk ditambahkan di tab bar
   (tab "Lacak"), hero beranda, layar sukses wizard, dan keadaan kosong Riwayat.
-  **Operator: isi `TURNSTILE_SECRET_KEY` (server) dan `VITE_TURNSTILE_SITE_KEY`
-  (frontend, build ulang).** Tanpa secret key, verifikasi dilewati dan server
-  menulis peringatan saat boot — gerbangnya tidak aktif sampai diisi.
+  **Operator: isi `TURNSTILE_SECRET_KEY` + `TURNSTILE_HOSTNAMES` (server) dan
+  `VITE_TURNSTILE_SITE_KEY` (frontend, build ulang).** Tanpa secret key,
+  verifikasi dilewati dan server menulis peringatan saat boot; secret terisi
+  tanpa allowlist hostname membuat verifikasi ditolak `503`.
 - **Gambar media promosi kini bisa diganti dari dashboard staf (CRUD).**
   Di form Edit Media ada panel "Foto Katalog": pratinjau, tombol Ganti Foto,
   dan Hapus Foto. Berkas disimpan di volume Docker `medprom_media` (repo

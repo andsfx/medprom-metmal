@@ -454,8 +454,13 @@ router.get('/submissions/track', async (req, res, next) => {
 
   try {
     // Captcha diverifikasi setelah format nomor lolos (panggilan Siteverify
-    // tidak terbuang untuk input cacat) dan sebelum DB disentuh.
-    const captcha = await verifyTurnstile(req.query?.captcha, clientIp(req));
+    // tidak terbuang untuk input cacat) dan sebelum DB disentuh. `action`
+    // dikunci ke 'track' agar token dari widget permukaan lain tak bisa dipakai
+    // ulang di sini.
+    const captcha = await verifyTurnstile(req.query?.captcha, {
+      remoteip: clientIp(req),
+      action: 'track',
+    });
     if (!captcha.ok) {
       return res.status(captcha.status || 400).json({ success: false, error: captcha.error });
     }

@@ -278,9 +278,17 @@ tidak pernah sampai ke browser).
 ```bash
 # .env — kredensial Turnstile (dashboard Cloudflare → Turnstile)
 TURNSTILE_SECRET_KEY=<secret-key>
+TURNSTILE_HOSTNAMES=medprom.vercel.app          # hostname frontend, dipisah koma
 # .env — sitekey publik untuk build frontend (ubah → build + deploy ulang)
 VITE_TURNSTILE_SITE_KEY=<site-key>
 ```
+
+Server tidak berhenti pada `success: true` — ia juga menuntut **`action`** cocok
+(widget di `/lacak` memasang `action="track"`, sehingga token dari permukaan lain
+tidak bisa dipakai ulang di sini) dan **`hostname`** termasuk `TURNSTILE_HOSTNAMES`.
+Itu sebabnya allowlist hostname wajib: secret terisi tanpa allowlist → verifikasi
+ditolak `503` (fail-closed), bukan dilewati. Produksi **jangan** memuat
+`localhost`/`127.0.0.1` di allowlist.
 
 Tanpa `TURNSTILE_SECRET_KEY`, server **melewati** verifikasi dan menulis
 peringatan saat boot — instance lama tetap jalan, tetapi gerbang captcha belum

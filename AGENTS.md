@@ -73,9 +73,12 @@ mengembalikan bentuk yang sama — pemuatan detailnya satu fungsi
 (`loadSubmissionDetail`) supaya kedua jalur tidak pernah menyimpang. Nomor
 pengajuan **bukan rahasia** (dibacakan ke PIC), jadi gerbangnya bukan
 kerahasiaan melainkan **captcha Cloudflare Turnstile** (`lib/turnstile.js`),
-diverifikasi setelah format nomor lolos dan **sebelum** DB disentuh; gangguan
-Siteverify → `503` fail-closed. Tanpa `TURNSTILE_SECRET_KEY`, verifikasi
-**dilewati** (peringatan boot) — lihat pitfall #15.
+diverifikasi setelah format nomor lolos dan **sebelum** DB disentuh. Verifikasi
+mengikuti kontrak kanonik Cloudflare: `success` **dan** `action` cocok
+(`'track'`) **dan** `hostname` ada di `TURNSTILE_HOSTNAMES`. Gangguan Siteverify
+→ `503` fail-closed. Tanpa `TURNSTILE_SECRET_KEY` verifikasi **dilewati**
+(peringatan boot); secret terisi tanpa allowlist hostname → **ditolak**
+fail-closed. Lihat pitfall #15.
 
 **Revisi** (`POST /promo/submissions/:id/revision`) hanya saat status
 `perlu_revisi`; kepemilikan ditegakkan lewat fingerprint; versi lama **tidak
@@ -237,7 +240,7 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
   di-inline **saat build** — mengubah `VITE_API_URL` perlu build + deploy ulang.
   `VITE_API_URL` = base URL **tanpa** suffix `/api/v1` (klien yang menambahkannya).
   Pasangan captcha: `VITE_TURNSTILE_SITE_KEY` (publik) ↔ `TURNSTILE_SECRET_KEY`
-  (server, tidak pernah ke browser).
+  (server, tidak pernah ke browser) + `TURNSTILE_HOSTNAMES` (allowlist hostname).
 - **Urutan deploy wajib**: API + skema dulu, frontend terakhir. Frontend baru di
   atas API lama = tombol yang pasti gagal.
 
@@ -350,14 +353,21 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     perenderan, jadi kredensialnya tetap ada di bundle.
 14. **Klaim di komentar/docs harus cocok dengan kode.** Docs basi wajib
     diperbaiki saat menyentuh area itu.
-15. **Captcha Turnstile dilewati bila `TURNSTILE_SECRET_KEY` kosong.** Ini
-    keputusan sadar (instance lama tetap jalan) tetapi berarti gerbang
-    anti-bot `/lacak` **mati** sampai kuncinya diisi — hanya ada peringatan di
-    log boot. Saat mengisi: `TURNSTILE_SECRET_KEY` di `.env` server **dan**
-    `VITE_TURNSTILE_SITE_KEY` di env build FE (nilai `VITE_*` di-inline saat
-    build — mengubah env Vercel saja tidak cukup tanpa redeploy). Bila Siteverify
-    tak terjangkau saat verifikasi berjalan, endpoint membalas `503`
-    (fail-closed), bukan meloloskan permintaan.
+15. **Captcha Turnstile: dua env, dua mode gagal yang berbeda.** `TURNSTILE_SECRET_KEY`
+    kosong → verifikasi **dilewati** (hanya peringatan log boot; instance lama
+    tetap jalan). Secret terisi tetapi `TURNSTILE_HOSTNAMES` kosong → verifikasi
+    **ditolak** `503` fail-closed, karena cek `hostname` tidak bisa dijalankan.
+    Isi bersamaan: secret di `.env` server **dan** `VITE_TURNSTILE_SITE_KEY` di
+    env build FE (nilai `VITE_*` di-inline saat build — mengubah env Vercel saja
+    tidak cukup tanpa redeploy). Allowlist hostname produksi **jangan** memuat
+    `localhost`/`127.0.0.1`. Bila Siteverify tak terjangkau saat verifikasi
+    berjalan, endpoint membalas `503` (fail-closed), bukan meloloskan permintaan.
+16. **Verifikasi captcha tidak berhenti di `success`.** Token Turnstile yang sah
+    dari widget lain tetap harus ditolak: `lib/turnstile.js` mencocokkan `action`
+    (widget `/lacak` memasang `action="track"`) dan `hostname` terhadap
+    allowlist. Jangan hapus cek ini — tanpa `action`, token bisa dipakai ulang di
+    permukaan lain; tanpa `hostname`, token dari situs mana pun yang memakai
+    sitekey sama ikut lolos.
 
 ## Commit & Rilis
 
