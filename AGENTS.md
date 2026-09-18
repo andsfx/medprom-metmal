@@ -380,16 +380,31 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     — **tanpa** `header_up X-Real-IP`, tanpa header keamanan, tanpa log,
     padahal versi di repo memuat semuanya. Jangan menganggap repo mencerminkan
     produksi; bandingkan dulu (`awk '/^promapi/,/^}/' /etc/caddy/Caddyfile`).
-    Akibat yang perlu diketahui: Caddy **meneruskan** `X-Real-IP` kiriman klien
-    apa adanya (diverifikasi dengan probe terisolasi: kirim `9.9.9.9`, origin
-    menerima `9.9.9.9`). Karena `rateLimit.js` memakai header itu sebagai
-    identitas klien, identitas menjadi **spoofable** — kecuali ada proxy lain
-    di depannya yang menimpanya. Untuk `promapi` produksi, Cloudflare-lah yang
-    menimpanya (terverifikasi: 60× header sama → 429, header berbeda → tetap
-    429). Untuk domain yang **DNS-only** (mis. `metmal.andotherstori.my.id`,
-    langsung ke VPS tanpa Cloudflare) **tidak ada yang menimpanya** — rate
-    limit di sana bisa dilewati. Perbaikan: `header_up X-Real-IP {remote_host}`
-    di setiap blok Caddy.
+    Akibatnya: tanpa `header_up`, Caddy **meneruskan** `X-Real-IP` kiriman
+    klien apa adanya (probe terisolasi: kirim `9.9.9.9`, origin terima
+    `9.9.9.9`), sehingga identitas di `rateLimit.js` bisa dipalsukan dari
+    internet **untuk domain yang diakses langsung ke origin**.
+19. **`header_up X-Real-IP {remote_host}` SALAH untuk domain di balik
+    Cloudflare.** Di balik proxy, `{remote_host}` = alamat Cloudflare, jadi
+    **semua** pengunjung berbagi satu bucket rate limit — satu orang bisa
+    mengunci pengguna lain. Yang benar:
+    `header_up X-Real-IP {client_ip}` **plus** daftar
+    `servers { trusted_proxies static <CIDR Cloudflare> }` di blok global.
+    `{client_ip}` memakai `CF-Connecting-IP` bila peer tepercaya, dan alamat
+    TCP asli bila tidak — jadi tidak bisa dipalsukan klien.
+    Diverifikasi dengan dua skenario di VPS: peer tepercaya + XFF `9.9.9.9`
+    → origin terima `9.9.9.9`; penyerang langsung + XFF dipalsukan → origin
+    terima alamat TCP asli. Ini juga memperbaiki domain DNS-only: dengan
+    `trusted_proxies` terisi, header palsu dari klien diabaikan.
+    Catatan: `trusted_proxies` di dalam blok `reverse_proxy` **bukan** sintaks
+    yang valid (Caddy menafsirkan argumen pertama sebagai IP); harus di
+    `servers` global dengan kata kunci `static`.
+20. **Cloudflare menimpa `X-Real-IP` dari klien.** Terverifikasi: 61 request
+    dengan `X-Real-IP` berbeda-beda (`10.0.0.1`..`10.0.0.61`) berakhir 60×
+    `400` lalu `429` — artinya identitas tetap IP asli pengirim, bukan header
+    kiriman. Karena itu `promapi` produksi **tidak** rentan spoofing meski
+    Caddyfile aktifnya polos; jangan "memperbaiki" dengan `{remote_host}`
+    (lihat #19) karena itu justru merusak rate limit.
 
 ## Commit & Rilis
 

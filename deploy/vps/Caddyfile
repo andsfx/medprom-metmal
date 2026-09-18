@@ -5,11 +5,9 @@
 #
 # Kontrak dengan API:
 #   * reverse_proxy → 127.0.0.1:3002 (api container, lihat docker-compose.yml)
-#   * header_up X-Real-IP {remote_host} — WAJIB. server/src/lib/rateLimit.js
-#     memakai X-Real-IP sebagai identitas klien dan sengaja mengabaikan
-#     X-Forwarded-For. Tanpa baris ini Caddy meneruskan X-Real-IP kiriman
-#     klien apa adanya, sehingga rate limit bisa dilewati dengan memalsukan
-#     header tersebut.
+#   * `header_up X-Real-IP {client_ip}` — WAJIB, dan **bukan** `{remote_host}`.
+#     `server/src/lib/rateLimit.js` memakai X-Real-IP sebagai identitas klien
+#     dan sengaja mengabaikan X-Forwarded-For. Lihat catatan di bawah.
 #
 # Dua blok domain, satu origin API:
 #   * `promapi.metmalcommunityspace.web.id` — domain kanonik (baru).
@@ -21,6 +19,22 @@
 #
 # Terapkan: caddy validate --config /etc/caddy/Caddyfile && caddy reload --config /etc/caddy/Caddyfile
 
+{
+	# Cloudflare mem-proxy domain produksi. Tanpa daftar ini Caddy tidak tahu
+	# hop mana yang boleh dipercaya, dan `{client_ip}` akan berisi alamat
+	# Cloudflare untuk SEMUA klien — akibatnya rate limit jadi satu bucket
+	# bersama dan satu pengunjung bisa mengunci seluruh pengguna lain.
+	servers {
+		trusted_proxies static \
+			173.245.48.0/20 103.21.244.0/22 103.22.200.0/22 103.31.4.0/22 \
+			141.101.64.0/18 108.162.192.0/18 190.93.240.0/20 188.114.96.0/20 \
+			197.234.240.0/22 198.41.128.0/17 162.158.0.0/15 104.16.0.0/13 \
+			104.24.0.0/14 172.64.0.0/13 131.0.72.0/22 \
+			2400:cb00::/32 2606:4700::/32 2803:f800::/32 2405:b500::/32 \
+			2405:8100::/32 2a06:98c0::/29 2c0f:f248::/32
+	}
+}
+
 (promapi_medprom) {
 	encode zstd gzip
 
@@ -31,9 +45,14 @@
 	}
 
 	reverse_proxy 127.0.0.1:3002 {
-		# Timpa identitas klien dengan alamat TCP sesungguhnya; jangan
-		# percaya nilai kiriman klien.
-		header_up X-Real-IP {remote_host}
+		# `{client_ip}` menghormati trusted_proxies di atas: bila request datang
+		# dari Cloudflare, ini IP pengunjung sesungguhnya (dari CF-Connecting-IP,
+		# bukan X-Forwarded-For kiriman klien); bila datang langsung ke origin,
+		# ini alamat TCP asli. Keduanya tidak bisa dipalsukan klien.
+		#
+		# JANGAN pakai `{remote_host}`: di balik Cloudflare itu = IP Cloudflare,
+		# sehingga seluruh pengunjung berbagi satu bucket rate limit.
+		header_up X-Real-IP {client_ip}
 	}
 }
 
