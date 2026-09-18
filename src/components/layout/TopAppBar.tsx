@@ -21,11 +21,13 @@ interface TopAppBarProps {
   onBack?: () => void;
   /** Slot aksi di kanan bar. */
   actions?: ReactNode;
+  /** Slot navigasi utama (desktop). Dirender di antara judul dan aksi. */
+  nav?: ReactNode;
   /** Elemen yang digulir untuk memicu elevasi; bawaan window. */
   scrollTargetId?: string;
 }
 
-export default function TopAppBar({ title, back, backTo, onBack, actions, scrollTargetId }: TopAppBarProps) {
+export default function TopAppBar({ title, back, backTo, onBack, actions, nav, scrollTargetId }: TopAppBarProps) {
   const navigate = useNavigate();
   const [elevated, setElevated] = useState(false);
 
@@ -61,6 +63,8 @@ export default function TopAppBar({ title, back, backTo, onBack, actions, scroll
           </span>
         )}
       </div>
+
+      {nav}
 
       {actions && <div className="flex shrink-0 items-center gap-1">{actions}</div>}
     </header>

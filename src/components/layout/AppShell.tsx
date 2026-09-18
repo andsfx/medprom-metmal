@@ -8,8 +8,13 @@
 import type { ReactNode } from 'react';
 import BottomTabBar from './BottomTabBar';
 import TopAppBar from './TopAppBar';
+import TopNav from './TopNav';
+import { useMediaQuery } from './useMediaQuery';
 
 const SCROLL_ID = 'app-scroll';
+
+/** Ambang yang sama dengan aturan CSS `.app-tabbar`/`.app-nav` di `base.css`. */
+const DESKTOP_QUERY = '(min-width: 640px)';
 
 interface AppShellProps {
   children: ReactNode;
@@ -36,6 +41,11 @@ export default function AppShell({
   actions,
   hideTabBar,
 }: AppShellProps) {
+  // Desktop: navigasi pindah ke app bar; mobile: tab bar bawah. Hanya satu yang
+  // dirender agar tidak ada dua landmark `nav` bernama sama di DOM.
+  const desktop = useMediaQuery(DESKTOP_QUERY);
+  const showNav = !hideTabBar;
+
   return (
     <div className="app-shell">
       <TopAppBar
@@ -44,14 +54,15 @@ export default function AppShell({
         backTo={backTo}
         onBack={onBack}
         actions={actions}
+        nav={showNav && desktop ? <TopNav /> : undefined}
         scrollTargetId={SCROLL_ID}
       />
 
-      <main id={SCROLL_ID} className="app-scroll" data-tabbar={hideTabBar ? 'off' : 'on'}>
+      <main id={SCROLL_ID} className="app-scroll" data-tabbar={showNav ? 'on' : 'off'}>
         {children}
       </main>
 
-      {!hideTabBar && <BottomTabBar />}
+      {showNav && !desktop && <BottomTabBar />}
     </div>
   );
 }

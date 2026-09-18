@@ -5,24 +5,21 @@
  * penyembunyian ada di `base.css` (`@media (min-width: 640px)`) — bukan
  * utilitas `sm:hidden` di sini, karena `display: grid` pada `.app-tabbar`
  * mengalahkan utilitas Tailwind tersebut.
+ *
+ * Di desktop, tujuan yang sama disajikan `TopNav` di dalam app bar
+ * (lihat `DESIGN.md`: "Tab bar hanya mobile; di desktop navigasi ada di app
+ * bar"). Keduanya membaca `NAV_ITEMS` agar tidak pernah lepas sinkron.
  */
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutGrid, FilePlus2, ClipboardList, Search } from 'lucide-react';
-
-const TABS = [
-  { to: '/', label: 'Katalog', Icon: LayoutGrid },
-  { to: '/ajukan', label: 'Ajukan', Icon: FilePlus2 },
-  { to: '/lacak', label: 'Lacak', Icon: Search },
-  { to: '/riwayat', label: 'Riwayat', Icon: ClipboardList },
-];
+import { NAV_ITEMS, isNavItemActive } from './navItems';
 
 export default function BottomTabBar() {
   const { pathname } = useLocation();
 
   return (
     <nav className="app-tabbar" aria-label="Navigasi utama">
-      {TABS.map(({ to, label, Icon }) => {
-        const active = to === '/' ? pathname === '/' : pathname.startsWith(to);
+      {NAV_ITEMS.map(({ to, label, Icon }) => {
+        const active = isNavItemActive(to, pathname);
         return (
           <Link
             key={to}

@@ -101,6 +101,15 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Navigasi utama tidak ada sama sekali di desktop.** Tab bar bawah
+  menyembunyikan dirinya di `≥640px` (aturan `base.css`) dan tidak punya
+  pengganti, padahal `DESIGN.md` menetapkan "di desktop navigasi ada di app
+  bar". Akibatnya tujuan seperti `/lacak` hanya bisa dicapai dengan mengetik
+  URL — tab keempat hanya muncul di mobile. Daftar tujuan kini satu sumber
+  (`navItems.ts`) dan disajikan dua komponen: `BottomTabBar` (mobile) dan
+  `TopNav` di dalam app bar (desktop). `AppShell` merender **tepat satu**
+  berdasarkan viewport agar tidak ada dua landmark `nav` bernama sama.
+  `CACHE_VERSION` service worker dinaikkan ke `v10`.
 - **Batas 5 pengajuan/24 jam per perangkat bisa dilewati.** `device_fingerprint`
   bersifat opsional di `POST /promo/submit` dan pengecekan anti-spam dibungkus
   `if (fingerprint)`, sehingga klien cukup mengosongkan field itu untuk
