@@ -515,8 +515,17 @@ export default function PromoUploadWizard() {
                       )}
                       <span className="min-w-0 flex-1">
                         <span className="flex flex-wrap items-center gap-2">
-                          <span className="text-sm font-semibold text-slate-900 dark:text-white">{m.name}</span>
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                          {/* `min-w-0` + `overflow-wrap: anywhere`: nama media bisa
+                           * memuat kata majemuk tanpa titik putus (mis.
+                           * "Feed Instagram/Fanpage/TikTok"). Tanpa keduanya,
+                           * flex item ini menolak menyusut di bawah lebar
+                           * min-content kata terpanjang dan meluber keluar
+                           * kartu pada viewport 320px. */}
+                          <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
+                          {/* `text-slate-600` (bukan slate-500): di atas latar
+                           * `bg-slate-100`, slate-500 hanya 4.34:1 — gagal AA
+                           * untuk teks 12px. slate-600 = 6.92:1. */}
+                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                             {CATEGORY_LABELS[m.category] ?? m.category}
                           </span>
                         </span>

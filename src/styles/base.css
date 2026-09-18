@@ -1,5 +1,15 @@
 /* Base styles — arah "App Produk" (Geist memimpin, Fraunces aksen display). */
 
+/* Jaring pengaman anti-scroll-horizontal. `clip` (bukan `hidden`) dipakai
+ * supaya `position: sticky`/`fixed` pada keturunan tetap bekerja — `hidden`
+ * akan mematikan keduanya karena membuat elemen jadi scroll container.
+ * Audit 2026-09-18 menemukan satu elemen meluber di 320px; aturan ini
+ * memastikan luber berikutnya tidak langsung membuka scroll horizontal. */
+html,
+body {
+  overflow-x: clip;
+}
+
 body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;

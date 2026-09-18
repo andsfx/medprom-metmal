@@ -36,48 +36,45 @@ function MediaCard({ media }: { media: PromoMediaType }) {
         <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">{media.name}</h3>
       </div>
 
+      {/* `<dl>` hanya boleh berisi `<dt>`/`<dd>` (atau `<div>` pembungkus
+       * langsung). Setiap baris memakai satu `<div>` langsung, dengan
+       * `<dt>`+`<dd>` di dalamnya; ikon diletakkan di dalam `<dt>` agar
+       * tidak ada pembungkus bersarang yang membuat `<dd>` kehilangan
+       * induk `<dl>` (axe: definition-list + dlitem). */}
       <dl className="mt-3 space-y-2 text-sm">
         {media.size_spec && (
           <div className="flex items-start gap-2">
+            <dt className="sr-only">Ukuran</dt>
             <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
-            <div>
-              <dt className="sr-only">Ukuran</dt>
-              <dd className="ui-text-muted">{media.size_spec}</dd>
-            </div>
+            <dd className="ui-text-muted">{media.size_spec}</dd>
           </div>
         )}
         {media.material_spec && (
           <div className="flex items-start gap-2">
+            <dt className="sr-only">Materi</dt>
             <Tag className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
-            <div>
-              <dt className="sr-only">Materi</dt>
-              <dd className="ui-text-muted">{media.material_spec}</dd>
-            </div>
+            <dd className="ui-text-muted">{media.material_spec}</dd>
           </div>
         )}
         {media.price_note && (
           <div className="flex items-start gap-2">
+            <dt className="sr-only">Harga</dt>
             <Tag className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
-            <div>
-              <dt className="sr-only">Harga</dt>
-              {/* Satu tarif per baris: sebagian media punya beberapa tarif
-               * (per hari/7 hari/14 hari/30 hari) yang tak terbaca bila
-               * didorong jadi satu baris panjang. */}
-              <dd className="font-semibold text-slate-900 dark:text-slate-100">
-                {media.price_note.split('\n').map((line, i) => (
-                  <span key={i} className="block">{line}</span>
-                ))}
-              </dd>
-            </div>
+            {/* Satu tarif per baris: sebagian media punya beberapa tarif
+             * (per hari/7 hari/14 hari/30 hari) yang tak terbaca bila
+             * didorong jadi satu baris panjang. */}
+            <dd className="font-semibold text-slate-900 dark:text-slate-100">
+              {media.price_note.split('\n').map((line, i) => (
+                <span key={i} className="block">{line}</span>
+              ))}
+            </dd>
           </div>
         )}
         {media.location_note && (
           <div className="flex items-start gap-2">
+            <dt className="sr-only">Lokasi</dt>
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
-            <div className="min-w-0">
-              <dt className="sr-only">Lokasi</dt>
-              <dd className="ui-text-muted">{media.location_note}</dd>
-            </div>
+            <dd className="ui-text-muted">{media.location_note}</dd>
           </div>
         )}
       </dl>

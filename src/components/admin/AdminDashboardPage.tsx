@@ -1474,11 +1474,11 @@ export default function AdminDashboardPage() {
 
   if (!user) {
     return (
-      <div className="ui-admin-page flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
+      <main className="ui-admin-page flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
         <Megaphone className="h-10 w-10 text-brand-primary-500" aria-hidden="true" />
-        <p className="text-sm font-semibold text-slate-800 dark:text-white">Sesi berakhir atau belum login.</p>
+        <h1 className="text-sm font-semibold text-slate-800 dark:text-white">Sesi berakhir atau belum login.</h1>
         <Link to="/login" className="ui-btn-primary rounded-md px-5 py-2.5 text-sm font-semibold transition">Login</Link>
-      </div>
+      </main>
     );
   }
 

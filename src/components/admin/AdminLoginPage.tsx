@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
 
   return (
     <div className="app-shell">
-      <div className="app-canvas">
+      <main className="app-canvas">
         <div className="w-full max-w-sm">
         <div className="mb-6 flex flex-col items-center text-center">
           <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] bg-brand-primary-600">
@@ -162,7 +162,7 @@ export default function AdminLoginPage() {
           </Link>
         </p>
         </div>
-      </div>
+      </main>
     </div>
   );
 }

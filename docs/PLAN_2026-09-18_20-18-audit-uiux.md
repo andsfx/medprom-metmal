@@ -240,3 +240,29 @@ besar bisa selesai dalam satu pass.
 
 Gate setelah perbaikan: axe-core 0 pelanggaran di 10 rute, plus seluruh suite
 test kedua repo (medprom 33/285, komunitas 69/470) dan CRLF=0.
+
+---
+
+## Koreksi & perbaikan (2026-09-18 21:10 WIB)
+
+**Audit pertama cacat pada medprom.** Saya melaporkan "0 pelanggaran axe" di
+`/` dan `/ajukan`. Itu **salah**: katalog media di-fetch dari API dan belum
+ter-render saat axe dijalankan (tunggu 6 detik, kurang). Dengan tunggu 9 detik,
+axe menemukan pelanggaran nyata. Angka "0" hanya sah bila konten async sudah
+ter-render. Semua temuan di bawah sudah diperbaiki dan diverifikasi.
+
+| Temuan | Bukti | Perbaikan |
+|---|---|---|
+| `<dl>` tidak valid di kartu katalog | axe `definition-list` 13 node + `dlitem` 88 node | `<dt>`/`<dd>` jadi anak langsung; ikon pindah ke dalam `<dt>` |
+| Teks meluber 320px | label nama media `right=340px` di viewport 320 | `min-w-0` + `[overflow-wrap:anywhere]` |
+| Kontras chip kategori | `text-slate-500` di `bg-slate-100` = **4.34:1** (gagal AA) | `text-slate-600` = **6.92:1** |
+| `/login` tanpa landmark | axe `landmark-one-main` + `region` 8 node | `<div class="app-canvas">` → `<main>` |
+| `/admin` state sesi berakhir | axe `page-has-heading-one` + `landmark-one-main` | tambah `<main>` + `<h1>` |
+
+**Hasil akhir:** axe **0 pelanggaran di 7 rute** (`/`, `/ajukan`, `/riwayat`,
+`/lacak`, `/login`, `/admin`, `/status/:token`); 0 elemen meluber di 320px;
+`overflow-x: clip` pada `html`+`body`; suite 33 berkas / 285 test hijau;
+`tsc` 0; build sukses.
+
+**Dikecualikan:** link inline "Lacak dengan nomor pengajuan" (18px). WCAG 2.5.8
+mengecualikan inline text link — memaksa 44px akan merusak alur kalimat.

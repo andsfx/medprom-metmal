@@ -8,11 +8,19 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 Penyelarasan kebijakan dokumentasi + perbaikan jalur deploy yang ditemukan saat
 verifikasi rilis 1.3.0 di produksi.
 
+### Fixed
+- **Audit UI/UX (Hallmark 58 gate + WCAG 2.2/axe-core) — 4 temuan diperbaiki.** Cakupan 7 rute (`/`, `/ajukan`, `/riwayat`, `/lacak`, `/login`, `/admin`, `/status/:token`) di produksi, viewport 320–1280. Setelah perbaikan: **0 pelanggaran axe di ketujuh rute**, 0 elemen meluber di 320px.
+  - **Major · `<dl>` tidak valid di kartu katalog** (`definition-list` 13 node + `dlitem` 88 node). Setiap baris membungkus `<dt>`/`<dd>` dalam `<div>` bersarang, sehingga `<dd>` kehilangan induk `<dl>` langsung. Ikon dipindah ke dalam `<dt>`, `<dd>` jadi anak langsung pembungkus. Sekarang `<dl>` hanya berisi `<div>` dengan `<dt>`+`<dd>` di dalamnya.
+  - **Major · teks meluber di 320px.** Label nama media (`Feed Instagram/Fanpage/TikTok`) mencapai `right=340px` pada viewport 320px: flex item tanpa `min-w-0` tidak bisa menyusut di bawah lebar min-content kata terpanjang, dan kata bergaris miring tak punya titik putus. Diperbaiki dengan `min-w-0` + `[overflow-wrap:anywhere]`.
+  - **Major · kontras chip kategori** (`/ajukan`). `text-slate-500` di atas `bg-slate-100` hanya **4.34:1**, gagal AA 4.5:1 untuk teks 12px. Dinaikkan ke `text-slate-600` (**6.92:1**).
+  - **Moderate · landmark & heading hilang.** `/login` tidak punya landmark `<main>` (8 node di luar landmark); `/admin` pada state "sesi berakhir" tidak punya `<main>` maupun `<h1>`. Keduanya diperbaiki.
+  - **Jaring pengaman:** `overflow-x: clip` pada `html` + `body` (bukan `hidden`, agar `position: sticky`/`fixed` tetap bekerja).
+  - **Dikecualikan dengan alasan:** link inline "Lacak dengan nomor pengajuan" (18px) — WCAG 2.5.8 mengecualikan inline text link; memaksa 44px merusak alur kalimat.
+
 ### Added
-- **Audit UI/UX (Hallmark 58 gate + WCAG 2.2/axe-core).** Cakupan: `/`, `/ajukan`, `/riwayat`, `/lacak`, `/login` di produksi, viewport 320–1280. Hasil: **0 critical · 1 major · 2 minor**.
-  - Bersih dan terukur: **0 pelanggaran axe** di kelima rute; 0 anti-pattern sumber (`transition-all`, `hover:scale`, gradien ungu/biru, font terlarang, emoji-ikon, side-stripe, `#000`/`#fff` murni); kontras semua teks lulus terhadap latar efektif; target sentuh 44px; tinggi input = tombol; tombol disabled tiga kanal (`opacity` + `cursor` + atribut); `prefers-reduced-motion` dan `focus-visible` ada; satu `h1` per halaman; 0 gambar tanpa alt; 0 input tanpa label; tanpa scroll horizontal 320–1280px.
-  - **Major · teks meluber di 320px.** Label `Feed Instagram/Fanpage/TikTok` di `/ajukan` mencapai `right=340px` pada viewport 320px karena kata majemuk bergaris miring tanpa titik putus (`overflow-wrap: normal`). Terkliping, bukan scroll, tapi tetap terpotong.
-  - Minor: link inline "Lacak dengan nomor pengajuan" tinggi 18px (di bawah 24px, tapi dikecualikan sebagai inline text link); `overflow-x` belum `clip` di `html`/`body` (aman hari ini, jaring pengaman untuk masa depan).
+- **Laporan audit UI/UX** — `docs/PLAN_2026-09-18_20-18-audit-uiux.md` (mencakup medprom + komunitas).
+
+  **Catatan koreksi metode:** audit pertama melaporkan "0 pelanggaran axe" di `/` dan `/ajukan`; itu **keliru** — katalog media belum ter-render saat axe dijalankan (tunggu 6 detik, kurang dari waktu fetch API). Dengan tunggu 9 detik, pelanggaran muncul dan sudah diperbaiki di atas. Angka "0 pelanggaran" hanya sah bila konten async sudah ter-render.
 
 ### Ditambahkan
 - **Pelacakan pengajuan dengan nomor — plus captcha Cloudflare Turnstile.**
