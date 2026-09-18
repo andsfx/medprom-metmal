@@ -375,6 +375,21 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     dashboard (*Turnstile → widget → Settings → Hostname Management*), bukan
     bug kode. Daftarkan domain produksi **dan** `localhost`/`127.0.0.1` untuk
     uji lokal. Domain produksi proyek ini: `medprom-metmal.vercel.app`.
+18. **Caddyfile di repo ≠ Caddyfile yang aktif di VPS.** Yang aktif di
+    `/etc/caddy/Caddyfile` ternyata hanya berisi `reverse_proxy 127.0.0.1:3002`
+    — **tanpa** `header_up X-Real-IP`, tanpa header keamanan, tanpa log,
+    padahal versi di repo memuat semuanya. Jangan menganggap repo mencerminkan
+    produksi; bandingkan dulu (`awk '/^promapi/,/^}/' /etc/caddy/Caddyfile`).
+    Akibat yang perlu diketahui: Caddy **meneruskan** `X-Real-IP` kiriman klien
+    apa adanya (diverifikasi dengan probe terisolasi: kirim `9.9.9.9`, origin
+    menerima `9.9.9.9`). Karena `rateLimit.js` memakai header itu sebagai
+    identitas klien, identitas menjadi **spoofable** — kecuali ada proxy lain
+    di depannya yang menimpanya. Untuk `promapi` produksi, Cloudflare-lah yang
+    menimpanya (terverifikasi: 60× header sama → 429, header berbeda → tetap
+    429). Untuk domain yang **DNS-only** (mis. `metmal.andotherstori.my.id`,
+    langsung ke VPS tanpa Cloudflare) **tidak ada yang menimpanya** — rate
+    limit di sana bisa dilewati. Perbaikan: `header_up X-Real-IP {remote_host}`
+    di setiap blok Caddy.
 
 ## Commit & Rilis
 
