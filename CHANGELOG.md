@@ -8,6 +8,12 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 Penyelarasan kebijakan dokumentasi + perbaikan jalur deploy yang ditemukan saat
 verifikasi rilis 1.3.0 di produksi.
 
+### Added
+- **Audit UI/UX (Hallmark 58 gate + WCAG 2.2/axe-core).** Cakupan: `/`, `/ajukan`, `/riwayat`, `/lacak`, `/login` di produksi, viewport 320–1280. Hasil: **0 critical · 1 major · 2 minor**.
+  - Bersih dan terukur: **0 pelanggaran axe** di kelima rute; 0 anti-pattern sumber (`transition-all`, `hover:scale`, gradien ungu/biru, font terlarang, emoji-ikon, side-stripe, `#000`/`#fff` murni); kontras semua teks lulus terhadap latar efektif; target sentuh 44px; tinggi input = tombol; tombol disabled tiga kanal (`opacity` + `cursor` + atribut); `prefers-reduced-motion` dan `focus-visible` ada; satu `h1` per halaman; 0 gambar tanpa alt; 0 input tanpa label; tanpa scroll horizontal 320–1280px.
+  - **Major · teks meluber di 320px.** Label `Feed Instagram/Fanpage/TikTok` di `/ajukan` mencapai `right=340px` pada viewport 320px karena kata majemuk bergaris miring tanpa titik putus (`overflow-wrap: normal`). Terkliping, bukan scroll, tapi tetap terpotong.
+  - Minor: link inline "Lacak dengan nomor pengajuan" tinggi 18px (di bawah 24px, tapi dikecualikan sebagai inline text link); `overflow-x` belum `clip` di `html`/`body` (aman hari ini, jaring pengaman untuk masa depan).
+
 ### Ditambahkan
 - **Pelacakan pengajuan dengan nomor — plus captcha Cloudflare Turnstile.**
   Tenant yang kehilangan tautan status kini bisa membuka `/lacak`, memasukkan
