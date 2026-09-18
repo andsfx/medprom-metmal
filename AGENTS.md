@@ -14,7 +14,9 @@ Bahasa UI dan pesan error: **Indonesia**.
 Dua sisi, satu basis kode:
 
 - **Publik (tanpa login)** — katalog media, wizard pengajuan 3 langkah, riwayat
-  per perangkat (fingerprint), dan **halaman status via token** (`/status/:token`).
+  per perangkat (fingerprint), **halaman status via token** (`/status/:token`),
+  dan **pelacakan via nomor pengajuan** (`/lacak`, digerbangi captcha Cloudflare
+  Turnstile).
 - **Staf (login)** — daftar/filter pengajuan, penetapan status, pencatatan
   pemasangan, CRUD katalog, ekspor CSV, kelola akun. Role: `superadmin` >
   `admin` > `tenant_relation` (read-only).
@@ -57,13 +59,23 @@ flowchart LR
    `DATE_RE`, `LINK_RE`, dan field wajib PRD §9.3 (+ `terms_accepted`).
 3. Mode ditentukan server: `linkUrl && !driveFileId ? 'link' : 'upload'`.
 4. Media harus ada **dan aktif**; lead time dihitung ulang dari `rules` di DB.
-5. Anti-spam 5/24 jam per fingerprint (hanya bila fingerprint dikirim).
+5. `device_fingerprint` **wajib** (400 bila kosong); anti-spam 5/24 jam per
+   perangkat.
 6. `INSERT` pengajuan + **versi 1** materi + **baris riwayat** pembuka → `201
    { success, id, submission_number, status_token, status, created_at }`.
 
 **Halaman status** (`GET /promo/submissions/status/:token`) mengembalikan
 `{ submission, history, files, installation }`; `submission` **tanpa**
 fingerprint/IP (metadata internal tidak boleh bocor ke publik).
+
+**Pelacakan via nomor** (`GET /promo/submissions/track?number=&captcha=`)
+mengembalikan bentuk yang sama — pemuatan detailnya satu fungsi
+(`loadSubmissionDetail`) supaya kedua jalur tidak pernah menyimpang. Nomor
+pengajuan **bukan rahasia** (dibacakan ke PIC), jadi gerbangnya bukan
+kerahasiaan melainkan **captcha Cloudflare Turnstile** (`lib/turnstile.js`),
+diverifikasi setelah format nomor lolos dan **sebelum** DB disentuh; gangguan
+Siteverify → `503` fail-closed. Tanpa `TURNSTILE_SECRET_KEY`, verifikasi
+**dilewati** (peringatan boot) — lihat pitfall #15.
 
 **Revisi** (`POST /promo/submissions/:id/revision`) hanya saat status
 `perlu_revisi`; kepemilikan ditegakkan lewat fingerprint; versi lama **tidak
@@ -83,15 +95,16 @@ Pengecualian yang disengaja: `/auth/me` → `{ success, user }` tanpa `data`
 
 | Path | Isi |
 |---|---|
-| `src/components/promo/` | Landing katalog, wizard, riwayat, **halaman status token**, pemilih tenant |
+| `src/components/promo/` | Landing katalog, wizard, riwayat, **halaman status token**, **pelacakan nomor**, `SubmissionDetail` (dipakai kedua jalur), pemilih tenant |
 | `src/components/admin/` | Login + dashboard staf (`AdminDashboardPage.tsx` = 3 tab) |
+| `src/components/ui/` | Komponen bersama: `Sheet`, **widget captcha Turnstile** |
 | `src/utils/` | Klien API (`promoApi`, `adminApi`), `leadTime`, **`statusFlow`**, `whatsapp`, `fingerprint` |
 | `src/lib/rest.ts` | Klien REST — satu-satunya tempat `VITE_API_URL` dibaca |
 | `src/hooks/` | `useAuth` (sesi), `usePermission` (kosmetik saja) |
 | `src/constants/promo.ts` | Label 8 status, batas 50MB, `isUploadModeEnabled()` |
 | `server/src/routes/` | `promo` (publik), `admin` (staf), `auth` |
 | `server/src/` | `index.js` (entry), `drive.js`, `auth.js`, `db.js`, `lib/` |
-| `server/src/lib/` | `leadTime`, **`statusFlow`** (alur status), **`identifiers`** (nomor + token), `rateLimit` |
+| `server/src/lib/` | `leadTime`, **`statusFlow`** (alur status), **`identifiers`** (nomor + token), **`turnstile`** (captcha), `rateLimit` |
 | `server/scripts/` | `seed-media-types.mjs` (katalog deck), `create-admin.mjs` |
 | `scripts/` | `db-migrate.mjs`, `verify-*.mjs` (Playwright) |
 | `__tests__/api/` | Test route server |
@@ -183,9 +196,9 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
 
 | File | Kenapa penting |
 |---|---|
-| `src/main.tsx`, `src/App.tsx` | Entry React + tabel rute (`/`, `/ajukan`, `/riwayat`, `/status/:token`, `/login`, `/admin`) |
+| `src/main.tsx`, `src/App.tsx` | Entry React + tabel rute (`/`, `/ajukan`, `/riwayat`, `/lacak`, `/status/:token`, `/login`, `/admin`) |
 | `src/lib/rest.ts` | Klien REST; `API_V1_BASE` = `VITE_API_URL` + `/api/v1`; `ApiError` |
-| `src/utils/promoApi.ts` | `errorsFromApiError`/`mapSubmitErrors` memetakan `errors[]` server ke field form; `fetchStatusByToken`, `submitRevision` |
+| `src/utils/promoApi.ts` | `errorsFromApiError`/`mapSubmitErrors` memetakan `errors[]` server ke field form; `fetchStatusByToken`, `fetchStatusByNumber` (nomor + token captcha), `submitRevision` |
 | `src/utils/statusFlow.ts` | Cermin alur status + transisi; dipakai dashboard untuk menyaring status yang sah |
 | `server/src/index.js` | Middleware (CORS whitelist → json 2mb → cookie), mount router, `/healthz`, 404 + error JSON |
 | `server/src/routes/promo.js` | Endpoint publik; validasi, lead time, nomor/token, halaman status, revisi |
@@ -194,6 +207,7 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
 | `server/src/drive.js` | Drive REST v3: magic bytes, upload, metadata, delete; `driveReady` (fail-closed 503) |
 | `server/src/lib/statusFlow.js` | Sumber kebenaran transisi status (8 nilai PRD) |
 | `server/src/lib/identifiers.js` | Nomor pengajuan `MP-YYMMDD-XXXXXX` + token status acak |
+| `server/src/lib/turnstile.js` | Verifikasi captcha Cloudflare Turnstile (Siteverify); `turnstileConfigured()` |
 | `server/src/lib/leadTime.js` | Cermin aturan lead time |
 | `server/schema.sql` | Sumber migrasi (7 tabel + index); remap status lama → 8 nilai PRD |
 | `server/scripts/seed-media-types.mjs` | Katalog deck — `ON CONFLICT` menyinkron SELURUH kolom yang dikelola seed (termasuk `price_note`, `location_note`, `image_path`) |
@@ -222,6 +236,8 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
 - **Env FE**: hanya variabel ber-prefix `VITE_` yang sampai ke browser. Nilai
   di-inline **saat build** — mengubah `VITE_API_URL` perlu build + deploy ulang.
   `VITE_API_URL` = base URL **tanpa** suffix `/api/v1` (klien yang menambahkannya).
+  Pasangan captcha: `VITE_TURNSTILE_SITE_KEY` (publik) ↔ `TURNSTILE_SECRET_KEY`
+  (server, tidak pernah ke browser).
 - **Urutan deploy wajib**: API + skema dulu, frontend terakhir. Frontend baru di
   atas API lama = tombol yang pasti gagal.
 
@@ -231,7 +247,7 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
   setup file `src/test/setup.ts` (`import '@testing-library/jest-dom'`).
   Konfigurasi di `vitest.config.ts`; include `src/**/*.test.ts(x)` dan
   `__tests__/**/*.test.{js,ts}`.
-- **12 file / 108 test, semuanya hijau.** Tidak ada test yang di-skip.
+- **32 file / 274 test, semuanya hijau.** Tidak ada test yang di-skip.
 - **Gaya**: `describe`/`it` (bukan `test`), deskripsi **Indonesia** dengan pola
   `<kondisi> → <harapan>`. Nama file mengikuti modul yang diuji.
 - **Lokasi**: test komponen co-located (`__tests__/` di samping komponen), test
@@ -246,10 +262,13 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
   karangan — khususnya `leadTime.test.ts` dan `__tests__/api/lead-time.test.js`.
 - **Test baru hanya untuk kontrak yang rapuh**; jangan mengunci implementasi
   atau plumbing. Setiap komponen baru wajib mount test.
-- **Celah yang diketahui**: `routes/auth.js`, `auth.js`, `lib/rateLimit.js`,
-  `db.js`, endpoint `/drive/upload`, dan `src/utils/fingerprint.ts` **belum ada
-  test**. `@vitest/coverage-v8` terpasang tetapi tidak dikonfigurasi (tidak ada
-  threshold/script).
+- **Celah yang diketahui**: `routes/auth.js` (rute `/auth/*`), `db.js`,
+  endpoint `/drive/upload`, dan `src/utils/fingerprint.ts` **belum ada test**.
+  `auth.js` (middleware `requireRole`/`authenticate`) dan `lib/rateLimit.js`
+  kini diuji nyata tanpa mock (`__tests__/api/authz.test.js`,
+  `rate-limit.test.js`); registrasi rute diuji `src/__tests__/App.test.tsx`.
+  `@vitest/coverage-v8` terpasang tetapi tidak
+  dikonfigurasi (tidak ada threshold/script).
 
 ## Pitfalls — jangan mengulang kesalahan ini
 
@@ -284,12 +303,15 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
    lewat `pg_get_constraintdef`. Dikunci
    `__tests__/api/schema-migration.test.js`.
 7. **`clientIp()` memakai `x-real-ip` tanpa verifikasi proxy** (tidak ada
-   `app.set('trust proxy')`), sehingga rate limit per-IP bisa dilewati dengan
-   memutar header itu. Komentarnya mengklaim anti-spoof — kode tidak.
-8. **Rate limit fingerprint bersyarat** (`if (fingerprint)`): klien yang tidak
-   mengirim `device_fingerprint` melewati batas 5/24 jam. Revisi publik
-   (`/promo/submissions/:id/revision`) justru **mewajibkan** fingerprint — itulah
-   satu-satunya penegakan kepemilikan pengajuan.
+   `app.set('trust proxy')`). Mitigasi: `deploy/vps/Caddyfile` (berversi) wajib
+   memuat `header_up X-Real-IP {remote_host}` sehingga edge menimpa header
+   kiriman klien. Bila instance di-proxy tanpa aturan itu, rate limit per-IP
+   masih bisa dilewati dengan memutar header.
+8. ~~Rate limit fingerprint bersyarat (`if (fingerprint)`)~~ — **sudah
+   diperbaiki**: `device_fingerprint` kini **wajib** di `POST /promo/submit`
+   (400 bila kosong), sama dengan revisi, sehingga batas 5/24 jam tidak bisa
+   dilewati dengan mengosongkan field. `GET /promo/submissions/mine` (responsnya
+   memuat `status_token` rahasia) juga kini dibatasi 60/15 mnt per IP.
 9. **`server/src/drive.js` menampung seluruh body di memori** sebelum dikirim ke
    Drive (bukan hanya "kepala file" seperti klaim header modul) — plafon memori
    VPS perlu diperhitungkan.
@@ -328,6 +350,14 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     perenderan, jadi kredensialnya tetap ada di bundle.
 14. **Klaim di komentar/docs harus cocok dengan kode.** Docs basi wajib
     diperbaiki saat menyentuh area itu.
+15. **Captcha Turnstile dilewati bila `TURNSTILE_SECRET_KEY` kosong.** Ini
+    keputusan sadar (instance lama tetap jalan) tetapi berarti gerbang
+    anti-bot `/lacak` **mati** sampai kuncinya diisi — hanya ada peringatan di
+    log boot. Saat mengisi: `TURNSTILE_SECRET_KEY` di `.env` server **dan**
+    `VITE_TURNSTILE_SITE_KEY` di env build FE (nilai `VITE_*` di-inline saat
+    build — mengubah env Vercel saja tidak cukup tanpa redeploy). Bila Siteverify
+    tak terjangkau saat verifikasi berjalan, endpoint membalas `503`
+    (fail-closed), bukan meloloskan permintaan.
 
 ## Commit & Rilis
 
@@ -386,6 +416,9 @@ isi `CORS_ORIGIN` → restart api.
 
 - Env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`,
   opsional `DRIVE_ROOT_FOLDER_ID`. Hanya template (`*.example`) yang ikut git.
+- Captcha: `TURNSTILE_SECRET_KEY` di `.env` server (dan
+  `VITE_TURNSTILE_SITE_KEY` di env build FE). Tanpa secret key, verifikasi
+  `/lacak` dilewati — lihat pitfall #15.
 - `.env`, `client_secret*.json`, `*-token.json` git-ignore — **tidak pernah**
   commit. `deploy/vps/.env` tidak ada di repo; salin manual 3 var `GOOGLE_*`.
 - Produksi token (butuh Node 22+, sekali saja dari mesin lokal):

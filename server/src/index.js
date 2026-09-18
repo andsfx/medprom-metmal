@@ -11,6 +11,7 @@
  *   GET  /api/v1/promo/tenants?q=       — cari tenant MID (publik)
  *   POST /api/v1/promo/submit           — kirim pengajuan (publik)
  *   GET  /api/v1/promo/submissions/mine — riwayat per perangkat (publik)
+ *   GET  /api/v1/promo/submissions/track — lacak via nomor pengajuan (publik, captcha)
  *   POST /api/v1/drive/upload           — upload file (publik, rate-limited)
  *   POST /api/v1/drive/delete           — hapus file (staff)
  *   GET  /api/v1/media/:nama            — gambar katalog (publik)
@@ -24,6 +25,7 @@
  *   CORS_ORIGIN    daftar origin dipisah koma; tanpa ini → default-deny
  *                  lintas-origin browser (same-origin tidak lewat CORS)
  *   GOOGLE_CLIENT_ID/SECRET/REFRESH_TOKEN — storage Google Drive (lihat drive.js)
+ *   TURNSTILE_SECRET_KEY — captcha endpoint pelacakan (lihat lib/turnstile.js)
  *   COOKIE_SAMESITE / COOKIE_SECURE / COOKIE_DOMAIN — lihat auth.js
  */
 import 'dotenv/config';
@@ -37,6 +39,7 @@ import promoRouter from './routes/promo.js';
 import adminRouter from './routes/admin.js';
 import driveRouter from './drive.js';
 import mediaRouter from './routes/media.js';
+import { turnstileConfigured } from './lib/turnstile.js';
 
 const app = express();
 app.disable('x-powered-by');
@@ -93,6 +96,9 @@ const PORT = Number(process.env.PORT || 3001);
 // Boot aman: listen dulu, verifikasi DB di latar belakang (warning saja).
 const server = app.listen(PORT, () => {
   console.log(`[api] REST server jalan di http://localhost:${PORT} (db: ${isDbReady() ? 'siap' : 'belum-siap'})`);
+  if (!turnstileConfigured()) {
+    console.warn('[api] TURNSTILE_SECRET_KEY kosong — verifikasi captcha endpoint pelacakan DILEWATI. Isi sebelum dipakai publik.');
+  }
 });
 
 db.verify?.();

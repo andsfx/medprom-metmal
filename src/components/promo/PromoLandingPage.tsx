@@ -170,6 +170,16 @@ export default function PromoLandingPage() {
             Lihat Katalog
           </a>
         </div>
+        <p className="mt-4 text-sm ui-text-muted">
+          Sudah mengajukan?{' '}
+          <Link
+            to="/lacak"
+            className="font-semibold text-brand-primary-700 underline-offset-2 hover:underline dark:text-brand-primary-300"
+          >
+            Lacak dengan nomor pengajuan
+          </Link>
+          .
+        </p>
       </section>
 
       {/* Katalog */}

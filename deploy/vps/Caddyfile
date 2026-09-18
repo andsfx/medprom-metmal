@@ -1,0 +1,35 @@
+# Caddyfile — medprom-metmal API (VPS)
+#
+# Salin ke /etc/caddy/Caddyfile, atau `import /opt/medprom/deploy/vps/Caddyfile`.
+# Ganti subdomain bila instance memakai nama lain.
+#
+# Kontrak dengan API:
+#   * reverse_proxy → 127.0.0.1:3002 (api container, lihat docker-compose.yml)
+#   * header_up X-Real-IP {remote_host} — WAJIB. server/src/lib/rateLimit.js
+#     memakai X-Real-IP sebagai identitas klien dan sengaja mengabaikan
+#     X-Forwarded-For. Tanpa baris ini Caddy meneruskan X-Real-IP kiriman
+#     klien apa adanya, sehingga rate limit bisa dilewati dengan memalsukan
+#     header tersebut.
+#
+# Terapkan: caddy validate --config /etc/caddy/Caddyfile && caddy reload --config /etc/caddy/Caddyfile
+
+promapi.andotherstori.my.id {
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options nosniff
+		Referrer-Policy no-referrer
+		-Server
+	}
+
+	reverse_proxy 127.0.0.1:3002 {
+		# Timpa identitas klien dengan alamat TCP sesungguhnya; jangan
+		# percaya nilai kiriman klien.
+		header_up X-Real-IP {remote_host}
+	}
+
+	log {
+		output file /var/log/caddy/medprom-api.log
+		format json
+	}
+}

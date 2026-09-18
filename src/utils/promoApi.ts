@@ -206,6 +206,30 @@ export async function fetchStatusByToken(token: string): Promise<StatusPageData>
   };
 }
 
+/**
+ * Lacak pengajuan lewat nomor `MP-YYMMDD-XXXXXX` (tanpa tautan token).
+ *
+ * Nomor bukan rahasia — ia dibacakan ke PIC di layar sukses, jadi jalur ini
+ * setara dengan halaman status ber-token. Gerbangnya adalah captcha Cloudflare
+ * Turnstile: token dari widget ikut dikirim dan diverifikasi server sebelum
+ * data apa pun dibaca, sehingga endpoint tidak bisa dipanen otomatis.
+ *
+ * 404 (nomor tidak dikenal), 400 (format/captcha salah), dan 503 (Siteverify
+ * tak terjangkau) sengaja diteruskan sebagai ApiError agar halaman pelacakan
+ * bisa menampilkan sebabnya, bukan pesan generik.
+ */
+export async function fetchStatusByNumber(number: string, captchaToken: string): Promise<StatusPageData> {
+  const params = new URLSearchParams({ number: number.trim() });
+  if (captchaToken) params.set('captcha', captchaToken);
+  const data = await apiGet<StatusPageData>(`/promo/submissions/track?${params.toString()}`);
+  return {
+    submission: data.submission,
+    history: Array.isArray(data.history) ? data.history : [],
+    files: Array.isArray(data.files) ? data.files : [],
+    installation: data.installation ?? null,
+  };
+}
+
 // ─── Kirim revisi materi (FR-015, FR-021) ───────────────────────
 
 export interface RevisionInput {

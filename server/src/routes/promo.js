@@ -4,7 +4,8 @@
  *   GET  /promo/media-types                    — katalog aktif (tanpa rate limit)
  *   GET  /promo/tenants?q=                     — cari tenant MID aktif (q >= 2 char)
  *   POST /promo/submit                        — kirim pengajuan (10 / 60 mnt / IP)
- *   GET  /promo/submissions/mine?fingerprint= — riwayat per perangkat
+ *   GET  /promo/submissions/mine?fingerprint= — riwayat per perangkat (60 / 15 mnt / IP)
+ *   GET  /promo/submissions/track?number=     — lacak via nomor pengajuan (60 / 15 mnt / IP + captcha)
  *   GET  /promo/submissions/status/:token     — status pengajuan via token (FR-019)
  *   POST /promo/submissions/:id/revision      — unggah ulang materi (Perlu Revisi)
  *
@@ -21,6 +22,7 @@ import { checkInstallationDate, toIsoDate } from '../lib/leadTime.js';
 import { getDriveFile, MAX_UPLOAD_BYTES } from '../drive.js';
 import { generateSubmissionNumber, generateStatusToken } from '../lib/identifiers.js';
 import { INITIAL_STATUS } from '../lib/statusFlow.js';
+import { verifyTurnstile } from '../lib/turnstile.js';
 
 const router = Router();
 
@@ -75,6 +77,59 @@ const SUBMISSION_PUBLIC_COLUMNS = `
   air_start_date, air_end_date, installation_date, notes,
   status, review_notes, status_changed_at, created_at, updated_at,
   source_type, file_url, file_name, link_url`;
+
+/** Nomor pengajuan yang dilacak tenant — normalisasi ke bentuk kanonis. */
+const SUBMISSION_NUMBER_RE = /^MP-\d{6}-[0-9A-Z]{6}$/;
+
+/** Normalisasi input nomor pengajuan (huruf besar, tanpa spasi) untuk dibandingkan. */
+function normalizeSubmissionNumber(raw) {
+  return String(raw || '').replace(/\s+/g, '').toUpperCase().slice(0, 32);
+}
+
+/**
+ * Muat satu pengajuan beserta riwayat, versi materi, dan pemasangan.
+ *
+ * Dipakai bersama oleh halaman status ber-token dan pelacakan via nomor
+ * pengajuan supaya kedua jalur publik menampilkan bentuk yang identik.
+ *
+ * @returns {Promise<object|null>} null bila pengajuan tidak ada.
+ */
+async function loadSubmissionDetail(submission) {
+  const [historyRes, filesRes, installRes] = await Promise.all([
+    db.query(
+      `SELECT id, submission_id, from_status, to_status, comment, actor_type,
+              actor_name, actor_id, created_at
+       FROM promo_submission_history WHERE submission_id = $1
+       ORDER BY created_at ASC`,
+      [submission.id],
+    ),
+    db.query(
+      `SELECT id, submission_id, version, source_type, file_url, file_name,
+              mime_type, file_size_bytes, link_url, drive_file_id, uploaded_by,
+              notes, created_at
+       FROM promo_submission_files WHERE submission_id = $1
+       ORDER BY version DESC`,
+      [submission.id],
+    ),
+    db.query(
+      `SELECT id, submission_id, media_location, start_date, end_date, notes,
+              proof_url, installed_by, installed_by_id, created_at, updated_at
+       FROM promo_installations WHERE submission_id = $1 LIMIT 1`,
+      [submission.id],
+    ),
+  ]);
+
+  return {
+    submission,
+    history: historyRes.rows,
+    files: filesRes.rows,
+    installation: installRes.rows[0] || null,
+  };
+}
+
+/** Pesan seragam untuk pengajuan tak ditemukan — jangan bocorkan mana yang ada. */
+const NOT_FOUND_MESSAGE =
+  'Pengajuan tidak ditemukan. Periksa kembali nomor atau tautan status Anda.';
 
 /**
  * Verifikasi materi dari klien (FR-008..FR-015) dan tentukan mode sumbernya.
@@ -243,6 +298,9 @@ router.post('/submit', async (req, res, next) => {
   if (airEndDate && !DATE_RE.test(airEndDate)) errors.push('air_end_date harus format YYYY-MM-DD');
   if (airStartDate && airEndDate && airEndDate < airStartDate) errors.push('Periode tayang berakhir sebelum tanggal mulai');
   if (!termsAccepted) errors.push('Persetujuan ketentuan wajib dicentang');
+  // Wajib: tanpa ini klien cukup mengosongkan fingerprint untuk melewati batas
+  // 5 pengajuan / 24 jam per perangkat di bawah. Sama dengan syarat revisi.
+  if (!fingerprint) errors.push('Fingerprint perangkat wajib diisi');
 
   if (errors.length > 0) {
     return res.status(400).json({ success: false, errors });
@@ -352,6 +410,10 @@ router.post('/submit', async (req, res, next) => {
 // fingerprint perangkat: tanpa token, tenant yang kehilangan tautan status
 // tidak punya jalan ke form revisi meski pengajuannya ada di riwayat ini.
 router.get('/submissions/mine', async (req, res, next) => {
+  // Respons memuat status_token rahasia; batasi laju agar tidak bisa dipakai
+  // menebak fingerprint perangkat lain (60 / 15 mnt / IP, sama dengan status).
+  if (!enforceRateLimit(req, res, 'promo-mine', 60, 15 * 60 * 1000)) return;
+
   const fingerprint = String(req.query?.fingerprint || '').trim();
   if (!fingerprint) {
     return res.status(400).json({ success: false, error: 'Fingerprint perangkat wajib diisi.' });
@@ -371,9 +433,52 @@ router.get('/submissions/mine', async (req, res, next) => {
   }
 });
 
+// ─── GET /promo/submissions/track?number= — lacak via nomor pengajuan ──
+// Jalur kedua bagi tenant tanpa tautan: cukup masukkan nomor `MP-YYMMDD-XXXXXX`
+// yang tercetak di layar sukses. Nomor memang bukan rahasia (dibacakan ke PIC),
+// jadi gerbangnya bukan kerahasiaan melainkan captcha Cloudflare Turnstile +
+// rate limit, agar endpoint tidak bisa dipakai memanen data massal.
+router.get('/submissions/track', async (req, res, next) => {
+  if (!enforceRateLimit(req, res, 'status-lookup', 60, 15 * 60 * 1000)) return;
+
+  const number = normalizeSubmissionNumber(req.query?.number);
+  if (!number) {
+    return res.status(400).json({ success: false, error: 'Nomor pengajuan wajib diisi.' });
+  }
+  if (!SUBMISSION_NUMBER_RE.test(number)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Format nomor pengajuan tidak valid. Contoh: MP-260918-A7K2QX.',
+    });
+  }
+
+  try {
+    // Captcha diverifikasi setelah format nomor lolos (panggilan Siteverify
+    // tidak terbuang untuk input cacat) dan sebelum DB disentuh.
+    const captcha = await verifyTurnstile(req.query?.captcha, clientIp(req));
+    if (!captcha.ok) {
+      return res.status(captcha.status || 400).json({ success: false, error: captcha.error });
+    }
+
+    const { rows } = await db.query(
+      `SELECT ${SUBMISSION_PUBLIC_COLUMNS}
+       FROM promo_submissions WHERE submission_number = $1 LIMIT 1`,
+      [number],
+    );
+    const submission = rows[0] || null;
+    if (!submission) {
+      return res.status(404).json({ success: false, error: NOT_FOUND_MESSAGE });
+    }
+
+    return res.json({ success: true, data: await loadSubmissionDetail(submission) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // ─── GET /promo/submissions/status/:token — halaman status PIC ───
-// Token status adalah satu-satunya kredensial tenant (FR-018..FR-022); rate limit
-// ketat agar token tidak bisa di-brute force.
+// Token status adalah kredensial tautan (FR-018..FR-022); rate limit ketat agar
+// token tidak bisa di-brute force.
 router.get('/submissions/status/:token', async (req, res, next) => {
   if (!enforceRateLimit(req, res, 'status-lookup', 60, 15 * 60 * 1000)) return;
 
@@ -389,42 +494,10 @@ router.get('/submissions/status/:token', async (req, res, next) => {
     const submission = rows[0] || null;
     // Pesan seragam untuk token salah — jangan bocorkan token mana yang ada.
     if (!submission) {
-      return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan. Periksa kembali tautan status Anda.' });
+      return res.status(404).json({ success: false, error: NOT_FOUND_MESSAGE });
     }
 
-    const [historyRes, filesRes, installRes] = await Promise.all([
-      db.query(
-        `SELECT id, submission_id, from_status, to_status, comment, actor_type,
-                actor_name, actor_id, created_at
-         FROM promo_submission_history WHERE submission_id = $1
-         ORDER BY created_at ASC`,
-        [submission.id],
-      ),
-      db.query(
-        `SELECT id, submission_id, version, source_type, file_url, file_name,
-                mime_type, file_size_bytes, link_url, drive_file_id, uploaded_by,
-                notes, created_at
-         FROM promo_submission_files WHERE submission_id = $1
-         ORDER BY version DESC`,
-        [submission.id],
-      ),
-      db.query(
-        `SELECT id, submission_id, media_location, start_date, end_date, notes,
-                proof_url, installed_by, installed_by_id, created_at, updated_at
-         FROM promo_installations WHERE submission_id = $1 LIMIT 1`,
-        [submission.id],
-      ),
-    ]);
-
-    return res.json({
-      success: true,
-      data: {
-        submission,
-        history: historyRes.rows,
-        files: filesRes.rows,
-        installation: installRes.rows[0] || null,
-      },
-    });
+    return res.json({ success: true, data: await loadSubmissionDetail(submission) });
   } catch (err) {
     return next(err);
   }

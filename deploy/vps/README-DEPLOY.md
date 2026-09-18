@@ -24,8 +24,12 @@ TLS dan mem-proxy subdomain baru ke `127.0.0.1:3002`.
 # Dari lokal (Windows) — rsync repo tanpa node_modules.
 # WAJIB: ikut mengecualikan kredensial. `.gitignore` TIDAK berlaku di rsync,
 # jadi tanpa baris exclude ini `scripts/client_secret_*.json` ikut tersalin ke VPS.
+# Catatan: `.env.example` sengaja TIDAK dikecualikan (kecualikan `.env` spesifik,
+# bukan pola `.env*`) supaya `cp .env.example .env` di langkah 3 tetap bisa jalan
+# di VPS yang baru.
 rsync -az --delete \
-  --exclude node_modules --exclude dist --exclude .env* \
+  --exclude node_modules --exclude dist \
+  --exclude '.env' --exclude '.env.local' --exclude '.env.production' \
   --exclude '.vercel' --exclude '*.log' \
   --exclude 'client_secret*.json' --exclude '*-token.json' \
   --exclude 'backups/' \
@@ -69,19 +73,24 @@ yang bersumber dari deck 2026 — tanpa menimpa harga/lokasi yang sudah diedit
 admin. Menjalankan seed setelah update kode akan menyebarkan koreksi ketentuan
 ke instance yang sudah jalan.
 
-> **Rilis 1.3.0 wajib menjalankan `db-migrate` sebelum API baru dipakai.**
-> Migrasi mengubah `status` menjadi 8 nilai PRD dan mengisi nomor + token untuk
-> pengajuan lama. Urutan deploy tetap: API + skema dulu, frontend terakhir.
+> **Saat memperbarui instance yang sudah jalan, hentikan API dulu sebelum
+> menerapkan skema** — jangan `up -d` lalu `db-migrate` pada API lama
+> (`AGENTS.md` pitfall #10). Constraint baru menolak nilai lama, jadi API lama
+> yang melayani skema baru akan membalas 400 pada tiap pengajuan **padahal
+> `/healthz` tetap hijau**. Urutan aman ada di langkah 7 (stop api → migrate →
+> seed → up api). Blok di atas hanya untuk pemasangan pertama, saat belum ada
+> API yang melayani trafik.
 
 ## 5. Caddy subdomain
 
-Tambah blok di `/etc/caddy/Caddyfile` lalu `caddy reload`:
+Bloknya **berversi** di repo: `deploy/vps/Caddyfile`. Salin ke
+`/etc/caddy/Caddyfile` (atau `import /opt/medprom/deploy/vps/Caddyfile`), lalu
+`caddy reload --config /etc/caddy/Caddyfile`.
 
-```
-promapi.andotherstori.my.id {
-    reverse_proxy 127.0.0.1:3002
-}
-```
+> **`header_up X-Real-IP {remote_host}` WAJIB ada.** `server/src/lib/rateLimit.js`
+> memakai `X-Real-IP` sebagai identitas klien (X-Forwarded-For sengaja
+> diabaikan). Tanpa `header_up` ini Caddy tidak menimpa nilai kiriman klien,
+> sehingga rate limit bisa dilewati dengan memalsukan header.
 
 ## 6. Smoke test API
 
@@ -98,6 +107,7 @@ cd D:/Andy/medprom-metmal
 npm ci && npm run build
 vercel link            # project baru: medprom-metmal
 vercel env add VITE_API_URL production   # https://promapi.andotherstori.my.id
+vercel env add VITE_TURNSTILE_SITE_KEY production   # sitekey publik Turnstile
 vercel --prod
 ```
 
@@ -111,17 +121,23 @@ Mendahulukan frontend membuat tenant melihat tombol yang pasti gagal
 ```bash
 # 1. Kirim kode rilis ke VPS (exclude kredensial — lihat langkah 2)
 rsync -az --delete \
-  --exclude node_modules --exclude dist --exclude .env* \
+  --exclude node_modules --exclude dist \
+  --exclude '.env' --exclude '.env.local' --exclude '.env.production' \
   --exclude '.vercel' --exclude '*.log' \
   --exclude 'client_secret*.json' --exclude '*-token.json' \
   --exclude 'backups/' \
   /d/Andy/medprom-metmal/ root@100.69.24.32:/opt/medprom/
 
-# 2. Restart API + terapkan skema dan katalog (keduanya idempotent)
+# 2. Hentikan API lama, terapkan skema, baru naikkan API baru (pitfall #10).
+#    Jangan `up -d` lebih dulu: API lama + constraint baru = tiap pengajuan
+#    gagal 400 meski /healthz hijau. `run --rm` dipakai karena container api
+#    sedang dimatikan (exec butuh container hidup).
 ssh root@100.69.24.32
-cd /opt/medprom/deploy/vps && docker compose up -d
-docker compose exec api node scripts/db-migrate.mjs
-docker compose exec api node server/scripts/seed-media-types.mjs
+cd /opt/medprom/deploy/vps
+docker compose stop api
+docker compose run --rm api node scripts/db-migrate.mjs
+docker compose run --rm api node server/scripts/seed-media-types.mjs
+docker compose up -d api
 
 # 3. Pastikan API sudah versi baru — tautan tidak valid harus ditolak dengan
 #    pesan tautan, bukan "drive_file_id wajib diisi" (API lama).
@@ -157,6 +173,10 @@ cd D:/Andy/medprom-metmal && npm ci && npm run build && vercel --prod
 - MID_API_KEY: begitu Metland memberi key → isi di `.env`, lalu
   `docker compose up -d` (restart api). Selama kosong, pemilih tenant memakai
   fallback isian nama manual.
+- Captcha Turnstile: buat widget di dashboard Cloudflare, lalu isi
+  `TURNSTILE_SECRET_KEY` di `.env` VPS **dan** `VITE_TURNSTILE_SITE_KEY` di env
+  Vercel (build ulang). Tanpa secret key, verifikasi `/lacak` dilewati dan
+  server menulis peringatan saat boot.
 - Sweep file yatim (opsional): cron `0 4 * * *` (WIB) menjalankan
   `node scripts/drive-sweep.mjs --apply >> /var/log/medprom-sweep.log 2>&1`
   dari host yang punya env `GOOGLE_*` + `DATABASE_URL` → tanpa `--apply`

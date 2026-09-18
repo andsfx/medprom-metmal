@@ -156,6 +156,8 @@ describe('PromoUploadWizard', () => {
     // Nomor pengajuan dari server, bukan potongan UUID.
     expect(screen.getByText('MP-260916-ABC234')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Lihat Riwayat/i })).toHaveAttribute('href', '/riwayat');
+    // Nomor pengajuan juga bisa dipakai melacak tanpa tautan token.
+    expect(screen.getByRole('link', { name: /Lacak dengan Nomor/i })).toHaveAttribute('href', '/lacak');
     // Token status membuka halaman status.
     expect(screen.getByRole('link', { name: /Lihat Status Pengajuan/i })).toHaveAttribute('href', '/status/tok-1');
     expect(mockedSubmitPromo).toHaveBeenCalledWith(expect.objectContaining({

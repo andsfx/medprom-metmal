@@ -35,10 +35,23 @@ function sanitize(val, maxLen = 1000) {
   return val.replace(/\0/g, '').trim().slice(0, maxLen);
 }
 
+/**
+ * Prefix netralisasi formula spreadsheet (CSV injection).
+ *
+ * Excel/Sheets mengeksekusi sel yang dimulai `=`, `+`, `-`, atau `@` sebagai
+ * rumus, dan TAB/CR bisa memecah sel. Nilai kiriman tenant (nama campaign,
+ * judul materi, catatan) dan nomor telepon `+62...` masuk ke CSV ini, jadi
+ * sel berawalan salah satu karakter itu diberi awalan `'` — di Excel tanda
+ * itu disembunyikan (teks tampil utuh), sedangkan pembaca CSV lain melihatnya
+ * sebagai penanda teks, bukan rumus.
+ */
+const CSV_FORMULA_PREFIX = /^[=+\-@\t\r]/;
+
 function csvEscape(val) {
   if (val === null || val === undefined) return '';
-  const str = String(val);
-  if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+  let str = String(val);
+  if (CSV_FORMULA_PREFIX.test(str)) str = `'${str}`;
+  if (str.includes(',') || str.includes('"') || str.includes('\n') || str.includes('\r')) {
     return `"${str.replace(/"/g, '""')}"`;
   }
   return str;
@@ -657,6 +670,9 @@ router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
     // BOM UTF-8 agar Excel membaca dengan benar.
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="pengajuan-media-promosi.csv"');
+    // Ekspor memuat PII (telepon, IP) — catat siapa mengunduhnya.
+    logActivity(req.auth.user, 'export_submissions', 'promo_submission', '',
+      { count: rows.length }, req);
     return res.send(`\uFEFF${lines.join('\r\n')}`);
   } catch (err) {
     return next(err);

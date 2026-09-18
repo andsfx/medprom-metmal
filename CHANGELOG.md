@@ -9,6 +9,20 @@ Penyelarasan kebijakan dokumentasi + perbaikan jalur deploy yang ditemukan saat
 verifikasi rilis 1.3.0 di produksi.
 
 ### Ditambahkan
+- **Pelacakan pengajuan dengan nomor — plus captcha Cloudflare Turnstile.**
+  Tenant yang kehilangan tautan status kini bisa membuka `/lacak`, memasukkan
+  nomor pengajuan (`MP-YYMMDD-XXXXXX`) yang tercetak di layar sukses, dan
+  melihat halaman status yang sama persis dengan halaman ber-token (status,
+  catatan tim, riwayat status, riwayat versi materi, informasi pemasangan, dan
+  form revisi). Endpoint baru `GET /api/v1/promo/submissions/track?number=`.
+  Karena pola nomor mudah ditebak, pengiriman dijaga **captcha Cloudflare
+  Turnstile**: tombol Lacak terkunci sampai verifikasi selesai, dan server
+  memverifikasi token ke Siteverify sebelum data apa pun dibaca (fail-closed
+  503 bila Siteverify tak terjangkau). Tautan masuk ditambahkan di tab bar
+  (tab "Lacak"), hero beranda, layar sukses wizard, dan keadaan kosong Riwayat.
+  **Operator: isi `TURNSTILE_SECRET_KEY` (server) dan `VITE_TURNSTILE_SITE_KEY`
+  (frontend, build ulang).** Tanpa secret key, verifikasi dilewati dan server
+  menulis peringatan saat boot — gerbangnya tidak aktif sampai diisi.
 - **Gambar media promosi kini bisa diganti dari dashboard staf (CRUD).**
   Di form Edit Media ada panel "Foto Katalog": pratinjau, tombol Ganti Foto,
   dan Hapus Foto. Berkas disimpan di volume Docker `medprom_media` (repo
@@ -84,6 +98,22 @@ verifikasi rilis 1.3.0 di produksi.
   `DESIGN.md` (baru).
 
 ### Diperbaiki
+- **Batas 5 pengajuan/24 jam per perangkat bisa dilewati.** `device_fingerprint`
+  bersifat opsional di `POST /promo/submit` dan pengecekan anti-spam dibungkus
+  `if (fingerprint)`, sehingga klien cukup mengosongkan field itu untuk
+  mengirim tanpa batas. Field kini **wajib** (400 bila kosong), sama seperti
+  syarat revisi. Konsekuensi: klien lama yang tidak mengirim fingerprint akan
+  ditolak — frontend sudah selalu mengirimnya (`getDeviceFingerprint()`).
+- **`GET /promo/submissions/mine` tidak dibatasi laju** padahal responsnya
+  memuat `status_token` rahasia tiap pengajuan, sehingga fingerprint perangkat
+  bisa ditebak berulang. Kini dibatasi 60 permintaan / 15 menit / IP (sama
+  dengan `status/:token`).
+- **Ekspor CSV rawan formula injection.** Nilai kiriman tenant (nama campaign,
+  judul materi, catatan) dan nomor telepon `+62...` diekspor mentah, sehingga
+  sel yang dimulai `=`, `+`, `-`, atau `@` dieksekusi Excel/Sheets sebagai
+  rumus. `csvEscape` kini memberi awalan `'` pada sel berbahaya (tanda teks —
+  di Excel disembunyikan, teks tampil utuh) dan mengutip sel yang memuat `\r`.
+  Akses ekspor (memuat telepon + IP) juga kini dicatat ke `activity_logs`.
 - **Test kontrak seed diperketat.** Test lama mengunci perilaku lewat dua
   potongan string SQL, sehingga kolom lain bisa diam-diam tertinggal. Kini
   menguji kesepuluh kolom yang dikelola seed - kolom baru yang lupa
@@ -250,6 +280,14 @@ verifikasi rilis 1.3.0 di produksi.
   tersisa hanya backup `.env.bak-*`). API restart, healthz OK.
 
 ### Diubah
+- **Runbook deploy diselaraskan dengan pitfall #10 dan Caddyfile kini ber-versi.**
+  Langkah update tidak lagi `up -d` lalu `db-migrate` (API lama + constraint baru
+  = tiap pengajuan gagal 400 padahal `/healthz` hijau); urutannya kini
+  `stop api` → `run --rm` migrate/seed → `up -d api`. `--exclude .env*` diganti
+  exclude `.env` spesifik agar `.env.example` ikut tersalin (memperbaiki
+  `cp .env.example .env` di VPS baru). Blok Caddy dipindah ke
+  `deploy/vps/Caddyfile` dengan `header_up X-Real-IP {remote_host}` wajib —
+  tanpa itu rate limit per-IP bisa dilewati dengan memalsukan header.
 - **Seed tidak lagi menimpa `image_path`.** Foto bisa diganti staf, jadi seed
   biasa membiarkan foto hasil unggahan tetap dipakai; hanya `--reset-gambar`
   yang menimpanya. Konsekuensi: suntingan admin atas kolom katalog lain tetap

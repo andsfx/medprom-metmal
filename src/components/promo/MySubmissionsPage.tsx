@@ -66,9 +66,14 @@ export default function MySubmissionsPage() {
               <div className="ui-empty-panel px-6 py-10">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada pengajuan dari perangkat ini.</p>
                 <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda dari halaman beranda.</p>
-                <Link to="/" className="ui-btn-primary mt-4 inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
-                  Ajukan Materi
-                </Link>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link to="/" className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+                    Ajukan Materi
+                  </Link>
+                  <Link to="/lacak" className="ui-control inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                    Lacak dengan Nomor
+                  </Link>
+                </div>
               </div>
             )}
 

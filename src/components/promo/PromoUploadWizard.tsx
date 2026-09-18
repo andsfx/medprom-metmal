@@ -397,8 +397,7 @@ export default function PromoUploadWizard() {
               <span className="font-mono text-sm font-bold tracking-widest text-brand-primary-700 dark:text-brand-primary-300">{ticketId}</span>
             </div>
             <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-              Simpan nomor ini. Status pengajuan dapat dipantau kapan saja melalui halaman status —
-              simpan tautannya, tidak perlu akun.
+              Simpan nomor ini — pakai untuk memantau status kapan saja, tidak perlu akun.
             </p>
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Status juga dapat dipantau di halaman Riwayat dari perangkat ini.
@@ -409,6 +408,9 @@ export default function PromoUploadWizard() {
                   Lihat Status Pengajuan
                 </Link>
               )}
+              <Link to="/lacak" className="ui-control inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Lacak dengan Nomor
+              </Link>
               <Link to="/riwayat" className="ui-control inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                 Lihat Riwayat
               </Link>

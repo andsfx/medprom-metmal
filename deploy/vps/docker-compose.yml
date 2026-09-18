@@ -79,6 +79,10 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
       GOOGLE_REFRESH_TOKEN: ${GOOGLE_REFRESH_TOKEN:-}
       DRIVE_ROOT_FOLDER_ID: ${DRIVE_ROOT_FOLDER_ID:-}
+      # Captcha Cloudflare Turnstile (endpoint pelacakan /lacak). Opsional (`:-`):
+      # tanpa secret key, verifikasi dilewati + peringatan saat boot — jangan
+      # sampai memblokir boot API hanya karena captcha belum dikonfigurasi.
+      TURNSTILE_SECRET_KEY: ${TURNSTILE_SECRET_KEY:-}
       # Gambar katalog yang diunggah staf. Repo read-only, jadi gambar
       # disimpan di volume terpisah (lihat server/src/media.js).
       MEDIA_DIR: /data/media

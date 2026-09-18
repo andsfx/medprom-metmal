@@ -7,11 +7,12 @@
  * mengalahkan utilitas Tailwind tersebut.
  */
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutGrid, FilePlus2, ClipboardList } from 'lucide-react';
+import { LayoutGrid, FilePlus2, ClipboardList, Search } from 'lucide-react';
 
 const TABS = [
   { to: '/', label: 'Katalog', Icon: LayoutGrid },
   { to: '/ajukan', label: 'Ajukan', Icon: FilePlus2 },
+  { to: '/lacak', label: 'Lacak', Icon: Search },
   { to: '/riwayat', label: 'Riwayat', Icon: ClipboardList },
 ];
 

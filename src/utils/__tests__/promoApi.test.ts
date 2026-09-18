@@ -5,7 +5,7 @@
  * melihat "Permintaan gagal (HTTP 400)" dan kehilangan sebab validasinya.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest';
-import { submitPromo, errorsFromApiError, mapSubmitErrors } from '../promoApi';
+import { submitPromo, errorsFromApiError, mapSubmitErrors, fetchStatusByNumber } from '../promoApi';
 import { ApiError } from '../../lib/rest';
 
 const originalFetch = global.fetch;
@@ -75,6 +75,43 @@ describe('submitPromo — propagasi errors[] dari HTTP 400', () => {
       status: 'menunggu_review',
       created_at: '2026-09-15T00:00:00Z',
     });
+  });
+});
+
+describe('fetchStatusByNumber — pelacakan via nomor + captcha', () => {
+  const DATA = {
+    submission: { id: 'sub-1', submission_number: 'MP-260918-A7K2QX' },
+    history: [], files: [], installation: null,
+  };
+
+  it('mengirim nomor dan token captcha sebagai query', async () => {
+    const fetchSpy = vi.fn(async () => jsonResponse({ success: true, data: DATA }));
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    await expect(fetchStatusByNumber('MP-260918-A7K2QX', 'tok-cf')).resolves.toEqual(DATA);
+
+    const [url] = fetchSpy.mock.calls[0] as [string];
+    expect(url).toContain('/promo/submissions/track');
+    expect(url).toContain('number=MP-260918-A7K2QX');
+    expect(url).toContain('captcha=tok-cf');
+  });
+
+  it('tanpa token captcha → parameter captcha tidak dikirim', async () => {
+    const fetchSpy = vi.fn(async () => jsonResponse({ success: true, data: DATA }));
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    await fetchStatusByNumber('MP-260918-A7K2QX', '');
+
+    const [url] = fetchSpy.mock.calls[0] as [string];
+    expect(url).not.toContain('captcha=');
+  });
+
+  it('meneruskan 404 dari server sebagai ApiError', async () => {
+    global.fetch = vi.fn(async () => jsonResponse(
+      { success: false, error: 'Pengajuan tidak ditemukan.' }, 404,
+    )) as unknown as typeof fetch;
+
+    await expect(fetchStatusByNumber('MP-260918-ZZZZZZ', 'tok')).rejects.toThrow(/tidak ditemukan/i);
   });
 });
 

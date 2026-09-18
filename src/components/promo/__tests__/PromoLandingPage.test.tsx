@@ -77,6 +77,14 @@ describe('PromoLandingPage', () => {
     expect(links[0]).toHaveAttribute('href', '/ajukan?media=spanduk');
   });
 
+  it('hero menautkan ke pelacakan nomor', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA);
+    renderLanding();
+
+    expect(await screen.findByRole('link', { name: /Lacak dengan nomor pengajuan/i }))
+      .toHaveAttribute('href', '/lacak');
+  });
+
   it('error state saat katalog gagal dimuat', async () => {
     mockedFetchMediaTypes.mockRejectedValue(new Error('network'));
     renderLanding();

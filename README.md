@@ -33,6 +33,9 @@ entri (feed dan story), sehingga totalnya 14 jenis media; 13 aktif, dan
   pengajuan terkirim. Halaman status menampilkan status terkini, catatan tim,
   riwayat perubahan status, riwayat versi materi, dan informasi pemasangan —
   tanpa perlu akun.
+- **Lacak dengan nomor pengajuan** — halaman `/lacak` menerima nomor pengajuan
+  dan menampilkan halaman status yang sama, untuk tenant yang kehilangan tautan.
+  Dijaga **captcha Cloudflare Turnstile** agar nomor tidak dipanen otomatis.
 - **Revisi materi**: ketika status materi **Perlu Revisi**, tenant dapat
   mengirim ulang materi (tautan atau file) dari halaman status. Versi lama tetap
   tersimpan untuk tim.
@@ -98,7 +101,7 @@ Untuk mode unggah, server memeriksa
    scope OAuth `drive.file`)
 4. metadata Drive: ukuran ≤ 50MB
 5. file belum dipakai pengajuan lain (unique constraint DB)
-6. rate limit 5 pengajuan per perangkat dalam 24 jam (fingerprint)
+6. rate limit 5 pengajuan per perangkat dalam 24 jam (fingerprint wajib)
 
 Mode tautan hanya menerima URL berskema `http` atau `https`.
 
@@ -132,16 +135,24 @@ Menunggu Review ──┬─→ Perlu Revisi ──→ Menunggu Review   (revisi
 - Materi yang disetujui tidak dapat diubah lagi tanpa alur baru.
 
 Setiap pengajuan mendapat **nomor** (`MP-YYMMDD-XXXXXX`) dan **token status**
-acak 32 karakter. Halaman `/status/:token` adalah satu-satunya cara tenant
-melihat status tanpa akun; token tidak dapat ditebak dan pesan untuk token salah
-diseragamkan agar tidak membocorkan keberadaan pengajuan.
+acak 32 karakter. Ada dua jalan tenant melihat status tanpa akun:
+
+- `/status/:token` — tautan ber-token; token tidak dapat ditebak dan pesan untuk
+  token salah diseragamkan agar tidak membocorkan keberadaan pengajuan.
+- `/lacak` — masukkan nomor pengajuan. Nomor memang bukan rahasia (dibacakan ke
+  PIC), jadi gerbangnya bukan kerahasiaan melainkan **captcha Cloudflare
+  Turnstile** yang diverifikasi server sebelum data dibaca, ditambah rate limit.
+
+Keduanya menampilkan halaman yang sama — status terkini, catatan tim, riwayat
+status, riwayat versi materi, informasi pemasangan, dan form revisi.
 
 ## Struktur
 
 ```
 src/                      Frontend React (Vite + Tailwind v4)
-  components/promo/       Katalog, form pengajuan, riwayat, halaman status token, pemilih tenant
+  components/promo/       Katalog, form pengajuan, riwayat, halaman status token, pelacakan nomor, pemilih tenant
   components/admin/       Login dan dashboard staf
+  components/ui/          Komponen bersama (widget captcha Turnstile, sheet)
   utils/                  promoApi, adminApi, fingerprint, leadTime, statusFlow, whatsapp
   lib/rest.ts             Klien REST
 server/
@@ -151,6 +162,7 @@ server/
   src/lib/leadTime.js     Lead time (cermin src/utils/leadTime.ts)
   src/lib/statusFlow.js   Alur status 8 tahap (cermin src/utils/statusFlow.ts)
   src/lib/identifiers.js  Nomor pengajuan + token status
+  src/lib/turnstile.js    Verifikasi captcha Cloudflare (Siteverify)
   src/auth.js             JWT, bcrypt, kontrol role
   scripts/                seed-media-types, create-admin
 scripts/                  db-migrate, drive-auth, drive-sweep, verifikasi produksi (Playwright)
@@ -255,6 +267,27 @@ Tanpa kredensial Drive, `POST /drive/upload` memang sudah membalas `503`
 mencegah tenant menekan tombol yang pasti gagal. Perlu diketahui: kode unggah
 tetap ikut ter-bundle karena mode sumber adalah state React — flag hanya
 menggerbangi perenderan UI, bukan menghapus kode dari bundel.
+
+## Captcha (Cloudflare Turnstile)
+
+Halaman `/lacak` dijaga captcha Cloudflare Turnstile. Widget Turnstile memakai
+**sitekey publik** (`VITE_TURNSTILE_SITE_KEY`, ikut ter-bundle) dan server
+memverifikasi token ke Siteverify memakai **secret key** (`TURNSTILE_SECRET_KEY`,
+tidak pernah sampai ke browser).
+
+```bash
+# .env — kredensial Turnstile (dashboard Cloudflare → Turnstile)
+TURNSTILE_SECRET_KEY=<secret-key>
+# .env — sitekey publik untuk build frontend (ubah → build + deploy ulang)
+VITE_TURNSTILE_SITE_KEY=<site-key>
+```
+
+Tanpa `TURNSTILE_SECRET_KEY`, server **melewati** verifikasi dan menulis
+peringatan saat boot — instance lama tetap jalan, tetapi gerbang captcha belum
+aktif. Bila Siteverify tidak terjangkau saat verifikasi dijalankan, endpoint
+membalas `503` (fail-closed), bukan meloloskan permintaan. Untuk uji coba,
+Cloudflare menyediakan test key yang selalu lolos: sitekey
+`1x00000000000000000000AA`, secret `1x0000000000000000000000000000000AA`.
 
 ## Deploy
 
