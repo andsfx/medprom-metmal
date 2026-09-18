@@ -278,7 +278,7 @@ tidak pernah sampai ke browser).
 ```bash
 # .env — kredensial Turnstile (dashboard Cloudflare → Turnstile)
 TURNSTILE_SECRET_KEY=<secret-key>
-TURNSTILE_HOSTNAMES=medprom.vercel.app          # hostname frontend, dipisah koma
+TURNSTILE_HOSTNAMES=medprom-metmal.vercel.app   # hostname frontend, dipisah koma
 # .env — sitekey publik untuk build frontend (ubah → build + deploy ulang)
 VITE_TURNSTILE_SITE_KEY=<site-key>
 ```

@@ -368,6 +368,13 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     allowlist. Jangan hapus cek ini — tanpa `action`, token bisa dipakai ulang di
     permukaan lain; tanpa `hostname`, token dari situs mana pun yang memakai
     sitekey sama ikut lolos.
+17. **`110200` = hostname belum terdaftar di dashboard Cloudflare.** Widget
+    terpasang di DOM (ada input `cf-turnstile-response`) tetapi Cloudflare
+    membalas `400` dan token tidak pernah terbit — gejalanya tombol submit
+    terkunci selamanya, tanpa pesan error di UI. Ini murni konfigurasi
+    dashboard (*Turnstile → widget → Settings → Hostname Management*), bukan
+    bug kode. Daftarkan domain produksi **dan** `localhost`/`127.0.0.1` untuk
+    uji lokal. Domain produksi proyek ini: `medprom-metmal.vercel.app`.
 
 ## Commit & Rilis
 
