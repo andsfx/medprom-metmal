@@ -34,6 +34,24 @@ type Tab = 'submissions' | 'catalog' | 'users';
 const STATUS_OPTIONS = ['', ...STATUS_ORDER];
 const ROLE_OPTIONS = ['admin', 'tenant_relation', 'superadmin'];
 
+/**
+ * Status yang mewajibkan Catatan Review — **cermin** aturan server di
+ * `server/src/routes/admin.js` (POST /admin/submissions/:id/status):
+ * `perlu_revisi` → "Komentar wajib diisi ketika meminta revisi",
+ * `ditolak` → "Alasan wajib diisi ketika menolak materi".
+ *
+ * Klien menegakkannya lebih awal supaya admin tidak baru tahu setelah submit
+ * (dulu tombol tetap aktif, lalu server membalas 400). Server tetap otoritatif
+ * — pesan galat server di bawah tidak dihapus.
+ */
+const STATUS_WAJIB_CATATAN: readonly string[] = ['perlu_revisi', 'ditolak'];
+
+/** Pesan yang ditampilkan di klien; teks server tetap dipakai bila ia menolak. */
+const PESAN_CATATAN_WAJIB: Record<string, string> = {
+  perlu_revisi: 'Catatan wajib diisi saat meminta revisi materi.',
+  ditolak: 'Alasan wajib diisi saat menolak materi.',
+};
+
 function StatusBadge({ status }: { status: string }) {
   const cls: Record<string, string> = {
     menunggu_review: 'bg-stone-100 text-stone-700',
@@ -189,8 +207,20 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     return [detail.status, ...allowed];
   }, [detail]);
 
+  /**
+   * Apakah pilihan status mewajibkan catatan tetapi catatannya masih kosong?
+   * Dipakai untuk menonaktifkan tombol Simpan Status + menampilkan pesannya
+   * lebih awal (cermin aturan server, lihat `STATUS_WAJIB_CATATAN`).
+   */
+  const catatanWajibKosong =
+    detail !== null
+    && STATUS_WAJIB_CATATAN.includes(newStatus)
+    && newStatus !== detail.status
+    && !reviewNotes.trim();
+
   async function saveStatus() {
     if (!detail) return;
+    if (catatanWajibKosong) return;
     setSaving(true);
     setSaveError('');
     try {
@@ -384,7 +414,11 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               </td></tr>
             )}
             {!loading && rows.length === 0 && (
-              <tr><td colSpan={7} className="px-3 py-10 text-center text-sm ui-text-muted">Tidak ada pengajuan.</td></tr>
+              <tr>
+                <td colSpan={7} className="px-3 py-10 text-center text-sm ui-text-muted" role="status">
+                  Tidak ada pengajuan.
+                </td>
+              </tr>
             )}
             {!loading && rows.map((r) => (
               <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60 dark:border-slate-800 dark:hover:bg-slate-800/40">
@@ -581,7 +615,12 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         href={f.source_type === 'link' ? f.link_url : f.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                        /* `min-h-11` (44px) — axe `target-size` (WCAG 2.2 AA 2.5.8)
+                         * menandai tautan ini 44.5×16px dengan ruang klik aman
+                         * 20px ke tetangga terdekat; ini tautan kontrol berdiri
+                         * sendiri di dalam baris daftar, bukan tautan inline di
+                         * tengah kalimat, jadi pengecualian 2.5.8 tidak berlaku. */
+                        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
                       >
                         <ExternalLink className="h-3 w-3" aria-hidden="true" />
                         Buka
@@ -745,7 +784,14 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
                   className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                  aria-invalid={catatanWajibKosong ? true : undefined}
+                  aria-describedby={catatanWajibKosong ? 'err-review-notes' : undefined}
                 />
+                {catatanWajibKosong && (
+                  <p id="err-review-notes" role="alert" className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400">
+                    {PESAN_CATATAN_WAJIB[newStatus]}
+                  </p>
+                )}
 
                 {/* Catat pemasangan — hanya bila materi boleh dipasang (FR-040). */}
                 {isInstallableStatus(detail.status) && (
@@ -839,7 +885,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   <button
                     type="button"
                     onClick={() => void saveStatus()}
-                    disabled={saving}
+                    disabled={saving || catatanWajibKosong}
+                    title={catatanWajibKosong ? PESAN_CATATAN_WAJIB[newStatus] : undefined}
                     className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
@@ -1018,7 +1065,18 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
         </div>
       )}
 
-      {!loading && (
+      {!loading && rows.length === 0 && (
+        <div className="ui-empty-panel px-6 py-10" role="status">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada media di katalog.</p>
+          <p className="mt-1 text-xs ui-text-muted">
+            {canManage
+              ? 'Tambahkan media pertama dengan tombol "Tambah Media" di atas.'
+              : 'Katalog masih kosong — hubungi Admin untuk menambahkan media.'}
+          </p>
+        </div>
+      )}
+
+      {!loading && rows.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((m) => (
             <div key={m.id ?? m.slug} className="ui-admin-card p-4">
@@ -1303,7 +1361,16 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
         </div>
       )}
 
-      {!loading && (
+      {!loading && rows.length === 0 && (
+        <div className="ui-empty-panel px-6 py-10" role="status">
+          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada akun staf.</p>
+          <p className="mt-1 text-xs ui-text-muted">
+            Tambahkan akun pertama dengan tombol "Tambah User" di atas.
+          </p>
+        </div>
+      )}
+
+      {!loading && rows.length > 0 && (
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>

@@ -7,6 +7,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchAdminSubmissions, fetchAdminMediaTypes, updateSubmissionStatus,
   fetchAdminSummary, fetchAdminSubmissionDetail, recordInstallation,
+  fetchAdminUsers,
 } from '../../../utils/adminApi';
 import type { AdminSubmissionRow } from '../../../types/promo';
 
@@ -23,6 +24,7 @@ vi.mock('../../../utils/adminApi', async (importOriginal) => {
     recordInstallation: vi.fn(),
     deleteSubmission: vi.fn(),
     downloadExportCsv: vi.fn(),
+    fetchAdminUsers: vi.fn(),
   };
 });
 
@@ -33,6 +35,7 @@ const mockedFetchDetail = vi.mocked(fetchAdminSubmissionDetail);
 const mockedFetchMediaTypes = vi.mocked(fetchAdminMediaTypes);
 const mockedUpdateStatus = vi.mocked(updateSubmissionStatus);
 const mockedRecordInstallation = vi.mocked(recordInstallation);
+const mockedFetchUsers = vi.mocked(fetchAdminUsers);
 
 /** Bentuk baris API staf (snake_case, 8 status PRD). */
 function row(over: Partial<AdminSubmissionRow>): AdminSubmissionRow {
@@ -83,6 +86,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   mockedFetchSubmissions.mockResolvedValue(PAGE);
   mockedFetchMediaTypes.mockResolvedValue([]);
+  mockedFetchUsers.mockResolvedValue([]);
   mockedFetchSummary.mockResolvedValue({
     total: 3,
     counts: {
@@ -357,5 +361,69 @@ describe('AdminDashboardPage', () => {
     renderDashboard({ id: 's1', email: 'super@test', display_name: 'Super', role: 'superadmin' });
     await screen.findByText('Optik Melawai');
     expect(screen.getByRole('tab', { name: /Pengguna/i })).toBeInTheDocument();
+  });
+
+  it('daftar pengajuan kosong → pesan keadaan kosong diumumkan (role=status)', async () => {
+    mockedFetchSubmissions.mockResolvedValue({ data: [], total: 0, page: 1, per_page: 20, total_pages: 1 });
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+
+    const pesan = await screen.findByText('Tidak ada pengajuan.');
+    expect(pesan).toHaveAttribute('role', 'status');
+  });
+
+  it('katalog kosong → panel keadaan kosong, bukan grid tanpa pesan', async () => {
+    mockedFetchMediaTypes.mockResolvedValue([]);
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getByRole('tab', { name: /Katalog Media/i }));
+
+    const pesan = await screen.findByText(/Belum ada media di katalog/i);
+    expect(pesan.closest('[role="status"]')).not.toBeNull();
+  });
+
+  it('pengguna kosong → panel keadaan kosong (superadmin)', async () => {
+    renderDashboard({ id: 's1', email: 'super@test', display_name: 'Super', role: 'superadmin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getByRole('tab', { name: /Pengguna/i }));
+
+    const pesan = await screen.findByText(/Belum ada akun staf/i);
+    expect(pesan.closest('[role="status"]')).not.toBeNull();
+  });
+
+  it('Perlu Revisi tanpa catatan → Simpan Status terkunci + pesan tertaut field', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[0]!);
+    await screen.findByText(/Ubah status/i);
+
+    // Awalnya catatan kosong & status tersimpan → tombol tetap bisa ditekan.
+    const simpan = screen.getByRole('button', { name: /Simpan Status/i });
+    expect(simpan).not.toBeDisabled();
+
+    // Pilih Perlu Revisi tanpa mengisi catatan → terkunci (cermin aturan server).
+    fireEvent.click(screen.getByRole('radio', { name: /Perlu Revisi/i }));
+    await waitFor(() => { expect(simpan).toBeDisabled(); });
+
+    const pesan = screen.getByText(/Catatan wajib diisi saat meminta revisi/i);
+    expect(pesan).toHaveAttribute('id', 'err-review-notes');
+    expect(screen.getByLabelText(/Catatan Review/i)).toHaveAttribute('aria-describedby', 'err-review-notes');
+
+    // Mengisi catatan membuka kuncinya kembali.
+    fireEvent.change(screen.getByLabelText(/Catatan Review/i), { target: { value: 'Perbaiki resolusi.' } });
+    await waitFor(() => { expect(simpan).not.toBeDisabled(); });
+  });
+
+  it('Ditolak tanpa catatan → pesan alasan wajib (cermin pesan server)', async () => {
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[0]!);
+    await screen.findByText(/Ubah status/i);
+    fireEvent.click(screen.getByRole('radio', { name: /Ditolak/i }));
+
+    expect(await screen.findByText(/Alasan wajib diisi saat menolak materi/i)).toBeInTheDocument();
   });
 });
