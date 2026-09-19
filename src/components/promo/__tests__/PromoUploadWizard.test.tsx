@@ -303,6 +303,23 @@ describe('PromoUploadWizard', () => {
     expect(screen.getByText(/Media atau lokasi pemasangan wajib diisi/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Kirim Materi' })).not.toBeInTheDocument();
   });
+
+  it('validasi gagal → fokus pindah ke field tidak valid pertama', async () => {
+    // Regresi WCAG 3.3.1: pengguna yang sudah menggulir ke bawah menekan
+    // "Lanjut" dan tidak melihat apa pun berubah. Fokus kini diarahkan ke
+    // field tidak valid paling atas menurut urutan DOM (tenant, bukan PIC
+    // yang diperiksa lebih dulu).
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA);
+    renderWizard();
+    fireEvent.click(await screen.findByText('Videotron'));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+
+    await screen.findByLabelText(/Nama PIC/i);
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+
+    await screen.findByText(/Nama PIC wajib diisi/i);
+    expect(screen.getByLabelText(/Nama Tenant/i)).toHaveFocus();
+  });
 });
 
 describe('PromoUploadWizard — lead time materi', () => {

@@ -35,12 +35,16 @@ function StatusBadge({ status }: { status: string }) {
 export default function MySubmissionsPage() {
   const [rows, setRows] = useState<MySubmissionRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const fp = getDeviceFingerprint();
     fetchMySubmissions(fp)
       .then((r) => { if (!cancelled) setRows(r); })
+      // Gagal memuat ≠ tidak ada pengajuan: tanpa pembedaan ini tenant
+      // mengira pengajuannya hilang (lihat komentar `fetchMySubmissions`).
+      .catch(() => { if (!cancelled) setLoadError(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
@@ -62,15 +66,30 @@ export default function MySubmissionsPage() {
               </div>
             )}
 
-            {!loading && rows.length === 0 && (
+            {!loading && loadError && (
+              <div className="ui-alert p-5" role="alert">
+                <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat riwayat pengajuan.</p>
+                <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+                  Riwayat Anda tidak hilang — sambungan ke server sedang bermasalah. Muat ulang
+                  halaman atau coba lagi sebentar.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2">
+                  <Link to="/lacak" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+                    Lacak dengan Nomor
+                  </Link>
+                </div>
+              </div>
+            )}
+
+            {!loading && !loadError && rows.length === 0 && (
               <div className="ui-empty-panel px-6 py-10">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada pengajuan dari perangkat ini.</p>
-                <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda dari halaman beranda.</p>
+                <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda — pilih media yang sesuai, lalu kirim materinya.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Link to="/" className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+                  <Link to="/ajukan" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
                     Ajukan Materi
                   </Link>
-                  <Link to="/lacak" className="ui-control inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <Link to="/lacak" className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                     Lacak dengan Nomor
                   </Link>
                 </div>

@@ -23,6 +23,14 @@ interface SheetProps {
 export default function Sheet({ open, onClose, title, children, footer }: SheetProps) {
   const panelRef = useRef<HTMLDivElement>(null);
   const restoreRef = useRef<HTMLElement | null>(null);
+  // `onClose` disimpan di ref, bukan dijadikan dependency efek di bawah.
+  // Semua pemanggil mengirim arrow function inline (`onClose={() => setX(null)}`),
+  // jadi identitasnya berubah setiap render. Bila ia jadi dependency, efek
+  // "buka" akan berjalan ulang tiap render: cleanup-nya mengembalikan fokus ke
+  // pemicu lalu `panelRef.focus()` merebutnya kembali — akibatnya pengguna
+  // hanya bisa mengetik SATU karakter per fokus di seluruh dialog staf.
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   useEffect(() => {
     if (!open) return;
@@ -37,7 +45,7 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onClose();
+        onCloseRef.current();
         return;
       }
       if (e.key !== 'Tab') return;
@@ -62,7 +70,7 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
       document.body.style.overflow = prevOverflow;
       restoreRef.current?.focus?.();
     };
-  }, [open, onClose]);
+  }, [open]);
 
   if (!open) return null;
 

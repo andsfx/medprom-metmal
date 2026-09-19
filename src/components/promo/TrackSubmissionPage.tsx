@@ -10,7 +10,7 @@
  * Isi detailnya sama persis dengan halaman status ber-token
  * (komponen `SubmissionDetail`).
  */
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Loader2, Search, X } from 'lucide-react';
 import AppShell from '../layout/AppShell';
@@ -79,6 +79,24 @@ export default function TrackSubmissionPage() {
   }, [pendingReload, captchaToken, siteKey, search]);
 
   const captchaBlocked = Boolean(siteKey) && !captchaToken;
+  const hasilRef = useRef<HTMLDivElement>(null);
+  const hasilFokusRef = useRef<string>('');
+
+  // Setelah hasil tiba, gulirkan detail ke layar dan pindahkan fokus ke
+  // judulnya. Tanpa ini, di layar pendek detail muncul DI BAWAH lipatan dan
+  // pengguna hanya melihat formulir yang sama — tidak ada tanda apa pun bahwa
+  // pencariannya berhasil (terukur: area gulir tetap di scrollTop 0).
+  // Fokus hanya diambil saat pengajuan yang ditampilkan BERGANTI, supaya muat
+  // ulang setelah kirim revisi tidak merampas fokus dari form revisi.
+  useEffect(() => {
+    const id = data?.submission?.id ?? '';
+    if (!id || id === hasilFokusRef.current) return;
+    hasilFokusRef.current = id;
+    const el = hasilRef.current;
+    if (!el) return;
+    el.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+    el.focus({ preventScroll: true });
+  }, [data]);
 
   return (
     <AppShell title="Lacak Pengajuan">
@@ -156,7 +174,14 @@ export default function TrackSubmissionPage() {
           </p>
         </div>
 
-        {data && <div className="mt-4"><SubmissionDetail data={data} onReload={reload} /></div>}
+        {/* `tabIndex={-1}`: kontainer hasil difokuskan secara programatis
+         * setelah pencarian berhasil, agar pembaca layar langsung
+         * membacakan status pengajuan yang baru dimuat. */}
+        {data && (
+          <div className="mt-4" ref={hasilRef} tabIndex={-1} aria-label="Hasil pelacakan">
+            <SubmissionDetail data={data} onReload={reload} />
+          </div>
+        )}
       </div>
     </AppShell>
   );

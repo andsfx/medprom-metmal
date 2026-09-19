@@ -3,7 +3,7 @@
  * Katalog Media (CRUD), Pengguna (superadmin).
  * tenant_relation = read-only (tanpa aksi tulis).
  */
-import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ChevronLeft, ChevronRight, Copy, Download, ExternalLink, FileText, Film,
@@ -348,7 +348,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           type="button"
           onClick={handleExport}
           disabled={exporting}
-          className="ui-control inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-60 dark:text-slate-200"
+          className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-60 dark:text-slate-200"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
           Unduh CSV
@@ -436,7 +436,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     <button
                       type="button"
                       onClick={() => openDetail(r)}
-                      className="ui-control rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                      className="ui-control inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                     >
                       Detail
                     </button>
@@ -445,7 +445,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         type="button"
                         onClick={() => void handleDelete(r)}
                         aria-label={`Hapus pengajuan ${r.tenant_name}`}
-                        className="inline-flex items-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
@@ -466,7 +466,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
             aria-label="Halaman sebelumnya"
-            className="ui-control inline-flex items-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
+            className="ui-control inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -476,7 +476,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
             aria-label="Halaman berikutnya"
-            className="ui-control inline-flex items-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
+            className="ui-control inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -651,7 +651,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ui-btn-primary inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+                className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
               >
                 <ExternalLink className="h-4 w-4" aria-hidden="true" />
                 Buka tautan materi
@@ -673,7 +673,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     href={wa}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ui-control inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                    className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                   >
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
                     Kirim pesan WA
@@ -685,7 +685,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 onClick={() => { void navigator.clipboard?.writeText(
                   `${detail.tenant_name} — ${detail.media_type_slug}\nTautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`,
                 ); }}
-                className="ui-control inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
               >
                 <Copy className="h-4 w-4" aria-hidden="true" />
                 Salin tautan
@@ -824,13 +824,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 {saveError && <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{saveError}</p>}
 
                 <div className="mt-4 flex flex-wrap justify-end gap-2">
-                  <button type="button" onClick={() => setDetail(null)} className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+                  <button type="button" onClick={() => setDetail(null)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
                   {isInstallableStatus(detail.status) && (
                     <button
                       type="button"
                       onClick={() => void saveInstallation()}
                       disabled={saving || !installLocation.trim()}
-                      className="ui-control inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-50 dark:text-slate-200"
+                      className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-50 dark:text-slate-200"
                     >
                       <Wrench className="h-4 w-4" aria-hidden="true" />
                       Catat Pemasangan
@@ -840,7 +840,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     type="button"
                     onClick={() => void saveStatus()}
                     disabled={saving}
-                    className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+                    className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                     Simpan Status
@@ -996,7 +996,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           <button
             type="button"
             onClick={() => { setForm({ ...EMPTY_CATALOG_FORM }); setFormError(''); }}
-            className="ui-btn-primary inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+            className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Tambah Media
@@ -1051,7 +1051,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                       });
                       setFormError('');
                     }}
-                    className="ui-control flex-1 rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                    className="ui-control inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                   >
                     Edit
                   </button>
@@ -1059,7 +1059,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                     type="button"
                     onClick={() => void handleDelete(m)}
                     aria-label={`Hapus ${m.name}`}
-                    className="inline-flex items-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
                   >
                     <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                   </button>
@@ -1119,7 +1119,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                     <div className="flex flex-wrap items-center gap-2">
                       <label
                         htmlFor="cf-image"
-                        className={`ui-control inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 ${unggahGambar ? 'pointer-events-none opacity-50' : ''}`}
+                        className={`ui-control inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 ${unggahGambar ? 'pointer-events-none opacity-50' : ''}`}
                       >
                         <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
                         {form.image_path ? 'Ganti Foto' : 'Unggah Foto'}
@@ -1141,7 +1141,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                           type="button"
                           onClick={() => void handleHapusGambar()}
                           disabled={unggahGambar}
-                          className="ui-control inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition disabled:opacity-50 dark:text-slate-200"
+                          className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition disabled:opacity-50 dark:text-slate-200"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Hapus Foto
@@ -1193,8 +1193,8 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
             {formError && <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{formError}</p>}
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setForm(null)} className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
-              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
+              <button type="button" onClick={() => setForm(null)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                 Simpan
               </button>
@@ -1282,7 +1282,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
         <button
           type="button"
           onClick={() => { setForm({ id: '', email: '', display_name: '', role: 'admin', password: '', is_active: true }); setFormError(''); }}
-          className="ui-btn-primary inline-flex items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+          className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Tambah User
@@ -1335,7 +1335,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                       <button
                         type="button"
                         onClick={() => { setForm({ id: u.id, email: u.email, display_name: u.display_name, role: u.role, password: '', is_active: u.is_active }); setFormError(''); }}
-                        className="ui-control rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                        className="ui-control inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
                       >
                         Edit
                       </button>
@@ -1343,7 +1343,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                         type="button"
                         onClick={() => void handleDelete(u)}
                         aria-label={`Hapus user ${u.email}`}
-                        className="inline-flex items-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
@@ -1430,8 +1430,8 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
             {formError && <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{formError}</p>}
 
             <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setForm(null)} className="rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
-              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
+              <button type="button" onClick={() => setForm(null)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                 Simpan
               </button>
@@ -1450,6 +1450,7 @@ export default function AdminDashboardPage() {
   const permissions = usePermission(user);
   const [tab, setTab] = useState<Tab>('submissions');
   const { confirm, dialog } = useConfirmDialog();
+  const tabRefs = useRef<Partial<Record<Tab, HTMLButtonElement | null>>>({});
 
   const onConfirmDelete = useCallback(
     async (id: string, subject: string) => {
@@ -1470,6 +1471,27 @@ export default function AdminDashboardPage() {
     if (permissions.canManageUsers) list.push({ key: 'users', label: 'Pengguna' });
     return list;
   }, [permissions.canManageUsers]);
+
+  /**
+   * Panah kiri/kanan/Home/End pada tablist (pola ARIA "tabs with automatic
+   * activation"). Sebelum ini `role="tablist"` dipasang tanpa dukungan panah,
+   * sehingga pengguna keyboard tidak bisa berpindah tab sama sekali — tombol
+   * panah tidak melakukan apa pun (terverifikasi di peramban).
+   */
+  function onTabListKeyDown(e: KeyboardEvent<HTMLDivElement>) {
+    const keys = tabs.map((t) => t.key);
+    const i = keys.indexOf(tab);
+    let next: Tab | null = null;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') next = keys[(i + 1) % keys.length] ?? null;
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') next = keys[(i - 1 + keys.length) % keys.length] ?? null;
+    else if (e.key === 'Home') next = keys[0] ?? null;
+    else if (e.key === 'End') next = keys[keys.length - 1] ?? null;
+    if (!next) return;
+    e.preventDefault();
+    setTab(next);
+    tabRefs.current[next]?.focus();
+  }
+
   if (isLoading) {
     return (
       <div className="ui-admin-page flex min-h-screen items-center justify-center" role="status">
@@ -1515,7 +1537,7 @@ export default function AdminDashboardPage() {
             <button
               type="button"
               onClick={() => void logout()}
-              className="ui-control inline-flex items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-red-600 dark:text-slate-200"
+              className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-red-600 dark:text-slate-200"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               Logout
@@ -1526,15 +1548,25 @@ export default function AdminDashboardPage() {
 
       {/* Tab nav */}
       <nav className="mx-auto max-w-6xl px-4 pt-4" aria-label="Bagian dashboard">
-        <div className="flex flex-wrap gap-1.5" role="tablist">
+        <div
+          className="flex flex-wrap gap-1.5"
+          role="tablist"
+          onKeyDown={onTabListKeyDown}
+        >
           {tabs.map((t) => (
             <button
               key={t.key}
               type="button"
               role="tab"
+              id={`tab-${t.key}`}
               aria-selected={tab === t.key}
+              aria-controls={`panel-${t.key}`}
+              // Roving tabindex (pola ARIA tablist): hanya tab aktif yang masuk
+              // urutan Tab; panah kiri/kanan memindahkan pilihan.
+              tabIndex={tab === t.key ? 0 : -1}
+              ref={(el) => { tabRefs.current[t.key] = el; }}
               onClick={() => setTab(t.key)}
-              className={`rounded-md px-4 py-2 text-sm font-semibold transition ${
+              className={`min-h-11 rounded-md px-4 py-2 text-sm font-semibold transition ${
                 tab === t.key
                   ? 'bg-brand-primary-600 text-white'
                   : 'ui-control text-slate-600 hover:text-brand-primary-700 dark:text-slate-300'
@@ -1549,9 +1581,11 @@ export default function AdminDashboardPage() {
 
       {/* Content */}
       <main className="mx-auto max-w-6xl px-4 py-5">
-        {tab === 'submissions' && <SubmissionsTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
-        {tab === 'catalog' && <CatalogTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
-        {tab === 'users' && permissions.canManageUsers && <UsersTab onConfirmDelete={onConfirmDelete} />}
+        <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
+          {tab === 'submissions' && <SubmissionsTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
+          {tab === 'catalog' && <CatalogTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
+          {tab === 'users' && permissions.canManageUsers && <UsersTab onConfirmDelete={onConfirmDelete} />}
+        </div>
       </main>
 
       {dialog}

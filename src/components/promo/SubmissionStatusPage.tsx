@@ -50,10 +50,10 @@ export default function SubmissionStatusPage() {
               Periksa kembali tautan status Anda. Tautan ini hanya berlaku untuk satu pengajuan.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/lacak" className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+              <Link to="/lacak" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
                 Lacak dengan Nomor Pengajuan
               </Link>
-              <Link to="/riwayat" className="ui-control inline-flex items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <Link to="/riwayat" className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
                 Lihat Riwayat Perangkat
               </Link>
             </div>

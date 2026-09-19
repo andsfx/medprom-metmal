@@ -1,5 +1,5 @@
 /**
- * Top app bar â€” judul kontekstual + aksi balik.
+ * Top app bar — judul kontekstual + aksi balik.
  *
  * Terangkat (`data-elevated`) begitu konten menggulir di belakangnya; ini
  * penanda kedalaman yang dipakai aplikasi asli, menggantikan garis statis.

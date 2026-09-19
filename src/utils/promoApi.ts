@@ -184,14 +184,19 @@ export async function submitPromo(payload: PromoSubmissionPayload): Promise<{
 
 // ─── Riwayat per perangkat (publik) ─────────────────────────────
 
+/**
+ * Riwayat pengajuan milik perangkat ini.
+ *
+ * Galat **diteruskan** (bukan didegradasi jadi daftar kosong): halaman Riwayat
+ * harus bisa membedakan "belum ada pengajuan" dari "gagal memuat". Sebelumnya
+ * setiap `ApiError` — termasuk server 503 dan koneksi putus — dikembalikan
+ * sebagai `[]`, sehingga tenant melihat "Belum ada pengajuan dari perangkat
+ * ini" padahal pengajuannya ada dan hanya gagal dimuat. Terverifikasi di
+ * produksi: respons 503 → layar kosong, tanpa galat apa pun.
+ */
 export async function fetchMySubmissions(fingerprint: string): Promise<MySubmissionRow[]> {
-  try {
-    const data = await apiGet<unknown>(`/promo/submissions/mine?fingerprint=${encodeURIComponent(fingerprint)}`);
-    return Array.isArray(data) ? (data as MySubmissionRow[]) : [];
-  } catch (err) {
-    if (err instanceof ApiError) return [];
-    throw err;
-  }
+  const data = await apiGet<unknown>(`/promo/submissions/mine?fingerprint=${encodeURIComponent(fingerprint)}`);
+  return Array.isArray(data) ? (data as MySubmissionRow[]) : [];
 }
 
 // ─── Status via token (publik, FR-019..FR-022) ───────────────────

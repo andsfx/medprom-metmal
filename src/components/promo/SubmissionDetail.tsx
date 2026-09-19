@@ -240,7 +240,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
               type="button"
               aria-pressed={revMode === 'link'}
               onClick={() => { setRevMode('link'); setRevError(''); }}
-              className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+              className={`min-h-11 flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
                 revMode === 'link'
                   ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
                   : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
@@ -252,7 +252,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
               type="button"
               aria-pressed={revMode === 'upload'}
               onClick={() => { setRevMode('upload'); setRevError(''); }}
-              className={`flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
+              className={`min-h-11 flex-1 rounded-md border px-3 py-2 text-sm font-semibold transition ${
                 revMode === 'upload'
                   ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
                   : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'

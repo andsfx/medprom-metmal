@@ -1,4 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
+import { useState } from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import Sheet from '../Sheet';
@@ -60,5 +61,32 @@ describe('Sheet', () => {
   it('footer diberikan → aksi dasar sheet dirender', () => {
     renderSheet({ footer: <button type="button">Simpan</button> });
     expect(screen.getByRole('button', { name: 'Simpan' })).toBeInTheDocument();
+  });
+
+  it('onClose identitas baru tiap render → fokus tidak direbut dari input', () => {
+    // Regresi: `onClose` inline (`() => setX(null)`) berubah identitas tiap
+    // render, jadi ia TIDAK boleh menjadi dependency efek "buka". Bila menjadi
+    // dependency, cleanup mengembalikan fokus ke pemicu lalu panel merebutnya
+    // kembali — pengguna hanya bisa mengetik satu karakter per fokus.
+    function Harness() {
+      const [nilai, setNilai] = useState('');
+      return (
+        <Sheet open onClose={() => { /* identitas baru tiap render */ }} title="Uji">
+          <input
+            aria-label="catatan"
+            value={nilai}
+            onChange={(e) => setNilai(e.target.value)}
+          />
+        </Sheet>
+      );
+    }
+    render(<Harness />);
+
+    const input = screen.getByLabelText('catatan');
+    input.focus();
+    fireEvent.change(input, { target: { value: 'halo' } });
+
+    expect(input).toHaveValue('halo');
+    expect(input).toHaveFocus();
   });
 });

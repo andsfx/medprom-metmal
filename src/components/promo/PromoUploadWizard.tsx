@@ -55,6 +55,43 @@ const STEPS: Array<{ label: string }> = [
   { label: 'Kirim Materi' },
 ];
 
+/**
+ * Urutan field formulir menurut urutan DOM — dipakai saat memindahkan fokus ke
+ * field tidak valid pertama. Urutannya sengaja tidak mengikuti urutan
+ * pemeriksaan di `goStep3()`, agar pengguna diarahkan ke field paling atas yang
+ * bermasalah (sesuai urutan yang mereka lihat), bukan ke pemeriksaan yang
+ * kebetulan dijalankan lebih dulu.
+ */
+const FIELD_ORDER = [
+  'media', 'tenant', 'pic_name', 'pic_phone', 'installation_date',
+  'campaign_name', 'material_title', 'material_description', 'material_type',
+  'media_target', 'air_end_date', 'terms_accepted', 'link_url',
+] as const;
+
+/** Nama field → id elemen di DOM (pemetaan yang tidak 1:1). */
+const FIELD_ID: Record<string, string> = {
+  tenant: 'tenant-search',
+  media: 'media-0',
+};
+
+/**
+ * Fokuskan field tidak valid pertama dan gulirkan ia ke tengah layar.
+ *
+ * Dipakai dua jalur: validasi klien (`goStep2`/`goStep3`) dan validasi server
+ * yang dipetakan ke field (`handleSubmit`). Tanpa ini pengguna yang sudah
+ * menggulir jauh ke bawah tidak melihat apa pun berubah saat menekan tombol
+ * lanjut/kirim.
+ */
+function fokusKeField(key: string): void {
+  const id = FIELD_ID[key] ?? key.replace(/_/g, '-');
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  // `scrollIntoView` tidak ada di jsdom (unit test) — panggil opsional agar
+  // jalur fokus tetap teruji tanpa memaksa lingkungan test menyediakannya.
+  el.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
+}
+
 /** Kunci sessionStorage draf pengajuan (link-only). */
 const DRAFT_KEY = 'metmal_promo_draft';
 
@@ -81,6 +118,12 @@ export default function PromoUploadWizard() {
   const [step, setStep] = useState<Step>(1);
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   const lewatiResetPertama = useRef(true);
+  /** Dinaikkan setiap validasi klien gagal — memicu pemindahan fokus ke field
+   *  tidak valid pertama (lihat efek di bawah). Sengaja BUKAN state turunan
+   *  dari `fieldErrors`: mengandalkan perubahan `fieldErrors` akan merebut
+   *  fokus setiap kali pengguna memperbaiki satu field, karena tiap ketikan
+   *  membuat objek error baru. */
+  const [focusErrorTick, setFocusErrorTick] = useState(0);
 
   const [selectedSlug, setSelectedSlug] = useState('');
   const [rulesOpen, setRulesOpen] = useState(false);
@@ -123,6 +166,21 @@ export default function PromoUploadWizard() {
     if (area) area.scrollTop = 0;
     judul.focus();
   }, [step]);
+
+  // Validasi klien gagal → pindahkan fokus ke field tidak valid pertama dan
+  // gulirkan ia ke layar. Tanpa ini, pengguna yang sudah menggulir jauh ke
+  // bawah menekan "Lanjut" dan tidak melihat apa pun berubah (terukur: field
+  // tidak valid pertama 232px DI ATAS layar, fokus tetap di tombol). WCAG
+  // 3.3.1 (error identification) mensyaratkan kesalahan teridentifikasi.
+  useEffect(() => {
+    if (focusErrorTick === 0) return;
+    const key = FIELD_ORDER.find((k) => fieldErrors[k]);
+    if (!key) return;
+    fokusKeField(key);
+    // Hanya bergantung pada tick: `fieldErrors` sengaja tidak menjadi
+    // dependency agar memperbaiki satu field tidak memindahkan fokus.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusErrorTick]);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
@@ -265,6 +323,7 @@ export default function PromoUploadWizard() {
   function goStep2() {
     if (!selectedSlug) {
       setFieldErrors({ media: 'Pilih salah satu jenis media promosi dulu.' });
+      setFocusErrorTick((t) => t + 1);
       return;
     }
     setFieldErrors({});
@@ -296,6 +355,7 @@ export default function PromoUploadWizard() {
     if (!leadCheck.ok) errs.installation_date = leadCheck.message;
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
+      setFocusErrorTick((t) => t + 1);
       return;
     }
     setFieldErrors({});
@@ -309,11 +369,13 @@ export default function PromoUploadWizard() {
     if (!selectedMedia || !tenant) return;
     if (sourceMode === 'upload' ? !file : !isValidLink(linkUrl)) {
       if (sourceMode === 'link') setLinkError('Tautan harus dimulai dengan http:// atau https://');
+      fokusKeField('link_url');
       return;
     }
     // Persetujuan ketentuan wajib (PRD §9.3) — ditegakkan juga di server.
     if (!termsAccepted) {
       setSubmitError('Centang persetujuan ketentuan sebelum mengirim.');
+      fokusKeField('terms_accepted');
       return;
     }
     setSubmitState('uploading');
@@ -370,6 +432,10 @@ export default function PromoUploadWizard() {
         };
         const target = Object.keys(mapped.fields).map((f) => stepForField[f]).filter(Boolean)[0];
         if (target && target !== 3) setStep(target);
+        // Setelah langkah yang tepat dirender, arahkan fokus ke field yang
+        // bermasalah (efek `focusErrorTick` berjalan pada render berikutnya,
+        // ketika field itu sudah ada di DOM).
+        setFocusErrorTick((t) => t + 1);
       }
       setSubmitError(mapped.general.length > 0 ? mapped.general.join('; ') : '');
       if (mapped.general.length === 0 && Object.keys(mapped.fields).length === 0) {
@@ -483,7 +549,7 @@ export default function PromoUploadWizard() {
                 <p className="ui-body ui-text-muted mt-2">Pilih media tempat materi Anda akan dipasang.</p>
 
                 <div className="mt-5 space-y-2">
-                  {mediaTypes.map((m) => (
+                  {mediaTypes.map((m, i) => (
                     <label
                       key={m.slug}
                       className={`flex cursor-pointer items-start gap-3 rounded-md border p-3.5 transition ${
@@ -493,11 +559,13 @@ export default function PromoUploadWizard() {
                       }`}
                     >
                       <input
+                        id={`media-${i}`}
                         type="radio"
                         name="media_type"
                         value={m.slug}
                         checked={selectedSlug === m.slug}
                         onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
+                        aria-describedby={fieldErrors.media ? 'err-media' : undefined}
                         className="mt-1 h-4 w-4 accent-[var(--brand-tosca)]"
                       />
                       {/* Foto contoh — dekoratif: nama media sudah ada di sebelahnya,
@@ -557,7 +625,7 @@ export default function PromoUploadWizard() {
                   ))}
                 </div>
 
-                {fieldErrors.media && <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media}</p>}
+                {fieldErrors.media && <p id="err-media" role="alert" className="mt-3 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media}</p>}
 
                 <button
                   type="button"
@@ -648,6 +716,8 @@ export default function PromoUploadWizard() {
                       min={leadInfo.earliest || undefined}
                       onChange={(e) => { setInstallationDate(e.target.value); setFieldErrors((er) => ({ ...er, installation_date: '' })); }}
                       className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
+                      aria-invalid={fieldErrors.installation_date ? true : undefined}
+                      aria-describedby={fieldErrors.installation_date ? 'err-installation_date' : undefined}
                     />
                     <p className="mt-1 text-xs ui-text-muted">
                       Permintaan tanggal bersifat harapan — jadwal final ditentukan Mall (lihat ketentuan media).
@@ -657,7 +727,7 @@ export default function PromoUploadWizard() {
                         Materi harus diterima paling lambat {leadInfo.label} — tanggal paling awal {leadInfo.earliest}.
                       </p>
                     )}
-                    {fieldErrors.installation_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.installation_date}</p>}
+                    {fieldErrors.installation_date && <p id="err-installation_date" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.installation_date}</p>}
                   </div>
 
                   <div>
@@ -775,8 +845,10 @@ export default function PromoUploadWizard() {
                         value={airEndDate}
                         onChange={(e) => { setAirEndDate(e.target.value); setFieldErrors((er) => ({ ...er, air_end_date: '' })); }}
                         className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                        aria-invalid={fieldErrors.air_end_date ? true : undefined}
+                        aria-describedby={fieldErrors.air_end_date ? 'err-air_end_date' : undefined}
                       />
-                      {fieldErrors.air_end_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
+                      {fieldErrors.air_end_date && <p id="err-air_end_date" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
                     </div>
                   </div>
 
@@ -862,7 +934,7 @@ export default function PromoUploadWizard() {
                     type="button"
                     aria-pressed={sourceMode === 'link'}
                     onClick={() => { setSourceMode('link'); setFileError(''); }}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
                       sourceMode === 'link'
                         ? 'ring-2 ring-brand-primary-600 bg-white text-brand-primary-700 dark:ring-1 dark:ring-brand-soft dark:bg-slate-800 dark:text-brand-primary-400'
                         : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
@@ -875,7 +947,7 @@ export default function PromoUploadWizard() {
                     type="button"
                     aria-pressed={sourceMode === 'upload'}
                     onClick={() => { setSourceMode('upload'); setLinkError(''); }}
-                    className={`flex flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
                       sourceMode === 'upload'
                         ? 'ring-2 ring-brand-primary-600 bg-white text-brand-primary-700 dark:ring-1 dark:ring-brand-soft dark:bg-slate-800 dark:text-brand-primary-400'
                         : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
@@ -978,7 +1050,7 @@ export default function PromoUploadWizard() {
                         type="button"
                         onClick={() => setFile(null)}
                         aria-label="Hapus file"
-                        className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -1017,10 +1089,13 @@ export default function PromoUploadWizard() {
                 {/* Persetujuan ketentuan — wajib sebelum kirim (PRD §9.3). */}
                 <label className="mt-5 flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-200">
                   <input
+                    id="terms-accepted"
                     type="checkbox"
                     checked={termsAccepted}
                     onChange={(e) => { setTermsAccepted(e.target.checked); setFieldErrors((er) => ({ ...er, terms_accepted: '' })); }}
                     className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand-tosca)]"
+                    aria-invalid={fieldErrors.terms_accepted ? true : undefined}
+                    aria-describedby={fieldErrors.terms_accepted ? 'err-terms_accepted' : undefined}
                   />
                   <span>
                     Saya menyatakan materi ini benar milik/kewenangan tenant saya dan menyetujui
@@ -1028,7 +1103,7 @@ export default function PromoUploadWizard() {
                   </span>
                 </label>
                 {fieldErrors.terms_accepted && (
-                  <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.terms_accepted}</p>
+                  <p id="err-terms_accepted" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.terms_accepted}</p>
                 )}
 
                 <button
