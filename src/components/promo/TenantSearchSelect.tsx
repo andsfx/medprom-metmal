@@ -143,7 +143,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
         </p>
       )}
       <div className="relative">
-        <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" aria-hidden="true" />
+        <Store className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" aria-hidden="true" />
         <input
           id={id}
           type="text"
@@ -179,13 +179,13 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
             onClick={clearSelection}
             disabled={disabled}
             aria-label="Hapus pilihan tenant"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
           >
-            <X className="h-4 w-4" />
+            <X className="h-4 w-4" aria-hidden="true" />
           </button>
         )}
         {loading && !manualMode && (
-          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" aria-hidden="true" />
+          <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-500" aria-hidden="true" />
         )}
       </div>
 

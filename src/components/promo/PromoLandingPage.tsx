@@ -93,7 +93,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
           {rulesOpen && (
             <ul className="mt-2 space-y-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
               {media.rules.split('\n').filter(Boolean).map((line, i) => (
-                <li key={i} className="flex gap-1.5">
+                <li key={i} className="flex items-start gap-1.5">
                   <span aria-hidden="true" className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-brand-primary-500" />
                   <span>{line}</span>
                 </li>

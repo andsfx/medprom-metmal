@@ -1393,7 +1393,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                     </span>
                   </td>
                   <td className="px-3 py-3">
-                    <span className={`text-xs font-semibold ${u.is_active ? 'text-green-700 dark:text-green-400' : 'text-slate-400'}`}>
+                    <span className={`text-xs font-semibold ${u.is_active ? 'text-green-700 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
                       {u.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </td>

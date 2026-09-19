@@ -5,6 +5,83 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+Audit kepatuhan gate UI/UX (Hallmark 58 gate + ui-ux-pro-max "Common Rules" +
+WCAG 2.2) terhadap `DESIGN.md` sebagai sistem terikat. Cakupan 5 rute publik +
+konsol staf, viewport 320–1280. Laporan: `docs/PLAN_2026-09-19_16-11.md`.
+Setelah perbaikan: **0 pelanggaran axe di 5 rute** (1280px dan 320px), 0
+regresi, suite 33 berkas / 292 test hijau.
+
+### Diperbaiki
+- **`prefers-reduced-motion` belum menutup seluruh gerakan (Gate 27).** Blok
+  `@media (prefers-reduced-motion: reduce)` hanya menangani `.app-pressable`
+  dan `.animate-spin`/`.animate-pulse`. Dua gerakan lolos: (a)
+  `transition-transform` pada chevron "Ketentuan" (`rotate-180`,
+  `PromoLandingPage.tsx:91` + `PromoUploadWizard.tsx:612`); (b) kelas arbitrer
+  `animate-[shake_0.4s_ease]` di `AdminLoginPage.tsx`. Ditambahkan kill-switch
+  ber-scope (`*, *::before, *::after` → durasi 0.001 ms) plus aturan eksplisit
+  `.transition-transform { transition: none }`. Durasi dipangkas, bukan
+  `none`, agar event `transitionend` tetap terpicu; `animation-iteration-count:
+  1` menghentikan animasi berulang. Terverifikasi di peramban dengan
+  `emulateMediaFeatures(reduce)`: transisi maksimum seluruh dokumen = 1e-06 s.
+- **Kelas `animate-[shake_0.4s_ease]` ternyata tidak pernah beranimasi.**
+  Tailwind mengompilasinya menjadi `animation:.4s shake`, tetapi **tidak ada
+  `@keyframes shake` di mana pun** (`git log -S "keyframes shake" --all`
+  kosong) — jadi efek getar saat login gagal tidak pernah ada sejak v1.0.0.
+  State `shake` + `setTimeout` 500 ms yang mati dihapus agar tidak menyesatkan
+  pembaca berikutnya (perilaku visual tidak berubah).
+- **Judul display tidak boleh mematahkan kata panjang (Gate 51).** `.ui-title-
+  screen`/`.ui-title-section`/`.ui-title-card` belum punya `overflow-wrap`.
+  Lebih penting: judul beranda memakai kelas Tailwind langsung
+  (`font-display text-3xl sm:text-4xl`), sehingga tidak terjangkau kelas itu.
+  Terukur di peramban (320px, kata majemuk panjang pada H1/H2 beranda):
+  `scrollWidth` **637px** vs `clientWidth` **273px** — teks meluber dan
+  terpotong oleh `overflow-x: clip`. Ditambahkan `overflow-wrap: anywhere;
+  min-width: 0` pada ketiga kelas judul **dan** jaring pengaman `h1–h6` di
+  `@layer base`. Terverifikasi: `scrollWidth` = `clientWidth` = 273px.
+- **Keadaan `disabled` hanya ditandai dua kanal di 5 tombol admin (Gate 39).**
+  `disabled:opacity-*` ada, atribut `disabled` ada, tetapi `cursor:
+  not-allowed` tidak — hanya `ConfirmDialog` yang punya. Ditambahkan satu
+  aturan global `button:disabled, input:disabled, select:disabled,
+  textarea:disabled { cursor: not-allowed }`, menutup kelima tombol sekaligus
+  mencegah regresi. Terverifikasi: 0 tombol nonaktif tanpa `not-allowed`.
+- **51 dari 77 tombol/tautan tanpa cincin fokus bergaya sendiri (Gate 26).**
+  Hanya 26 elemen memakai `.ui-focus-ring`/`.ui-btn-primary`; sisanya
+  mengandalkan outline bawaan peramban, sehingga indikator fokus berbeda-beda
+  antar elemen. Ditambahkan jaring pengaman `a/button/input/select/textarea/
+  summary:focus-visible { outline: 2px solid var(--focus-ring-color) }` di
+  `@layer base` — lapisan Tailwind menang tanpa peduli spesifisitas, jadi
+  elemen yang sudah punya cincin sendiri (`ui-focus-ring`, `focus:ring-2`)
+  **tidak berubah** dan tidak ada cincin ganda. Terverifikasi: 0 elemen
+  interaktif tanpa cincin di beranda maupun `/login`.
+- **Kontras ikon & teks `text-slate-400` di bawah ambang (Gate 40).**
+  `slate-400` (`#94a3b8`) hanya **2.56:1** di atas putih — gagal ambang ikon
+  3:1 maupun teks 4.5:1. Empat lokasi dinaikkan ke `slate-500` (**4.76:1**):
+  label status "Nonaktif" (`AdminDashboardPage.tsx:1396`), ikon `Store` dan
+  spinner `TenantSearchSelect`, tombol hapus berkas wizard, tombol hapus
+  pilihan tenant, dan tombol intip password `/login`. `placeholder:text-
+  slate-400` dibiarkan (placeholder dikecualikan WCAG 1.4.3).
+- **Baris ikon+teks tanpa `align-items` eksplisit (Gate 36).** Tiga baris
+  (`SubmissionDetail` riwayat status, `PromoLandingPage` daftar ketentuan)
+  mewarisi `align-items: stretch`. Diubah ke `items-start` — baris dengan
+  ikon ber-`mt-*` memang harus rata atas, bukan tengah. Baris `flex` lain yang
+  mengandung ikon sudah memakai `items-center`.
+- **Dua `<svg>` Lucide tanpa `aria-hidden` (Gate 33).** Tombol hapus berkas
+  wizard dan tombol hapus pilihan tenant — keduanya punya `aria-label`, tetapi
+  ikonnya belum tersembunyi dari pembaca layar. Ditambahkan `aria-hidden`.
+
+### Usulan (belum dikerjakan)
+- **Hex mentah di luar blok token (Gate 48) — mode gelap.** `base.css`
+  memuat ~38 nilai hex/rgb mentah pada aturan `.dark .*` (`#0f172a`, `#1e293b`,
+  `#334155`, `#475569`, `#94a3b8`, `#cbd5e1`, `#f1f5f9`, `rgb(15 23 42 / …)`)
+  dan satu di mode terang (`.app-sheet-grip { background: #d6d3d1 }`).
+  **Sengaja tidak diubah:** mode gelap belum diaudit dan belum aktif publik
+  (DESIGN.md), sehingga mengangkatnya jadi token berisiko menimbulkan regresi
+  yang tidak dapat diverifikasi. Perlu sesi audit mode gelap tersendiri.
+- **Bentuk badge/radius.** Lihat laporan untuk rincian (di luar cakupan audit
+  ini).
+
+### Sebelumnya — penyelarasan kebijakan dokumentasi
+
 Penyelarasan kebijakan dokumentasi + perbaikan jalur deploy yang ditemukan saat
 verifikasi rilis 1.3.0 di produksi.
 

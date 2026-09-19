@@ -15,7 +15,6 @@ export default function AdminLoginPage() {
   const [pw, setPw] = useState('');
   const [showPw, setShowPw] = useState(false);
   const [error, setError] = useState('');
-  const [shake, setShake] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Sudah login → langsung dashboard.
@@ -35,8 +34,6 @@ export default function AdminLoginPage() {
       return;
     }
     setError(result.error || 'Login gagal');
-    setShake(true);
-    setTimeout(() => setShake(false), 500);
     setLoading(false);
   }
 
@@ -54,7 +51,7 @@ export default function AdminLoginPage() {
 
         <form
           onSubmit={onSubmit}
-          className={`ui-admin-card p-6 ${shake ? 'animate-[shake_0.4s_ease]' : ''}`}
+          className="ui-admin-card p-6"
           noValidate
         >
           <div className="space-y-4">
@@ -87,7 +84,7 @@ export default function AdminLoginPage() {
                   type="button"
                   onClick={() => setShowPw((v) => !v)}
                   aria-label={showPw ? 'Sembunyikan password' : 'Tampilkan password'}
-                  className="app-pressable ui-focus-ring absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-600 dark:hover:text-slate-300"
+                  className="app-pressable ui-focus-ring absolute right-1 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full text-slate-500 transition hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
                 >
                   {showPw ? <EyeOff className="h-4 w-4" aria-hidden="true" /> : <Eye className="h-4 w-4" aria-hidden="true" />}
                 </button>

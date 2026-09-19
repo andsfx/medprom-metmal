@@ -362,7 +362,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
         <h2 className="ui-title-card text-slate-900 dark:text-white">Riwayat Status</h2>
         <ol className="mt-3 space-y-3">
           {data.history.map((h) => (
-            <li key={h.id} className="flex gap-3">
+            <li key={h.id} className="flex items-start gap-3">
               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-slate-900 dark:text-white">

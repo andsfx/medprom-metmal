@@ -1050,9 +1050,9 @@ export default function PromoUploadWizard() {
                         type="button"
                         onClick={() => setFile(null)}
                         aria-label="Hapus file"
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-slate-700"
+                        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
                       >
-                        <X className="h-4 w-4" />
+                        <X className="h-4 w-4" aria-hidden="true" />
                       </button>
                     </div>
                   )}

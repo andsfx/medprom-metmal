@@ -98,6 +98,20 @@ body {
 button:not(:disabled) {
   cursor: pointer;
 }
+
+/* Kanal ketiga untuk keadaan disabled (Gate 39). Aturan `button:not(:disabled)`
+ * di atas tidak menyentuh tombol nonaktif, sehingga kursor mereka jatuh ke
+ * panah bawaan — hanya opacity + atribut `disabled` yang tersisa. Audit
+ * 2026-09-19 menemukan 5 tombol admin (ekspor, paginasi, simpan instalasi,
+ * simpan status, unggah foto) dengan `disabled:opacity-*` tanpa `cursor:
+ * not-allowed`. Satu aturan global ini menutup semuanya sekaligus mencegah
+ * regresi, tanpa mengubah tata letak atau warna. */
+button:disabled,
+input:disabled,
+select:disabled,
+textarea:disabled {
+  cursor: not-allowed;
+}
 .ui-btn-primary {
   /* Radius dari token, bukan utilitas: tombol yang lupa membawa kelas radius
    * tetap seragam dengan kontrol lain. */
@@ -157,6 +171,12 @@ button:not(:disabled) {
   /* `balance` mencegah baris judul menggantung satu kata (widow) — diminta
    * ui-ux-pro-max (html-tailwind) dan baseline-ui. */
   text-wrap: balance;
+  /* Gate 51: judul ukuran display harus boleh mematahkan kata majemuk
+   * panjang ("Feed Instagram/Fanpage/TikTok") alih-alih meluber keluar
+   * viewport. `min-width: 0` melengkapi untuk saat kelas ini dipakai pada
+   * flex/grid item, yang default-nya menolak menyusut di bawah min-content. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 /* Judul nama layar di header konsol staf turun satu langkah skala di bawah
@@ -176,6 +196,9 @@ button:not(:disabled) {
   font-weight: 700;
   line-height: var(--leading-tight);
   text-wrap: balance;
+  /* Gate 51 — lihat catatan di `.ui-title-screen`. */
+  overflow-wrap: anywhere;
+  min-width: 0;
 }
 
 .ui-title-card { /* h3 — kartu, butir, sub-judul */
@@ -184,6 +207,33 @@ button:not(:disabled) {
   font-weight: 600;
   line-height: var(--leading-tight);
   text-wrap: balance;
+  /* Gate 51 — lihat catatan di `.ui-title-screen`. */
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Jaring pengaman judul (Gate 51). Beberapa judul ukuran display di repo ini
+ * memakai kelas Tailwind langsung (`font-display text-3xl sm:text-4xl` di
+ * PromoLandingPage) alih-alih `.ui-title-*`, sehingga aturan di atas tidak
+ * menjangkaunya. Terukur di peramban (320px, kata majemuk panjang pada H1/H2
+ * beranda): `scrollWidth` 637px vs `clientWidth` 273px — teks meluber keluar
+ * kotak dan terpotong oleh `overflow-x: clip` di `html`/`body`.
+ *
+ * Ditaruh di `@layer base` supaya tetap berada di bawah lapisan `utilities`:
+ * `overflow-wrap` tidak diatur Tailwind di sini, dan tidak ada kelas judul yang
+ * perlu menimpanya. `anywhere` (bukan `break-word`) dipilih karena ikut
+ * memperkecil ukuran min-content, yang dibutuhkan saat judul menjadi flex/grid
+ * item. */
+@layer base {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: anywhere;
+    min-width: 0;
+  }
 }
 
 .ui-body { /* teks isi */
@@ -213,6 +263,29 @@ button:not(:disabled) {
 .ui-focus-ring {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
   --tw-ring-color: var(--focus-ring-color);
+}
+
+/* Jaring pengaman fokus (Gate 26). Audit 2026-09-19 menemukan 51 dari 77
+ * tombol/tautan tanpa cincin fokus bergaya sendiri — mereka hanya mengandalkan
+ * outline bawaan peramban, sehingga indikator fokus berbeda-beda antar
+ * elemen. Aturan ini memberi mereka cincin tosca yang sama.
+ *
+ * Sengaja ditaruh di `@layer base`, bukan tanpa lapisan: lapisan Tailwind
+ * menang atas `@layer base` tanpa peduli spesifisitas. Akibatnya elemen yang
+ * SUDAH punya gaya fokus sendiri tidak berubah sama sekali —
+ * `.ui-focus-ring` (tanpa lapisan) dan `focus:outline-none`/`focus:ring-2`
+ * (lapisan `utilities`) keduanya tetap menang, jadi tidak ada cincin ganda.
+ * Hanya elemen yang belum punya apa pun yang mendapatkan aturan ini. */
+@layer base {
+  a:focus-visible,
+  button:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--focus-ring-color);
+    outline-offset: 2px;
+  }
 }
 
 /* ─── Rule (hairline separator) ─── */
@@ -482,17 +555,40 @@ button:not(:disabled) {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  /* Kill-switch ber-scope. Aturan eksplisit di bawah hanya mencakup gerakan
+   * yang diketahui saat audit; kill-switch ini menutup sisa dan mencegah
+   * regresi saat ada gerakan baru ditambahkan. Yang paling penting pada
+   * audit 2026-09-19: `transition-transform` pada chevron "Ketentuan"
+   * (`rotate-180`, PromoUploadWizard + PromoLandingPage) dan kelas arbitrer
+   * `animate-[shake_0.4s_ease]` di AdminLoginPage — keduanya sebelumnya lolos
+   * dari blok ini. Durasi dipangkas (bukan `none`) agar event `transitionend`
+   * yang mungkin ditunggu kode tetap terpicu, dan status akhir tetap identik.
+   * `animation-iteration-count: 1` menghentikan animasi berulang; regangan ini
+   * hidup di base.css (tak berlapis) sehingga menang atas utility Tailwind. */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+
   .app-pressable:active {
     transform: none;
   }
   /* Animasi berulang dimatikan — status tetap terbaca karena setiap spinner
    * di repo ini selalu didampingi teks ("Mengirim…", "Memuat riwayat…",
    * "Unduh CSV"). `animate-pulse` skeleton menyisakan kartu statis; ikon
-   * Loader2 menyisakan ikon statis. Regangan ini hidup di base.css (tak
-   * berlapis), sehingga menang atas utility Tailwind yang tinggal di @layer. */
+   * Loader2 menyisakan ikon statis. */
   .animate-spin,
   .animate-pulse {
     animation: none;
+  }
+  /* Chevron yang berputar saat panel dibuka: lompat langsung ke sudut akhir,
+   * tanpa transisi — informasi (terbuka/tertutup) tetap terbaca dari arah
+   * panah. */
+  .transition-transform {
+    transition: none;
   }
 }
 
