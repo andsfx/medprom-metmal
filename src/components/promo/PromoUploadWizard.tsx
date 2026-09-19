@@ -413,7 +413,7 @@ export default function PromoUploadWizard() {
         device_fingerprint: getDeviceFingerprint(),
       });
       // FR-016/FR-017: nomor pengajuan dari server; token untuk halaman status.
-      setTicketId(result.submission_number || '—');
+      setTicketId(result.submission_number || '-');
       setStatusToken(result.status_token || '');
       setSubmitState('success');
       clearDraft();
@@ -463,7 +463,7 @@ export default function PromoUploadWizard() {
               <span className="font-mono text-sm font-bold tracking-widest text-brand-primary-700 dark:text-brand-primary-300">{ticketId}</span>
             </div>
             <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-              Simpan nomor ini — pakai untuk memantau status kapan saja, tidak perlu akun.
+              Simpan nomor ini untuk memantau status kapan saja, tanpa perlu akun.
             </p>
             <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
               Status juga dapat dipantau di halaman Riwayat dari perangkat ini.
@@ -625,7 +625,9 @@ export default function PromoUploadWizard() {
                   ))}
                 </div>
 
-                {fieldErrors.media && <p id="err-media" role="alert" className="mt-3 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media}</p>}
+                <div className="ui-helper-slot mt-3">
+                  {fieldErrors.media && <p id="err-media" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media}</p>}
+                </div>
 
                 <button
                   type="button"
@@ -633,7 +635,7 @@ export default function PromoUploadWizard() {
                   disabled={!selectedSlug}
                   className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
                 >
-                  Lanjut — Data Tenant
+                  Lanjut ke Data Tenant
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
               </div>
@@ -654,7 +656,7 @@ export default function PromoUploadWizard() {
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
                       {manualMode
-                        ? 'Daftar tenant tidak tersedia — isi nama tenant secara manual.'
+                        ? 'Daftar tenant tidak tersedia. Isi nama tenant secara manual.'
                         : 'Pilih dari daftar tenant aktif Metropolitan Mall Bekasi.'}
                     </p>
                     <TenantSearchSelect
@@ -682,7 +684,9 @@ export default function PromoUploadWizard() {
                         aria-invalid={fieldErrors.pic_name ? true : undefined}
                         aria-describedby={fieldErrors.pic_name ? 'err-pic_name' : undefined}
                       />
-                      {fieldErrors.pic_name && <p id="err-pic_name" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_name}</p>}
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors.pic_name && <p id="err-pic_name" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_name}</p>}
+                      </div>
                     </div>
                     <div>
                       <label htmlFor="pic-phone" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -701,7 +705,9 @@ export default function PromoUploadWizard() {
                         aria-invalid={fieldErrors.pic_phone ? true : undefined}
                         aria-describedby={fieldErrors.pic_phone ? 'err-pic_phone' : undefined}
                       />
-                      {fieldErrors.pic_phone && <p id="err-pic_phone" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_phone}</p>}
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors.pic_phone && <p id="err-pic_phone" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_phone}</p>}
+                      </div>
                     </div>
                   </div>
 
@@ -720,14 +726,16 @@ export default function PromoUploadWizard() {
                       aria-describedby={fieldErrors.installation_date ? 'err-installation_date' : undefined}
                     />
                     <p className="mt-1 text-xs ui-text-muted">
-                      Permintaan tanggal bersifat harapan — jadwal final ditentukan Mall (lihat ketentuan media).
+                      Permintaan tanggal bersifat harapan. Jadwal final ditentukan Mall (lihat ketentuan media).
                     </p>
                     {leadInfo.lead && (
                       <p className="mt-1 text-xs font-medium text-brand-primary-700 dark:text-brand-primary-300">
-                        Materi harus diterima paling lambat {leadInfo.label} — tanggal paling awal {leadInfo.earliest}.
+                        Materi harus diterima paling lambat {leadInfo.label}, tanggal paling awal {leadInfo.earliest}.
                       </p>
                     )}
-                    {fieldErrors.installation_date && <p id="err-installation_date" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.installation_date}</p>}
+                    <div className="ui-helper-slot mt-1">
+                      {fieldErrors.installation_date && <p id="err-installation_date" className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.installation_date}</p>}
+                    </div>
                   </div>
 
                   <div>
@@ -745,7 +753,9 @@ export default function PromoUploadWizard() {
                       aria-invalid={fieldErrors.campaign_name ? true : undefined}
                       aria-describedby={fieldErrors.campaign_name ? 'err-campaign_name' : undefined}
                     />
-                    {fieldErrors.campaign_name && <p id="err-campaign_name" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.campaign_name}</p>}
+                    <div className="ui-helper-slot mt-1">
+                      {fieldErrors.campaign_name && <p id="err-campaign_name" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.campaign_name}</p>}
+                    </div>
                   </div>
 
                   <div>
@@ -763,7 +773,9 @@ export default function PromoUploadWizard() {
                       aria-invalid={fieldErrors.material_title ? true : undefined}
                       aria-describedby={fieldErrors.material_title ? 'err-material_title' : undefined}
                     />
-                    {fieldErrors.material_title && <p id="err-material_title" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_title}</p>}
+                    <div className="ui-helper-slot mt-1">
+                      {fieldErrors.material_title && <p id="err-material_title" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_title}</p>}
+                    </div>
                   </div>
 
                   <div>
@@ -781,7 +793,9 @@ export default function PromoUploadWizard() {
                       aria-invalid={fieldErrors.material_description ? true : undefined}
                       aria-describedby={fieldErrors.material_description ? 'err-material_description' : undefined}
                     />
-                    {fieldErrors.material_description && <p id="err-material_description" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_description}</p>}
+                    <div className="ui-helper-slot mt-1">
+                      {fieldErrors.material_description && <p id="err-material_description" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_description}</p>}
+                    </div>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
@@ -800,7 +814,9 @@ export default function PromoUploadWizard() {
                         <option value="">Pilih jenis materi…</option>
                         {MATERIAL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                       </select>
-                      {fieldErrors.material_type && <p id="err-material_type" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_type}</p>}
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors.material_type && <p id="err-material_type" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_type}</p>}
+                      </div>
                     </div>
                     <div>
                       <label htmlFor="media-target" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -817,7 +833,9 @@ export default function PromoUploadWizard() {
                         aria-invalid={fieldErrors.media_target ? true : undefined}
                         aria-describedby={fieldErrors.media_target ? 'err-media_target' : undefined}
                       />
-                      {fieldErrors.media_target && <p id="err-media_target" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media_target}</p>}
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors.media_target && <p id="err-media_target" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media_target}</p>}
+                      </div>
                     </div>
                   </div>
 
@@ -833,7 +851,9 @@ export default function PromoUploadWizard() {
                         onChange={(e) => { setAirStartDate(e.target.value); setFieldErrors((er) => ({ ...er, air_start_date: '', air_end_date: '' })); }}
                         className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
                       />
-                      {fieldErrors.air_start_date && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_start_date}</p>}
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors.air_start_date && <p className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_start_date}</p>}
+                      </div>
                     </div>
                     <div>
                       <label htmlFor="air-end-date" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -848,7 +868,9 @@ export default function PromoUploadWizard() {
                         aria-invalid={fieldErrors.air_end_date ? true : undefined}
                         aria-describedby={fieldErrors.air_end_date ? 'err-air_end_date' : undefined}
                       />
-                      {fieldErrors.air_end_date && <p id="err-air_end_date" role="alert" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors.air_end_date && <p id="err-air_end_date" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
+                      </div>
                     </div>
                   </div>
 
@@ -876,12 +898,14 @@ export default function PromoUploadWizard() {
                   onClick={goStep3}
                   className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
                 >
-                  Lanjut — Kirim Materi
+                  Lanjut ke Kirim Materi
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
-                {submitError && (
-                  <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{submitError}</p>
-                )}
+                <div className="ui-helper-slot mt-3">
+                  {submitError && (
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">{submitError}</p>
+                  )}
+                </div>
               </div>
             )}
 
@@ -960,7 +984,7 @@ export default function PromoUploadWizard() {
                 ) : (
                   <p className="mt-5 flex items-start gap-1.5 rounded-md bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
                     <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    Kanal unggah berkas sedang tidak diaktifkan pada instance ini — silakan kirim
+                    Kanal unggah berkas sedang tidak diaktifkan pada instance ini. Silakan kirim
                     tautan materi Anda.
                   </p>
                 )}
@@ -988,12 +1012,14 @@ export default function PromoUploadWizard() {
                       aria-invalid={linkError || fieldErrors.link_url ? true : undefined}
                       aria-describedby={linkError || fieldErrors.link_url ? 'err-link_url' : undefined}
                     />
-                    {(linkError || fieldErrors.link_url) && (
-                      <p id="err-link_url" className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
-                        <X className="h-3.5 w-3.5" aria-hidden="true" />
-                        {linkError || fieldErrors.link_url}
-                      </p>
-                    )}
+                    <div className="ui-helper-slot mt-2">
+                      {(linkError || fieldErrors.link_url) && (
+                        <p id="err-link_url" className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                          <X className="h-3.5 w-3.5" aria-hidden="true" />
+                          {linkError || fieldErrors.link_url}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -1030,12 +1056,14 @@ export default function PromoUploadWizard() {
                     />
                   </label>
 
-                  {fileError && (
-                    <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
-                      <X className="h-3.5 w-3.5" aria-hidden="true" />
-                      {fileError}
-                    </p>
-                  )}
+                  <div className="ui-helper-slot mt-2">
+                    {fileError && (
+                      <p className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        {fileError}
+                      </p>
+                    )}
+                  </div>
 
                   {file && !fileError && (
                     <div className="ui-control mt-3 flex items-center gap-3 rounded-md p-3">
@@ -1069,7 +1097,7 @@ export default function PromoUploadWizard() {
                     <p className="mt-1 text-xs ui-text-muted">
                       Kirim berkas materi ke{' '}
                       <a
-                        href={`mailto:${materialEmail}?subject=${encodeURIComponent(`Materi Promosi ${selectedMedia.name} — ${tenant?.name ?? ''}`)}`}
+                        href={`mailto:${materialEmail}?subject=${encodeURIComponent(`Materi Promosi ${selectedMedia.name} - ${tenant?.name ?? ''}`)}`}
                         className="font-medium text-brand-primary-700 underline dark:text-brand-primary-300"
                       >
                         {materialEmail}
@@ -1102,9 +1130,11 @@ export default function PromoUploadWizard() {
                     ketentuan pemasangan media promosi Metropolitan Mall Bekasi.
                   </span>
                 </label>
-                {fieldErrors.terms_accepted && (
-                  <p id="err-terms_accepted" className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.terms_accepted}</p>
-                )}
+                <div className="ui-helper-slot mt-1">
+                  {fieldErrors.terms_accepted && (
+                    <p id="err-terms_accepted" className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.terms_accepted}</p>
+                  )}
+                </div>
 
                 <button
                   type="button"

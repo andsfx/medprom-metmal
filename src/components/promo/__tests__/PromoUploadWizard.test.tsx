@@ -89,13 +89,13 @@ async function wizardToStep3() {
 
   // Step 1: pilih Videotron
   fireEvent.click(screen.getByLabelText(/Videotron/i));
-  fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
 
   // Step 2: data tenant + PIC + field PRD
   await screen.findByLabelText(/Nama PIC/i);
   await fillStep2Fields();
   await pickTenant();
-  fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+  fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
   await screen.findByRole('heading', { name: 'Kirim Materi' });
 }
 
@@ -112,10 +112,10 @@ describe('PromoUploadWizard', () => {
     mockedFetchMediaTypes.mockResolvedValue(MEDIA);
     renderWizard();
     fireEvent.click(await screen.findByText('Videotron'));
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
 
     await screen.findByLabelText(/Nama PIC/i);
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
     expect(await screen.findByText(/Nama PIC wajib diisi/i)).toBeInTheDocument();
   });
 
@@ -289,19 +289,45 @@ describe('PromoUploadWizard', () => {
     mockedFetchMediaTypes.mockResolvedValue(MEDIA);
     renderWizard();
     fireEvent.click(await screen.findByLabelText(/Videotron/i));
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
 
     await screen.findByLabelText(/Nama PIC/i);
     // Isi PIC + tenant saja; field campaign/materi dibiarkan kosong.
     fireEvent.change(screen.getByLabelText(/Nama PIC/i), { target: { value: 'Andi PIC' } });
     fireEvent.change(screen.getByLabelText(/Nomor Telepon PIC/i), { target: { value: '081234567890' } });
     await pickTenant();
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
 
     expect(await screen.findByText(/Nama campaign wajib diisi/i)).toBeInTheDocument();
     expect(screen.getByText(/Judul materi wajib diisi/i)).toBeInTheDocument();
     expect(screen.getByText(/Media atau lokasi pemasangan wajib diisi/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Kirim Materi' })).not.toBeInTheDocument();
+  });
+
+  it('slot galat dicadangkan: wadah selalu ter-render sebelum dan sesudah galat muncul', async () => {
+    // Mengukur tinggi piksel tidak dapat diandalkan di jsdom (tidak ada layout
+    // engine: semua `getBoundingClientRect` bernilai 0). Yang diuji karena itu
+    // adalah kontrak yang membuat cadangan itu bekerja: wadah `.ui-helper-slot`
+    // ter-render lebih dulu dan tetap ada saat galat muncul, sehingga pesan
+    // tidak pernah menambah tinggi area slot.
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA);
+    renderWizard();
+    fireEvent.click(await screen.findByLabelText(/Videotron/i));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
+    await screen.findByLabelText(/Nama PIC/i);
+
+    const fieldPIC = screen.getByLabelText(/Nama PIC/i).closest('div') as HTMLElement;
+    const slot = fieldPIC.querySelector('.ui-helper-slot');
+    expect(slot).not.toBeNull();
+    expect(screen.queryByText(/Nama PIC wajib diisi/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
+    const pesan = await screen.findByText(/Nama PIC wajib diisi/i);
+
+    // Wadah yang sama masih ada dan kini memuat pesan — tinggi slot tidak
+    // berubah antara keadaan tanpa galat dan ber-galat.
+    expect(slot).toContainElement(pesan);
+    expect(screen.getByLabelText(/Nama PIC/i).closest('div')).toBe(fieldPIC);
   });
 
   it('validasi gagal → fokus pindah ke field tidak valid pertama', async () => {
@@ -312,10 +338,10 @@ describe('PromoUploadWizard', () => {
     mockedFetchMediaTypes.mockResolvedValue(MEDIA);
     renderWizard();
     fireEvent.click(await screen.findByText('Videotron'));
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
 
     await screen.findByLabelText(/Nama PIC/i);
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
 
     await screen.findByText(/Nama PIC wajib diisi/i);
     expect(screen.getByLabelText(/Nama Tenant/i)).toHaveFocus();
@@ -341,7 +367,7 @@ describe('PromoUploadWizard — lead time materi', () => {
     mockedFetchMediaTypes.mockResolvedValue(MEDIA_LEAD);
     renderWizard();
     fireEvent.click(await screen.findByLabelText(/Spanduk/i));
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
     await screen.findByLabelText(/Nama PIC/i);
     await fillStep2Fields();
     await pickTenant();
@@ -355,7 +381,7 @@ describe('PromoUploadWizard — lead time materi', () => {
   it('memblokir tanggal pasang yang lebih dekat dari lead time', async () => {
     await toStep2WithLead();
     fireEvent.change(screen.getByLabelText(/Tanggal Pemasangan/i), { target: { value: isoFromNow(0) } });
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
 
     expect(await screen.findByText(/terlalu dekat/i)).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Kirim Materi' })).not.toBeInTheDocument();
@@ -364,7 +390,7 @@ describe('PromoUploadWizard — lead time materi', () => {
   it('meloloskan tanggal pasang yang sudah melewati lead time', async () => {
     await toStep2WithLead();
     fireEvent.change(screen.getByLabelText(/Tanggal Pemasangan/i), { target: { value: isoFromNow(10) } });
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
 
     expect(await screen.findByRole('heading', { name: 'Kirim Materi' })).toBeInTheDocument();
   });
@@ -383,11 +409,11 @@ describe('PromoUploadWizard — kanal email media sosial', () => {
     mockedFetchMediaTypes.mockResolvedValue(MEDIA_SOCIAL);
     renderWizard();
     fireEvent.click(await screen.findByLabelText(/Feed Instagram/i));
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
     await screen.findByLabelText(/Nama PIC/i);
     await fillStep2Fields();
     await pickTenant();
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
     await screen.findByRole('heading', { name: 'Kirim Materi' });
   }
 
@@ -410,7 +436,7 @@ describe('PromoUploadWizard — fallback tenant manual (API tenant tidak tersedi
     renderWizard();
 
     fireEvent.click(await screen.findByText('Videotron'));
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Data Tenant/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Data Tenant/i }));
 
     const tenantInput = await screen.findByLabelText(/Nama Tenant/i);
     fireEvent.change(tenantInput, { target: { value: 'Gerai Baru' } });
@@ -420,7 +446,7 @@ describe('PromoUploadWizard — fallback tenant manual (API tenant tidak tersedi
     expect(screen.getByLabelText(/Nama Tenant/i)).not.toHaveAttribute('role', 'combobox');
 
     await fillStep2Fields();
-    fireEvent.click(screen.getByRole('button', { name: /Lanjut — Kirim Materi/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Lanjut ke Kirim Materi/i }));
 
     expect(await screen.findByRole('heading', { name: 'Kirim Materi' })).toBeInTheDocument();
   });

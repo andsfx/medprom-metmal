@@ -161,6 +161,22 @@ textarea:disabled {
   color: var(--ink-primary);
 }
 
+/* Slot pesan galat/helper di bawah field. Pesan galat hanya ada di DOM saat
+ * `fieldErrors.*` terisi; tanpa cadangan, kemunculannya mendorong field di
+ * bawahnya turun (layout shift) tepat saat pengguna sedang memperbaiki isian.
+ * `min-height` (bukan `height`) dipakai supaya pesan lebih dari satu baris
+ * tetap tumbuh utuh — tidak ada `overflow: hidden` yang memotongnya.
+ *
+ * Ukuran mengikuti peran teks galat di dalamnya (`text-xs` = 12px, line-height
+ * 16px = `--text-meta` + 1rem), jadi `1lh` = tinggi satu baris pesan. Baris
+ * `1rem` adalah fallback peramban yang belum mengenal satuan `lh`. */
+.ui-helper-slot {
+  font-size: var(--text-meta);
+  line-height: 1rem;
+  min-height: 1rem;
+  min-height: 1lh;
+}
+
 /* ─── Skala tipografi per peran ───
  * Mencegah nilai ad-hoc: satu peran, satu pemanggil. */
 .ui-title-screen { /* h1 — nama layar */
