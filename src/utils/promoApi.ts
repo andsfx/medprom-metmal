@@ -136,7 +136,7 @@ export function mapSubmitErrors(errors: string[]): { fields: Record<string, stri
     else if (low.includes('lokasi pemasangan')) field = 'media_target';
     else if (low.includes('persetujuan ketentuan')) field = 'terms_accepted';
     else if (low.includes('pic')) field = 'pic_name';
-    else if (low.includes('gerai') || low.includes('tenant')) field = 'tenant';
+    else if (low.includes('tenant')) field = 'tenant';
     else if (low.includes('media')) field = 'media';
 
     if (field && !fields[field]) fields[field] = msg;

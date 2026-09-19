@@ -150,7 +150,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
             <div className="flex gap-2">
               <dt className="shrink-0 font-semibold ui-text-muted">Periode</dt>
               <dd className="text-slate-900 dark:text-white">
-                {data.submission.air_start_date || '—'} s/d {data.submission.air_end_date || '—'}
+                {data.submission.air_start_date || '-'} s/d {data.submission.air_end_date || '-'}
               </dd>
             </div>
           )}
@@ -212,7 +212,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
               <div className="flex gap-2">
                 <dt className="w-28 shrink-0 font-semibold ui-text-muted">Periode</dt>
                 <dd className="text-slate-900 dark:text-white">
-                  {data.installation.start_date || '—'} s/d {data.installation.end_date || '—'}
+                  {data.installation.start_date || '-'} s/d {data.installation.end_date || '-'}
                 </dd>
               </div>
             )}

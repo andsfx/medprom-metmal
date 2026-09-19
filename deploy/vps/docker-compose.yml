@@ -64,8 +64,8 @@ services:
       COOKIE_SECURE: ${COOKIE_SECURE:-true}
       # Origin FE produksi (exact-match, dipisah koma bila lebih dari satu).
       CORS_ORIGIN: ${CORS_ORIGIN:?isi CORS_ORIGIN di .env}
-      # MID tenant roster — opsional; kosong = pencarian gerai menolak dengan
-      # pesan konfigurasi (submit tetap jalan, gerai diketik manual tidak
+      # MID tenant roster — opsional; kosong = pencarian tenant menolak dengan
+      # pesan konfigurasi (submit tetap jalan, tenant diketik manual tidak
       # didukung; isi begitu Metland memberikan key).
       MID_API_KEY: ${MID_API_KEY:-}
       # Storage media — Google Drive (akun mediapromosi.metmalbekasi@gmail.com).

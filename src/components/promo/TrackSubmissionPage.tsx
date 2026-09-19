@@ -104,7 +104,7 @@ export default function TrackSubmissionPage() {
         <div className="ui-card p-5">
           <h2 className="ui-title-card text-slate-900 dark:text-white">Lacak dengan Nomor Pengajuan</h2>
           <p className="mt-2 text-xs ui-text-muted">
-            Masukkan nomor pengajuan yang Anda terima setelah mengirim materi — formatnya seperti
+            Masukkan nomor pengajuan yang Anda terima setelah mengirim materi. Formatnya seperti
             <span className="font-mono font-semibold"> MP-260918-A7K2QX</span>. Tidak perlu akun.
           </p>
 

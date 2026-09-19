@@ -256,7 +256,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   }
 
   async function handleDelete(row: AdminSubmissionRow) {
-    const ok = await onConfirmDelete(row.id, `${row.tenant_name} — ${row.media_type_slug}`);
+    const ok = await onConfirmDelete(row.id, `${row.tenant_name} - ${row.media_type_slug}`);
     if (!ok) return;
     try {
       await deleteSubmission(row.id);
@@ -424,7 +424,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60 dark:border-slate-800 dark:hover:bg-slate-800/40">
                 <td className="px-3 py-3">
                   <span className="font-mono text-xs font-semibold text-brand-primary-700 dark:text-brand-primary-300">
-                    {r.submission_number || '—'}
+                    {r.submission_number || '-'}
                   </span>
                 </td>
                 <td className="px-3 py-3 text-xs ui-text-muted">
@@ -527,7 +527,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           <>
             <div className="mb-4">
               <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
-                {detail.submission_number || '—'}
+                {detail.submission_number || '-'}
               </p>
               <p className="mt-1 text-xs ui-text-muted">
                 {detail.tenant_name} · {detail.media_type_slug} · {detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
@@ -544,7 +544,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   {detail.unit_number && <span className="ml-1.5 text-xs ui-text-muted">Unit {detail.unit_number}</span>}
                   {detail.tenant_id
                     ? <span className="ml-1.5 text-xs ui-text-muted">(MID {detail.tenant_id})</span>
-                    : <span className="ml-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">(manual — tidak tertaut MID)</span>}
+                    : <span className="ml-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">(manual, tidak tertaut MID)</span>}
                 </dd>
               </div>
               {detail.campaign_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Campaign</dt><dd className="text-slate-900 dark:text-white">{detail.campaign_name}</dd></div>}
@@ -554,7 +554,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               {(detail.air_start_date || detail.air_end_date) && (
                 <div className="flex gap-2">
                   <dt className="w-32 shrink-0 font-semibold ui-text-muted">Periode tayang</dt>
-                  <dd className="text-slate-900 dark:text-white">{detail.air_start_date || '—'} s/d {detail.air_end_date || '—'}</dd>
+                  <dd className="text-slate-900 dark:text-white">{detail.air_start_date || '-'} s/d {detail.air_end_date || '-'}</dd>
                 </div>
               )}
               {detail.installation_date && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Tgl pasang</dt><dd className="text-slate-900 dark:text-white">{detail.installation_date}</dd></div>}
@@ -583,7 +583,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   </a>
                   {detail.source_type === 'link' && (
                     <p className="mt-1 text-xs ui-text-muted">
-                      Materi ada di penyimpanan tenant — unduh sendiri, tidak tersimpan di server kami.
+                      Materi ada di penyimpanan tenant. Unduh sendiri, tidak tersimpan di server kami.
                     </p>
                   )}
                 </dd>
@@ -662,7 +662,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     <div className="flex gap-2">
                       <dt className="w-28 shrink-0 ui-text-muted">Periode</dt>
                       <dd className="text-slate-900 dark:text-white">
-                        {detailData.installation.start_date || '—'} s/d {detailData.installation.end_date || '—'}
+                        {detailData.installation.start_date || '-'} s/d {detailData.installation.end_date || '-'}
                       </dd>
                     </div>
                   )}
@@ -722,7 +722,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               <button
                 type="button"
                 onClick={() => { void navigator.clipboard?.writeText(
-                  `${detail.tenant_name} — ${detail.media_type_slug}\nTautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`,
+                  `${detail.tenant_name} - ${detail.media_type_slug}\nTautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`,
                 ); }}
                 className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
               >
@@ -767,7 +767,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   </div>
                   {STATUS_TRANSITIONS[detail.status]?.length === 0 && (
                     <p className="mt-1.5 text-xs ui-text-muted">
-                      Status ini bersifat final — tidak ada perubahan status lanjutan.
+                      Status ini bersifat final, tidak ada perubahan status lanjutan.
                     </p>
                   )}
                 </fieldset>
@@ -896,7 +896,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               </div>
             ) : (
               <p className="mt-4 rounded-md bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
-                Akun Tenant Relations hanya dapat melihat dan mengunduh — perubahan status oleh Admin.
+                Akun Tenant Relations hanya dapat melihat dan mengunduh. Perubahan status dilakukan Admin.
               </p>
             )}
           </>
@@ -1071,7 +1071,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           <p className="mt-1 text-xs ui-text-muted">
             {canManage
               ? 'Tambahkan media pertama dengan tombol "Tambah Media" di atas.'
-              : 'Katalog masih kosong — hubungi Admin untuk menambahkan media.'}
+              : 'Katalog masih kosong. Hubungi Admin untuk menambahkan media.'}
           </p>
         </div>
       )}
@@ -1093,7 +1093,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                   {m.is_active === false ? 'Nonaktif' : 'Aktif'}
                 </span>
               </div>
-              <p className="mt-2 line-clamp-2 text-xs ui-text-muted">{m.size_spec || '—'} {m.price_note ? `· ${m.price_note}` : ''}</p>
+              <p className="mt-2 line-clamp-2 text-xs ui-text-muted">{m.size_spec || '-'} {m.price_note ? `· ${m.price_note}` : ''}</p>
               {canManage && (
                 <div className="mt-3 flex gap-1.5">
                   <button
@@ -1172,7 +1172,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                         className="mb-2.5 aspect-[4/3] w-full max-w-[220px] rounded-[var(--radius-control)] object-cover"
                       />
                     ) : (
-                      <p className="mb-2.5 text-xs ui-text-muted">Belum ada foto — kartu katalog tampil tanpa gambar.</p>
+                      <p className="mb-2.5 text-xs ui-text-muted">Belum ada foto. Kartu katalog tampil tanpa gambar.</p>
                     )}
                     <div className="flex flex-wrap items-center gap-2">
                       <label
@@ -1207,7 +1207,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                       )}
                       {unggahGambar && <Loader2 className="h-4 w-4 animate-spin text-brand-primary-600" aria-hidden="true" />}
                     </div>
-                    <p className="mt-1.5 text-xs ui-text-muted">JPEG, PNG, atau WebP — maks 4MB. Disarankan lanskap 4:3.</p>
+                    <p className="mt-1.5 text-xs ui-text-muted">JPEG, PNG, atau WebP, maks 4MB. Disarankan lanskap 4:3.</p>
                     {galatGambar && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{galatGambar}</p>}
                   </div>
                 ) : (
@@ -1588,7 +1588,7 @@ export default function AdminDashboardPage() {
               <Megaphone className="h-5 w-5 text-white" aria-hidden="true" />
             </span>
             <div className="leading-tight">
-              <h1 className="ui-title-screen ui-admin-title text-slate-900 dark:text-white">Media Promosi — Admin</h1>
+              <h1 className="ui-title-screen ui-admin-title text-slate-900 dark:text-white">Media Promosi Admin</h1>
               <p className="text-xs ui-text-muted">Metropolitan Mall Bekasi</p>
             </div>
           </div>

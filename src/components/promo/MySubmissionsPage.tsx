@@ -54,7 +54,7 @@ export default function MySubmissionsPage() {
       <div className="mx-auto max-w-2xl px-4 py-5">
         <p className="ui-prose ui-body mb-4 flex items-start gap-1.5 ui-text-muted">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          Riwayat terikat pada browser/perangkat ini — mengganti perangkat atau membersihkan data
+          Riwayat terikat pada browser/perangkat ini. Mengganti perangkat atau membersihkan data
           browser akan menghilangkan akses ke riwayat.
         </p>
 
@@ -70,7 +70,7 @@ export default function MySubmissionsPage() {
               <div className="ui-alert p-5" role="alert">
                 <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat riwayat pengajuan.</p>
                 <p className="mt-1 text-xs text-red-700 dark:text-red-300">
-                  Riwayat Anda tidak hilang — sambungan ke server sedang bermasalah. Muat ulang
+                  Riwayat Anda tidak hilang. Sambungan ke server sedang bermasalah. Muat ulang
                   halaman atau coba lagi sebentar.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
@@ -84,7 +84,7 @@ export default function MySubmissionsPage() {
             {!loading && !loadError && rows.length === 0 && (
               <div className="ui-empty-panel px-6 py-10">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada pengajuan dari perangkat ini.</p>
-                <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda — pilih media yang sesuai, lalu kirim materinya.</p>
+                <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda. Pilih media yang sesuai, lalu kirim materinya.</p>
                 <div className="mt-4 flex flex-wrap gap-2">
                   <Link to="/ajukan" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
                     Ajukan Materi

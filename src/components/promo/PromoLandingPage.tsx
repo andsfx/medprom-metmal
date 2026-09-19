@@ -11,8 +11,8 @@ import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../constants/promo';
 import type { PromoMediaType } from '../../types/promo';
 
 const CONTACTS = [
-  { label: 'Tenant Relations — Media Promosi Cetak', people: 'Bapak Ade · Ibu Ervita', wa: ['https://wa.me/6287785749386', 'https://wa.me/6281316759616'] },
-  { label: 'Marketing Communications — Media Promosi Digital', people: 'Bapak Uga', wa: ['https://wa.me/6285711088151'] },
+  { label: 'Tenant Relations (Media Promosi Cetak)', people: 'Bapak Ade · Ibu Ervita', wa: ['https://wa.me/6287785749386', 'https://wa.me/6281316759616'] },
+  { label: 'Marketing Communications (Media Promosi Digital)', people: 'Bapak Uga', wa: ['https://wa.me/6285711088151'] },
 ];
 
 function MediaCard({ media }: { media: PromoMediaType }) {
@@ -136,7 +136,7 @@ export default function PromoLandingPage() {
           to="/login"
           className="app-pressable ui-focus-ring inline-flex min-h-11 items-center rounded-full px-3 text-sm font-medium text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300"
         >
-          Login Staf
+          Login
         </Link>
       }
     >
@@ -149,8 +149,8 @@ export default function PromoLandingPage() {
           Ajukan Materi Promosi Tenant Anda
         </h1>
         <p className="ui-body ui-text-muted mt-2 max-w-lg">
-          Kirim materi media promosi — spanduk, LED, videotron, hingga media sosial —
-          langsung ke Tim Tenant Relations. Status pengajuan bisa dipantau kapan saja.
+          Kirim promosi Anda ke Tim Tenant Relations, dari spanduk, LED, dan
+          videotron hingga media sosial. Statusnya bisa dipantau kapan saja.
         </p>
         <div className="mt-5 flex flex-wrap gap-2.5">
           <Link
@@ -248,7 +248,7 @@ export default function PromoLandingPage() {
 
       <footer className="py-8">
         <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-          &copy; {new Date().getFullYear()} Metropolitan Mall Bekasi — Metland Coloring Life
+          &copy; {new Date().getFullYear()} Metropolitan Mall Bekasi. Metland Coloring Life.
         </p>
       </footer>
     </AppShell>

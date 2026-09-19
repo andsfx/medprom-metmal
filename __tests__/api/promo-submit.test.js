@@ -140,7 +140,7 @@ describe('POST /promo/submit — validasi', () => {
     const { res } = await callSubmit({ media_type_slug: 'spanduk' });
     expect(res.statusCode).toBe(400);
     expect(Array.isArray(res.body.errors)).toBe(true);
-    expect(res.body.errors).toContain('Nama gerai wajib diisi');
+    expect(res.body.errors).toContain('Nama tenant wajib diisi');
     expect(res.body.errors).toContain('Nama campaign wajib diisi');
     expect(res.body.errors).toContain('Judul materi wajib diisi');
     expect(res.body.errors).toContain('Deskripsi materi wajib diisi');

@@ -284,7 +284,7 @@ router.post('/submit', async (req, res, next) => {
   const linkUrl = sanitize(body.link_url || '', 500);
 
   if (!mediaTypeSlug) errors.push('media_type_slug wajib diisi');
-  if (!tenantName) errors.push('Nama gerai wajib diisi');
+  if (!tenantName) errors.push('Nama tenant wajib diisi');
   if (!picName) errors.push('Nama PIC wajib diisi');
   if (!picPhone) errors.push('Nomor telepon PIC wajib diisi');
   else if (!PHONE_RE.test(picPhone)) errors.push('Format nomor telepon tidak valid');

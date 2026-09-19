@@ -118,7 +118,7 @@ const MEDIA_TYPES = [
     location_note: 'Atrium 1 (dekat tenant Optik Melawai), Pintu Utara 1 (hadap pintu masuk), Koridor Lantai Dasar (samping Momoiro), Lantai 1 (depan OB Fit), Lantai 1, 2, & 3 (samping eskalator Atrium 2)',
     sort_order: 6,
     rules: [
-      'Tidak menerima video — materi berupa gambar statis (JPEG/PNG).',
+      'Tidak menerima video. Materi berupa gambar statis (JPEG/PNG).',
       '1 tenant hanya diperkenankan memasang 1 materi.',
       'Materi akan langsung dipasang pada 7 titik.',
       'Image akan looping selama jam operasional mall.',

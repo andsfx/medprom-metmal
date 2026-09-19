@@ -48,6 +48,6 @@ export function submissionWaLink(input: {
     `Pengajuan media promosi (${input.media_type_slug}) berstatus: ${STATUS_LABELS[input.status] ?? input.status}.`,
   ];
   if (input.review_notes) lines.push(`Catatan Tenant Relations: ${input.review_notes}`);
-  lines.push('Terima kasih. — Tenant Relations Metropolitan Mall Bekasi');
+  lines.push('Terima kasih. Tenant Relations Metropolitan Mall Bekasi');
   return waLink(input.pic_phone, lines.join('\n'));
 }
