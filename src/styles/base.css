@@ -104,6 +104,11 @@ button:not(:disabled) {
   border-radius: var(--radius-control);
   background: var(--brand-tosca-600);
   color: #fff;
+  /* Target sentuh 44px (DESIGN.md). Sebelumnya hanya `.ui-control` yang
+   * memikul aturan ini, sehingga CTA primer/sekunder — yang mengandalkan
+   * padding per pemakaian — jatuh di 36–42px. Ditaruh di sini agar setiap
+   * CTA patuh secara sistemik, bukan ditambal `min-h-11` per instance. */
+  min-height: var(--tap-min);
 }
 
 .ui-btn-primary:hover {
@@ -124,6 +129,8 @@ button:not(:disabled) {
   border: 1px solid var(--rule-color);
   border-radius: var(--radius-control);
   color: var(--ink-secondary);
+  /* Target sentuh 44px (DESIGN.md) — lihat catatan di `.ui-btn-primary`. */
+  min-height: var(--tap-min);
 }
 
 .ui-btn-secondary:hover {
