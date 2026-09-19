@@ -5,6 +5,69 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+### Diubah
+- **Elevasi app bar tidak lagi digerakkan listener `scroll`.** `TopAppBar` kini
+  memakai `IntersectionObserver` atas sentinel setinggi 0 di awal area gulir
+  (`root` = elemen gulir, ambang 4px via `rootMargin`), menghapus handler per
+  frame saat konten menggulir. Perilaku `data-elevated` tidak berubah. Di
+  lingkungan tanpa `IntersectionObserver` (jsdom pada test) elevasi dibiarkan
+  `false` dan mount tetap aman.
+- **Istilah "gerai" diganti "tenant" di seluruh teks yang dilihat pengguna.**
+  Halaman ini mengelola pengajuan *tenant*, tetapi beberapa teks masih memakai
+  "gerai": pesan validasi server (`Nama gerai wajib diisi`), judul & deskripsi
+  dokumen (`index.html`, `manifest.webmanifest`), dan komentar ops
+  (`deploy/vps/.env.example`, `docker-compose.yml`). Semua diseragamkan.
+  Pasangan yang wajib ikut berubah: pemetaan galat ke field di
+  `src/utils/promoApi.ts` mencocokkan kata kunci `'gerai' || 'tenant'` — kini
+  cukup `'tenant'` — dan test `__tests__/api/promo-submit.test.js` yang
+  mengunci pesan lama ikut diperbarui (test tetap hijau).
+- **Label "Login Staf" disederhanakan menjadi "Login"** pada aksi app bar
+  beranda dan judul halaman `/login`.
+- **13 em-dash (`—`) dihapus dari seluruh teks yang dilihat pengguna.** Sebelum
+  perbaikan, karakter itu muncul di 5 rute (terverifikasi di DOM): subteks
+  hero, label kontak, footer, tombol langkah wizard, pesan galat, catatan lead
+  time, pesan WhatsApp, judul dokumen/manifest, dan `<title>` konsol staf.
+  Diganti kalimat terpisah, koma, atau tanda kurung. **Plus 12 em-dash sebagai
+  penanda nilai kosong** (`|| '—'`) yang tidak terlihat saat audit rute karena
+  hanya muncul bila suatu field memang kosong: nomor pengajuan, tanggal tayang,
+  periode pemasangan, dan ukuran media. Diganti tanda hubung `-`.
+  Penemuan ini dari pemeriksaan **bundle produksi** (`dist/*.js`) — komentar
+  sudah dibuang terser, jadi setiap em-dash yang tersisa pasti string literal.
+  Tidak ada em-dash maupun en-dash tersisa di teks terlihat (0 pada 5 rute ×
+  3 viewport, dan 0 pada bundle produksi). Sisa em-dash hanya di komentar kode,
+  yang tidak pernah dirender.
+
+### Diperbaiki
+- **15 slot pesan galat wizard menggeser konten saat pesan muncul.** Pesan
+  `fieldErrors.*`, `linkError`, `fileError`, `submitError` (langkah 2), dan
+  `terms_accepted` hanya ada di DOM saat validasi gagal, sehingga kemunculannya
+  mendorong field di bawahnya turun tepat ketika pengguna sedang memperbaiki
+  isian. Ke-15 slot kini dibungkus satu kelas bersama `.ui-helper-slot`
+  (`src/styles/base.css`) yang mencadangkan satu baris tinggi pesan. Memakai
+  **`min-height`** (bukan `height`) supaya pesan yang membungkus lebih dari satu
+  baris tetap tumbuh utuh, dan sengaja **tanpa `overflow: hidden`** agar tidak
+  memotongnya. Satu kelas dipakai bersama, bukan 15 nilai ad-hoc, supaya tinggi
+  cadangan ikut berubah otomatis bila tipografi `--text-meta` disesuaikan.
+  `id`, `role="alert"`, dan `aria-describedby` tiap pesan tidak berubah, jadi
+  pembaca layar tetap mengumumkan galat yang sama.
+- **Subteks hero melewati batas panjang dan turun tiga baris.** Teks lama
+  ("Kirim materi media promosi — spanduk, LED, videotron, hingga media sosial —
+  langsung ke Tim Tenant Relations. Status pengajuan bisa dipantau kapan saja.")
+  memuat 23 kata dengan dua em-dash dan membungkus tiga baris di desktop. Kini
+  20 kata, dua baris, tanpa em-dash. Terukur di DOM (1280px): H1 satu baris,
+  subteks dua baris, CTA primer `bottom` 288px dari viewport 805px — semuanya
+  terlihat tanpa menggulir. Padding atas hero 40px (batas aman).
+- **Satu aturan lead time katalog masih memuat em-dash**
+  (`server/scripts/seed-media-types.mjs`: "Tidak menerima video — materi berupa
+  gambar statis"). Teks `rules` dirender apa adanya di kartu katalog, jadi em-dash
+  ikut terlihat tenant. Diganti titik. **Jalankan `npm run db:seed` setelah
+  deploy** agar baris di DB ikut tersinkron (seed memakai `IS DISTINCT FROM`).
+- `CACHE_VERSION` service worker dinaikkan ke `v11` — aset shell berubah.
+
+Verifikasi: `tsc` 0 · **33 berkas / 292 test hijau** · build sukses · **axe 0
+pelanggaran** di 5 rute × 3 viewport (1280/375/320) · 0 scroll horizontal ·
+0 em-dash / en-dash / "gerai" / "Login Staf" pada teks ter-render.
+
 Audit kepatuhan gate UI/UX (Hallmark 58 gate + ui-ux-pro-max "Common Rules" +
 WCAG 2.2) terhadap `DESIGN.md` sebagai sistem terikat. Cakupan 5 rute publik +
 konsol staf, viewport 320–1280. Laporan: `docs/PLAN_2026-09-19_16-11.md`.
