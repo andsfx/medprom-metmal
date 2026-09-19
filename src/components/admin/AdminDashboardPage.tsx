@@ -41,7 +41,7 @@ function StatusBadge({ status }: { status: string }) {
     disetujui: 'bg-green-50 text-green-700',
     siap_dipasang: 'bg-brand-primary-50 text-brand-primary-700',
     sedang_dipasang: 'bg-brand-primary-50 text-brand-primary-700 ring-1 ring-inset ring-brand-primary-500/30',
-    sudah_dipasang: 'bg-brand-primary-500 text-white',
+    sudah_dipasang: 'bg-brand-primary-600 text-white',
     ditolak: 'bg-red-50 text-red-700',
     selesai: 'bg-stone-100 text-stone-600',
     perlu_revisi: 'bg-amber-50 text-amber-700',
@@ -719,7 +719,10 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           className="sr-only"
                         />
                         {STATUS_LABELS[s] ?? s}
-                        {s === detail.status && <span className="ml-1 text-xs font-normal ui-text-muted">(sekarang)</span>}
+                        {/* `text-slate-600` (bukan ui-text-muted): di atas
+                         * `bg-brand-primary-50` (label terpilih), muted hanya
+                         * 4.31:1 — gagal AA untuk teks 12px. slate-600 = 6.86:1. */}
+                        {s === detail.status && <span className="ml-1 text-xs font-normal text-slate-600 dark:text-slate-300">(sekarang)</span>}
                       </label>
                     ))}
                   </div>
@@ -1018,12 +1021,16 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
       {!loading && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((m) => (
-            <div key={m.id ?? m.slug} className={`ui-admin-card p-4 ${m.is_active === false ? 'opacity-70' : ''}`}>
+            <div key={m.id ?? m.slug} className="ui-admin-card p-4">
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{m.name}</p>
                   <p className="text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category} · /{m.slug}</p>
                 </div>
+                {/* State nonaktif dibawa badge "Nonaktif", bukan opacity-70:
+                 * opacity menurunkan kontras SEMUA teks di dalam kartu
+                 * (ui-text-muted 4.76 -> 2.75:1, gagal AA). Badge pakai
+                 * slate-600 di slate-200 = 6.15:1, lulus AA. */}
                 <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${m.is_active === false ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
                   {m.is_active === false ? 'Nonaktif' : 'Aktif'}
                 </span>
@@ -1501,7 +1508,10 @@ export default function AdminDashboardPage() {
               <p className="text-xs font-semibold text-slate-900 dark:text-white">{user.display_name}</p>
               <p className="text-xs ui-text-muted">{user.role}</p>
             </div>
-            <Link to="/" className="text-xs font-medium text-slate-600 transition hover:text-brand-primary-700 dark:text-slate-300">Beranda</Link>
+            {/* `min-h-11`: menyamakan dengan pola tautan lain di repo (mis.
+             * "Kembali ke halaman publik" di /login). Tinggi 16px lolos
+             * pengecualian jarak WCAG 2.5.8, tapi konsistensi target lebih baik. */}
+            <Link to="/" className="ui-focus-ring inline-flex min-h-11 items-center text-xs font-medium text-slate-600 transition hover:text-brand-primary-700 dark:text-slate-300">Beranda</Link>
             <button
               type="button"
               onClick={() => void logout()}

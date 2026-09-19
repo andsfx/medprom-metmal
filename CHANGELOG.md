@@ -17,6 +17,13 @@ verifikasi rilis 1.3.0 di produksi.
   - **Jaring pengaman:** `overflow-x: clip` pada `html` + `body` (bukan `hidden`, agar `position: sticky`/`fixed` tetap bekerja).
   - **Dikecualikan dengan alasan:** link inline "Lacak dengan nomor pengajuan" (18px) — WCAG 2.5.8 mengecualikan inline text link; memaksa 44px merusak alur kalimat.
 
+### Fixed
+- **Audit dashboard admin (kredensial dev di `/login`) — 4 temuan kontras diperbaiki.** Cakupan: tab Pengajuan, Katalog Media, Pengguna, dan modal Detail, diakses sebagai `super@metmal.co.id`. Setelah perbaikan: **0 pelanggaran axe di ketiga tab + modal**, dan 7 rute publik tetap 0.
+  - **Badge status `sudah_dipasang`** memakai `bg-brand-primary-500` (`#00918e`) dengan teks putih = **3.86:1**, gagal AA 4.5:1. Diganti `bg-brand-primary-600` (`#007a78`) = **5.18:1**. Tujuh badge status lain sudah lulus (4.79–9.42).
+  - **Kartu media nonaktif memakai `opacity-70`**, yang menurunkan kontras **seluruh** teks di dalamnya: `ui-text-muted` 4.76 → **2.75:1**, `slate-600` di `slate-200` 6.15 → **3.10:1**, `slate-700` → 4.37:1. Opacity dihapus; state nonaktif tetap dibawa badge "Nonaktif" (`slate-600` di `slate-200` = 6.15:1). Terverifikasi visual: kartu "Vertical Banner" tetap terbaca sebagai nonaktif.
+  - **`(sekarang)`** di pipeline status memakai `ui-text-muted` di atas `bg-brand-primary-50` = **4.31:1**, gagal AA. Diganti `text-slate-600` = **6.86:1**.
+  - **Tautan nav "Beranda"** tinggi 16px. Secara WCAG 2.5.8 ini **lulus** pengecualian jarak (lingkaran 24px tidak bersinggungan dengan target lain) — jadi bukan pelanggaran; disamakan ke `min-h-11` demi konsistensi dengan pola repo.
+
 ### Added
 - **Laporan audit UI/UX** — `docs/PLAN_2026-09-18_20-18-audit-uiux.md` (mencakup medprom + komunitas).
 
