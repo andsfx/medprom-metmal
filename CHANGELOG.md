@@ -12,6 +12,25 @@ Setelah perbaikan: **0 pelanggaran axe di 5 rute** (1280px dan 320px), 0
 regresi, suite 33 berkas / 292 test hijau.
 
 ### Diperbaiki
+- **Indikator fokus memudar ~150 ms — seharusnya muncul instan (Gate 15).**
+  Utility `transition` Tailwind v4 menyertakan **`outline-color` dan
+  `box-shadow`** dalam daftar propertinya (terverifikasi di CSS terkompilasi).
+  Akibatnya dua jalur fokus sama-sama beranimasi: cincin `.ui-focus-ring`
+  (berbasis `box-shadow`) **dan** outline jaring pengaman (Gate 26) karena
+  `outline-color` ikut ditransisikan. Terukur di Chromium dengan fokus keyboard
+  sungguhan (`:focus-visible` aktif) pada elemen ber-`transition` telanjang:
+  `outline-color` bergerak dari `rgb(0,0,0)` ke `rgb(0,145,142)` frame demi
+  frame selama **~150 ms** — pengguna keyboard tidak melihat indikator apa pun
+  pada frame pertama. Terbukti pada tombol tab admin
+  (`AdminDashboardPage.tsx`), tombol akun demo `/login` (`AdminLoginPage.tsx:141`),
+  tombol Logout, dan tautan "Beranda". Diperbaiki dengan mematikan transisi
+  **hanya saat `:focus-visible`** (`base.css:268-296`), sehingga transisi
+  hover/aktif/disabled tidak tersentuh. Terverifikasi: elemen terfokus
+  `transition-duration: 0s`, `outline-color` sudah `rgb(0,145,142)` pada frame
+  pertama; 10 elemen yang punya transisi hover tetap `0.12s/0.15s` saat tidak
+  fokus; 0 pelanggaran. Elemen ber-`.app-pressable` sebenarnya sudah aman
+  (aturan tak berlapisnya menang atas utility Tailwind) — aturan ini menutup
+  sisanya dan mencegah regresi.
 - **`prefers-reduced-motion` belum menutup seluruh gerakan (Gate 27).** Blok
   `@media (prefers-reduced-motion: reduce)` hanya menangani `.app-pressable`
   dan `.animate-spin`/`.animate-pulse`. Dua gerakan lolos: (a)

@@ -265,6 +265,36 @@ textarea:disabled {
   --tw-ring-color: var(--focus-ring-color);
 }
 
+/* Indikator fokus wajib muncul INSTAN (Gate 15). Utility `transition` Tailwind
+ * v4 menyertakan `outline-color` DAN `box-shadow` dalam daftar propertinya
+ * (terverifikasi di `dist/*.css`), sehingga elemen ber-`transition` telanjang
+ * memudarkan cincin fokusnya:
+ *   - `.ui-focus-ring` → ring adalah `box-shadow` → memudar;
+ *   - elemen yang hanya mengandalkan jaring pengaman di bawah → outline
+ *     `2px solid var(--focus-ring-color)` juga memudar, karena `outline-color`
+ *     ikut ditransisikan.
+ * Terukur di Chromium dengan fokus keyboard sungguhan (`:focus-visible` aktif):
+ * `outline-color` bergerak dari `rgb(0,0,0)` ke `rgb(0,145,142)` frame demi
+ * frame selama ~150ms — pengguna keyboard tidak melihat indikator apa pun pada
+ * frame pertama. Terbukti pada tombol tab admin, tombol akun demo `/login`,
+ * tombol Logout, dan tautan "Beranda".
+ *
+ * Aturan ini hanya berlaku SAAT elemen benar-benar `:focus-visible`, jadi
+ * transisi hover/aktif/disabled tidak tersentuh. Elemen ber-`.app-pressable`
+ * sebenarnya sudah aman karena aturan tak berlapis `transition: transform …`
+ * di `base.css` menang atas utility Tailwind; aturan ini menutup sisanya dan
+ * mencegah regresi. `outline` bawaan peramban tidak beranimasi, jadi mematikan
+ * transisi tidak menghilangkan indikator — ia hanya membuatnya langsung ada. */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+summary:focus-visible,
+.ui-focus-ring:focus-visible {
+  transition: none;
+}
+
 /* Jaring pengaman fokus (Gate 26). Audit 2026-09-19 menemukan 51 dari 77
  * tombol/tautan tanpa cincin fokus bergaya sendiri — mereka hanya mengandalkan
  * outline bawaan peramban, sehingga indikator fokus berbeda-beda antar
