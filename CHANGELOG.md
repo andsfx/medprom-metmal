@@ -127,6 +127,11 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   state lama. Dikunci `__tests__/api/media-type-update.test.js`.
 
 ### Diubah
+- **Angka PPN di form cetak ditandai sebagai estimasi.** Aplikasi ini tidak
+  melakukan penagihan (invoice tetap manual di luar sistem), jadi ringkasan
+  langkah 2 dan langkah 3 form media cetak kini menyertakan keterangan
+  "Perkiraan; harga final sesuai penawaran Tenant Relations" agar tenant tidak
+  membacanya sebagai tagihan final. Rumus tidak berubah.
 - **Dashboard staf: panel pengingat + pilihan kanal bukti tayang.** Tab
   Pengajuan kini menampilkan panel **Pengingat periode berakhir** (materi
   ber-pajak yang sudah dipasang dan periodenya mendekat/lewat) dengan tombol

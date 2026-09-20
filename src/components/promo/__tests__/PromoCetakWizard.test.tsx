@@ -169,6 +169,12 @@ describe('PromoCetakWizard — langkah 3 (ringkasan & kirim)', () => {
     expect(screen.getByText('Rp. 543.900')).toBeInTheDocument();
   });
 
+  it('angka PPN ditandai sebagai perkiraan, bukan tagihan final', async () => {
+    await isiSampaiRingkasan();
+    // Tidak ada penagihan di aplikasi ini — label harus jujur.
+    expect(await screen.findByText(/Perkiraan; harga final sesuai penawaran/i)).toBeInTheDocument();
+  });
+
   it('tombol kirim nonaktif sampai ketentuan disetujui', async () => {
     await isiSampaiRingkasan();
     const kirim = await screen.findByRole('button', { name: /Kirim Pengajuan/i });

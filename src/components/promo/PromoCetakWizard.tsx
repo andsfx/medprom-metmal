@@ -577,11 +577,16 @@ export default function PromoCetakWizard() {
                               <p role="alert" className="text-xs font-medium text-red-600 sm:col-span-2 dark:text-red-400">{fieldErrors[`periode_${m.slug}`]}</p>
                             )}
                             {harga && dur > 0 && (
-                              <dl className="grid grid-cols-3 gap-2 rounded-md bg-white p-2.5 text-xs sm:col-span-2 dark:bg-slate-800/60">
-                                <div><dt className="ui-text-muted">Durasi</dt><dd className="font-semibold text-slate-800 dark:text-slate-100">{dur} hari</dd></div>
-                                <div><dt className="ui-text-muted">Subtotal</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.subtotal)}</dd></div>
-                                <div><dt className="ui-text-muted">PPN 11%</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.ppnAmount)}</dd></div>
-                              </dl>
+                              <>
+                                <dl className="grid grid-cols-3 gap-2 rounded-md bg-white p-2.5 text-xs sm:col-span-2 dark:bg-slate-800/60">
+                                  <div><dt className="ui-text-muted">Durasi</dt><dd className="font-semibold text-slate-800 dark:text-slate-100">{dur} hari</dd></div>
+                                  <div><dt className="ui-text-muted">Subtotal</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.subtotal)}</dd></div>
+                                  <div><dt className="ui-text-muted">PPN 11%</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.ppnAmount)}</dd></div>
+                                </dl>
+                                <p className="text-xs ui-text-muted sm:col-span-2">
+                                  Perkiraan; harga final sesuai penawaran Tenant Relations.
+                                </p>
+                              </>
                             )}
                           </div>
                         )}
@@ -651,6 +656,10 @@ export default function PromoCetakWizard() {
                     <div><dt className="ui-text-muted">PPN {(PPN_RATE * 100).toFixed(0)}%</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(totalPpn)}</dd></div>
                     <div><dt className="ui-text-muted">Total</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(totalSubtotal + totalPpn)}</dd></div>
                   </dl>
+                  <p className="mt-2 text-xs ui-text-muted">
+                    Perkiraan; harga final sesuai penawaran Tenant Relations. Penagihan
+                    dilakukan di luar aplikasi ini.
+                  </p>
                 </div>
 
                 <label className="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
