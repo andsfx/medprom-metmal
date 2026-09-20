@@ -489,22 +489,37 @@ router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next)
       return res.status(400).json({ success: false, error: 'Kategori harus outdoor, indoor, atau social' });
     }
 
+    // Kolom teks: bedakan "tidak dikirim" dari "dikirim kosong".
+    //
+    // Sebelumnya setiap nilai kosong di-skip (`if (!value) continue`), sehingga
+    // mengosongkan field teks — termasuk `rules` (Ketentuan) yang tampil sebagai
+    // deskripsi media — tidak pernah tersimpan: nilai lama diam-diam bertahan dan
+    // pengguna mengira sudah tersimpan. Kini kunci yang HADIR di body (walau
+    // bernilai '') ikut ditulis; kunci yang absen tidak disentuh sama sekali.
+    //
+    // `slug`/`category` tetap hanya diproses bila tidak kosong (perilaku lama):
+    // mengosongkan keduanya akan melanggar NOT NULL/CHECK. `image_path` dikelola
+    // endpoint foto sendiri, jadi tidak ikut di sini.
     const sets = [];
     const values = [];
-    const fields = {
-      slug,
-      category,
-      name: sanitize(d.name || '', 100),
-      size_spec: sanitize(d.size_spec || '', 200),
-      material_spec: sanitize(d.material_spec || '', 200),
-      accepted_formats: sanitize(d.accepted_formats || '', 60),
-      price_note: sanitize(d.price_note || '', 200),
-      location_note: sanitize(d.location_note || '', 300),
-      rules: sanitize(d.rules || '', 5000),
-      image_path: sanitize(d.image_path || '', 200),
-    };
+
+    const fields = { slug, category };
+    if (d.name !== undefined) {
+      const name = sanitize(d.name, 100);
+      if (!name) return res.status(400).json({ success: false, error: 'Nama wajib diisi' });
+      fields.name = name;
+    }
+    const KOLOM_TEKS = [
+      ['size_spec', 200], ['material_spec', 200], ['accepted_formats', 60],
+      ['price_note', 200], ['location_note', 300], ['rules', 5000],
+    ];
+    for (const [key, maxLen] of KOLOM_TEKS) {
+      if (d[key] !== undefined) fields[key] = sanitize(d[key], maxLen);
+    }
+
     for (const [key, value] of Object.entries(fields)) {
-      if (!value) continue;
+      // `slug`/`category` hanya bila tidak kosong; kolom teks boleh kosong.
+      if (value === '' && (key === 'slug' || key === 'category')) continue;
       values.push(value);
       sets.push(`${key} = $${values.length}`);
     }

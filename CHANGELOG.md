@@ -5,6 +5,21 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+### Diperbaiki
+- **Mengosongkan field teks katalog media kini benar-benar tersimpan.**
+  `POST /admin/media-types/:id` melewati setiap nilai kosong (`if (!value)
+  continue`), sehingga menghapus isi **Ketentuan** (`rules`) — yang tampil
+  sebagai deskripsi media di katalog publik dan wizard — tidak pernah
+  berpengaruh: nilai lama diam-diam bertahan, dan bila tak ada kolom lain yang
+  berubah endpoint membalas `400 "Tidak ada perubahan"`. Handler kini
+  membedakan "tidak dikirim" (kunci absen → kolom tidak disentuh) dari "dikirim
+  kosong" (kunci hadir bernilai `''` → kolom dikosongkan). Aturan yang tetap
+  dijaga: `name` wajib (kosong → `400 "Nama wajib diisi"`), `slug`/`category`
+  tidak dapat dikosongkan (NOT NULL/CHECK), dan `image_path` tidak lagi
+  diterima lewat endpoint ini — ia dikelola endpoint foto sendiri, sehingga
+  menyimpannya di form tidak akan menimpa foto yang baru diunggah dengan nilai
+  state lama. Dikunci `__tests__/api/media-type-update.test.js`.
+
 ### Diubah
 - **`DESIGN.md` diaudit terhadap kode; klaim faktual yang salah diperbaiki.**
   Seluruh dokumen (baris 1-515 saat audit) diperiksa klaim per klaim terhadap

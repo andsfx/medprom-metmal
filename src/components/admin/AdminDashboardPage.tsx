@@ -965,7 +965,9 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
         size_spec: form.size_spec, material_spec: form.material_spec,
         accepted_formats: form.accepted_formats, price_note: form.price_note,
         location_note: form.location_note, rules: form.rules,
-        image_path: form.image_path,
+        // `image_path` sengaja TIDAK dikirim: field ini dikelola endpoint foto
+        // (unggah/hapus) dan tidak dapat disunting di form. Mengirimkannya di
+        // sini akan menimpa foto yang baru diunggah dengan nilai state lama.
         is_active: form.is_active, sort_order: form.sort_order,
       };
       if (form.id) await updateMediaType(form.id, input);
