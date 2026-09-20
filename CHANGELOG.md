@@ -6,6 +6,25 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 ## [Unreleased]
 
 ### Diubah
+- **`DESIGN.md` diaudit terhadap kode; klaim faktual yang salah diperbaiki.**
+  Seluruh dokumen (baris 1-515 saat audit) diperiksa terhadap
+  `src/styles/theme.css`, `src/styles/base.css`, `index.html`,
+  `src/constants/promo.ts`, dan komponen terkait. Dari 165 klaim yang
+  diperiksa, sekitar 55 bermasalah. Klaim faktual (nilai, kelas, ukuran, nama
+  token, keberadaan elemen) kini mengikuti kode: antara lain H1
+  `text-3xl sm:text-4xl`, H3 kartu `text-lg`, eyebrow `text-xs` (bukan
+  `text-[11px]`), leading `1.6`/`1.2`/`1.45`, tabel spasi landing
+  (`pt-6 pb-6 sm:pt-10 sm:pb-10`, katalog `pb-10`, admin `max-w-6xl`), dan
+  tabel status badge (9 kunci, kelas token `bg-brand-primary-*`). Klaim
+  niat/preskriptif dipertahankan; penyimpangan kode terhadapnya ditandai
+  eksplisit. Bagian baru **"Catatan Ketidaksesuaian (menunggu keputusan)"**
+  ditambahkan di akhir `DESIGN.md` untuk tujuh ketidaksesuaian kode-vs-niat yang
+  tidak dapat diselesaikan dengan mengubah dokumen saja (lebar kontainer admin,
+  `--radius-chip` tak terpakai, jumlah status 7/8/9, ukuran judul kartu, tosca
+  sebagai permukaan, `--elevation-fab` tak terpakai, dropdown tenant memakai
+  `shadow-lg` alih-alih token elevasi). Bagian "Migrasi dari Pola
+  Event" dinyatakan selesai, dan klaim mode gelap dikoreksi (varian `dark:` ada
+  di komponen tenant; skeleton pra-mount mengikuti `prefers-color-scheme`).
 - **Elevasi app bar tidak lagi digerakkan listener `scroll`.** `TopAppBar` kini
   memakai `IntersectionObserver` atas sentinel setinggi 0 di awal area gulir
   (`root` = elemen gulir, ambang 4px via `rootMargin`), menghapus handler per
@@ -187,14 +206,21 @@ regresi, suite 33 berkas / 292 test hijau.
   **Sengaja tidak diubah:** mode gelap belum diaudit dan belum aktif publik
   (DESIGN.md), sehingga mengangkatnya jadi token berisiko menimbulkan regresi
   yang tidak dapat diverifikasi. Perlu sesi audit mode gelap tersendiri.
-- **Bentuk badge/radius.** Lihat laporan untuk rincian (di luar cakupan audit
-  ini).
-- **Ukuran judul kartu katalog berbeda dari tabel `DESIGN.md`.** Kartu memakai
-  `text-lg` (18px) yang cocok dengan token `--text-title` (`src/styles/theme.css:21`,
-  yang `DESIGN.md` sendiri sebut sebagai sumber kebenaran), sedangkan tabel
-  "Skala Tipografi" di `DESIGN.md` menulis `text-xl`; tabel itu juga menyebut
-  bobot `700` sementara bagian "Kartu Media (Landing)" menulis `600`.
-  **Tidak diubah** — perlu keputusan pemilik desain soal mana yang benar.
+- **Bentuk badge/radius.** Token `--radius-chip: 9999px` (`src/styles/theme.css:59`)
+  tidak dipakai di mana pun, dan badge tidak seragam: `rounded-md` di admin
+  (`AdminDashboardPage.tsx:68`), `rounded-full` di riwayat/detail
+  (`MySubmissionsPage.tsx:28`, `SubmissionDetail.tsx:32`). Pilih satu bentuk
+  (dan pakai tokennya) atau hapus tokennya. Keputusannya dicatat sebagai butir 2
+  di bagian "Catatan Ketidaksesuaian" `DESIGN.md`.
+- **Ukuran judul kartu katalog.** Kartu memakai `text-lg` (18px) yang cocok
+  dengan token `--text-title` (`src/styles/theme.css:21`, yang `DESIGN.md`
+  sendiri sebut sebagai sumber kebenaran); tabel lama "Skala Tipografi" di
+  `DESIGN.md` menulis `text-xl`, dan tabel itu juga menyebut bobot `700`
+  sementara bagian "Kartu Media (Landing)" menulis `600`. Tabel `DESIGN.md`
+  sudah diperbaiki mengikuti kode (`text-lg`, Fraunces 700); pertanyaan
+  terbukanya (bila niat desain sebenarnya `text-xl`/600) kini dicatat sebagai
+  butir 4 di bagian "Catatan Ketidaksesuaian" `DESIGN.md`, bukan sebagai usulan
+  terbuka di sini.
 
 ### Sebelumnya — penyelarasan kebijakan dokumentasi
 
