@@ -45,6 +45,20 @@ describe('App — registrasi rute', () => {
     expect(screen.getByRole('heading', { name: 'Riwayat Pengajuan' })).toBeInTheDocument();
   });
 
+  it('/ajukan-cetak → form media promosi cetak (bukan redirect)', async () => {
+    renderAt('/ajukan-cetak');
+
+    // Judul langkah 1 form cetak; bila rutenya lupa didaftarkan, halaman jatuh
+    // ke redirect `*` dan heading ini tidak akan pernah muncul.
+    expect(await screen.findByRole('heading', { name: 'Data Pemohon' })).toBeInTheDocument();
+  });
+
+  it('/batch/:token → halaman status batch terdaftar', async () => {
+    renderAt('/batch/abc');
+
+    expect(await screen.findByRole('heading', { name: /Status Pengajuan Cetak/i })).toBeInTheDocument();
+  });
+
   it('tab bar memuat Lacak menuju /lacak', () => {
     renderAt('/lacak');
 

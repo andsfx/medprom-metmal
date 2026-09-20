@@ -1,6 +1,8 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import PromoLandingPage from './components/promo/PromoLandingPage';
 import PromoUploadWizard from './components/promo/PromoUploadWizard';
+import PromoCetakWizard from './components/promo/PromoCetakWizard';
+import BatchStatusPage from './components/promo/BatchStatusPage';
 import MySubmissionsPage from './components/promo/MySubmissionsPage';
 import SubmissionStatusPage from './components/promo/SubmissionStatusPage';
 import TrackSubmissionPage from './components/promo/TrackSubmissionPage';
@@ -12,6 +14,8 @@ export default function App() {
     <Routes>
       <Route path="/" element={<PromoLandingPage />} />
       <Route path="/ajukan" element={<PromoUploadWizard />} />
+      <Route path="/ajukan-cetak" element={<PromoCetakWizard />} />
+      <Route path="/batch/:token" element={<BatchStatusPage />} />
       <Route path="/riwayat" element={<MySubmissionsPage />} />
       <Route path="/lacak" element={<TrackSubmissionPage />} />
       <Route path="/status/:token" element={<SubmissionStatusPage />} />

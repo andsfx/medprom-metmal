@@ -6,12 +6,14 @@
 import { apiGet, apiPost, apiUrl, ApiError } from '../lib/rest';
 import type {
   PromoMediaType, TenantOption, PromoSubmissionPayload, MySubmissionRow, StatusPageData,
+  BatchStatusData, BatchSubmitResult,
 } from '../types/promo';
 
 // ─── Katalog (publik) ───────────────────────────────────────────
 
-export async function fetchMediaTypes(): Promise<PromoMediaType[]> {
-  const data = await apiGet<unknown>('/promo/media-types');
+export async function fetchMediaTypes(channel?: 'cetak' | 'digital'): Promise<PromoMediaType[]> {
+  const qs = channel ? `?channel=${encodeURIComponent(channel)}` : '';
+  const data = await apiGet<unknown>(`/promo/media-types${qs}`);
   return Array.isArray(data) ? (data as PromoMediaType[]) : [];
 }
 
@@ -272,4 +274,70 @@ export async function submitRevision(
     );
   }
   return { version: result.version || 1, status: result.status || 'menunggu_review' };
+}
+
+// ─── Batch cetak (publik) ───────────────────────────────────────
+
+/**
+ * Kirim pengajuan cetak berisi beberapa media sekaligus.
+ * Server memvalidasi ulang seluruh field dan menghitung PPN sendiri; klien
+ * tidak mengirim angka yang dipercaya server.
+ */
+export async function submitBatch(payload: BatchSubmitPayload): Promise<BatchSubmitResult> {
+  interface Res {
+    success: boolean; error?: string; errors?: string[];
+    batch_id?: string; batch_number?: string; batch_token?: string;
+    applicant_type?: string; created_at?: string; items?: BatchSubmitResult['items'];
+  }
+  let result: Res;
+  try {
+    result = await apiPost<Res>('/promo/submit-batch', payload);
+  } catch (err) {
+    if (err instanceof ApiError) {
+      const errors = errorsFromApiError(err);
+      const message = errors.length > 0 ? errors.join('; ') : err.message;
+      throw new ApiError(message, err.code, { ...(err.payload || {}), errors });
+    }
+    throw err;
+  }
+  if (!result.success) {
+    const message = Array.isArray(result.errors) && result.errors.length > 0
+      ? result.errors.join('; ')
+      : (result.error || 'Gagal mengirim pengajuan');
+    throw new ApiError(message, 'APP', result.errors ? { errors: result.errors } : undefined);
+  }
+  return {
+    batch_id: result.batch_id || '',
+    batch_number: result.batch_number || '',
+    batch_token: result.batch_token || '',
+    applicant_type: result.applicant_type || 'tenant',
+    created_at: result.created_at || '',
+    items: Array.isArray(result.items) ? result.items : [],
+  };
+}
+
+/** Payload pengajuan cetak (satu kirim, banyak media). */
+export interface BatchSubmitPayload {
+  applicant_type: 'tenant' | 'non_tenant';
+  tenant_id: string;
+  tenant_name: string;
+  unit_number: string;
+  pic_name: string;
+  pic_phone: string;
+  submission_date: string;
+  notes: string;
+  device_fingerprint: string;
+  items: Array<{
+    media_type_slug: string;
+    media_target: string;
+    installation_date: string;
+    air_start_date: string;
+    air_end_date: string;
+    quantity?: number;
+  }>;
+}
+
+/** Status satu batch via token (publik). */
+export async function fetchBatchByToken(token: string): Promise<BatchStatusData> {
+  return apiGet<BatchStatusData>(`/promo/batches/status/${encodeURIComponent(token)}`);
 }

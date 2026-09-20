@@ -34,6 +34,24 @@ export const CATEGORY_LABELS: Record<string, string> = {
 
 export const CATEGORY_ORDER: string[] = ['outdoor', 'indoor', 'social'];
 
+/**
+ * Kanal katalog — dipisahkan deck lewat blok "Contact Person", BUKAN kategori.
+ * Kategori tetap outdoor/indoor/social (CHECK keras di DB).
+ */
+export const CHANNEL_LABELS: Record<string, string> = {
+  cetak: 'Media Promosi Cetak',
+  digital: 'Media Promosi Digital',
+};
+
+/** Jenis pemohon pada form cetak (tenant maupun non-tenant boleh mengajukan). */
+export const APPLICANT_TYPE_LABELS: Record<string, string> = {
+  tenant: 'Tenant',
+  non_tenant: 'Non-tenant',
+};
+
+/** Batas jumlah media dalam satu pengajuan cetak — cermin server MAX_BATCH_ITEMS. */
+export const MAX_BATCH_ITEMS = 10;
+
 /** Jenis materi (field form PRD §9.3) — nilai disimpan apa adanya. */
 export const MATERIAL_TYPES: string[] = [
   'Promosi',

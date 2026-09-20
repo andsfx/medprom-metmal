@@ -6,6 +6,20 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 ## [Unreleased]
 
 ### Ditambahkan
+- **Form pengajuan "spanduk banner / giant banner / umbul-umbul" (sisi tenant).**
+  Rute baru `/ajukan-cetak` menyediakan form ringkas dengan field persis
+  permintaan pemilik: **tanggal pengajuan**, **nama pemohon**, **nama
+  tenant / nama non tenant**, **telepon**, **periode pemasangan**, **tanggal
+  pemasangan**, dan **lokasi pemasangan** per media. Pemohon dapat **tenant
+  maupun non-tenant** (sakelar jenis pemohon; non-tenant mengetik namanya
+  sendiri tanpa perlu terdaftar di MID). **Beberapa media dapat dipilih
+  sekaligus** dalam satu kirim (checkbox, batas 10), masing-masing dengan
+  periode, tanggal pemasangan, dan lokasi sendiri. Ringkasan menampilkan
+  subtotal, **PPN 11%**, dan total; minimal sewa 7 hari divalidasi di klien
+  dan diulang server. Form ini **tidak meminta berkas materi** — materi cetak
+  menyusul lewat alur revisi. Halaman status batch baru di `/batch/:token`
+  menampilkan seluruh media dalam satu pengajuan, dan beranda mendapat tautan
+  "Ajukan Media Cetak".
 - **Pengingat periode berakhir & bukti tayang di dashboard staf.**
   `GET /api/v1/admin/submissions/reminders?days=14` adalah notifikasi
   **turunan data** (bukan cron/worker): ia menghitung materi yang sudah

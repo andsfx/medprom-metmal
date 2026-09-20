@@ -193,6 +193,14 @@ export default function PromoLandingPage() {
           >
             Lihat Katalog
           </a>
+          {/* Jalur cetak ringkas: field persis permintaan pemilik, boleh
+           * beberapa media sekaligus, tanpa unggah materi. */}
+          <Link
+            to="/ajukan-cetak"
+            className="ui-btn-secondary app-pressable inline-flex items-center gap-2 rounded-[var(--radius-control)] px-5 py-3 text-sm font-medium"
+          >
+            Ajukan Media Cetak
+          </Link>
         </div>
         <p className="mt-4 text-sm ui-text-muted">
           Sudah mengajukan?{' '}

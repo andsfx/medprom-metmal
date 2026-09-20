@@ -9,7 +9,16 @@ export interface PromoMediaType {
   accepted_formats: string;
   /** Path foto contoh media ('/media/<slug>.webp'); '' = tanpa foto. */
   image_path: string;
+  /** Teks harga deck (verbatim, bisa multi-baris) — hanya untuk tampilan. */
   price_note: string;
+  /** Kanal katalog: 'cetak' (Tenant Relations) atau 'digital' (Marcom). */
+  media_channel?: 'cetak' | 'digital';
+  /** Harga numerik (per unit) untuk perhitungan PPN; 0 bila tanpa harga. */
+  price_amount?: number;
+  /** Satuan harga numerik (mis. 'hari', 'hari/16 tiang'). */
+  price_unit?: string;
+  /** true bila harga di katalog SUDAH termasuk PPN. */
+  ppn_included?: boolean;
   location_note: string;
   rules: string;
   sort_order: number;
@@ -96,6 +105,15 @@ export interface InstallationRow {
   end_date: string;
   notes: string;
   proof_url: string;
+  /** Kanal bukti tayang: tautan (kolom proof_url) atau unggahan berkas. */
+  proof_kind?: 'link' | 'upload';
+  proof_file_id?: string;
+  proof_file_url?: string;
+  proof_file_name?: string;
+  proof_mime?: string;
+  proof_size_bytes?: number;
+  proof_uploaded_by?: string;
+  proof_uploaded_at?: string | null;
   installed_by: string;
   installed_by_id: string | null;
   created_at: string;
@@ -136,10 +154,25 @@ export interface MySubmissionRow {
   status_changed_at: string | null;
   created_at: string;
   updated_at: string;
-  source_type: 'upload' | 'link';
+  source_type: 'upload' | 'link' | 'none';
   file_url: string;
   file_name: string;
   link_url: string;
+  /** Jenis pemohon pengajuan cetak. */
+  applicant_type?: 'tenant' | 'non_tenant';
+  /** Tanggal pengajuan (form cetak); '' bila tidak diisi. */
+  submission_date?: string;
+  /** Batch pengajuan cetak (satu kirim berisi beberapa media). */
+  batch_id?: string | null;
+  price_amount?: number;
+  price_unit?: string;
+  ppn_included?: boolean;
+  ppn_rate?: number;
+  quantity?: number;
+  duration_days?: number;
+  subtotal?: number;
+  ppn_amount?: number;
+  total_amount?: number;
 }
 
 export interface AdminSubmissionRow {
@@ -162,13 +195,26 @@ export interface AdminSubmissionRow {
   installation_date: string;
   terms_accepted: boolean;
   notes: string;
-  source_type: 'upload' | 'link';
+  source_type: 'upload' | 'link' | 'none';
   file_url: string;
   file_name: string;
   mime_type: string;
   file_size_bytes: number;
   drive_file_id: string;
   link_url: string;
+  applicant_type?: 'tenant' | 'non_tenant';
+  submission_date?: string;
+  batch_id?: string | null;
+  batch_number?: string | null;
+  price_amount?: number;
+  price_unit?: string;
+  ppn_included?: boolean;
+  ppn_rate?: number;
+  quantity?: number;
+  duration_days?: number;
+  subtotal?: number;
+  ppn_amount?: number;
+  total_amount?: number;
   status: string;
   status_changed_at: string | null;
   review_notes: string;
@@ -196,4 +242,68 @@ export interface AuthUser {
   email: string;
   display_name: string;
   role: string;
+}
+
+// ─── Batch pengajuan cetak ──────────────────────────────────────
+
+/** Satu item dalam hasil submit batch (snapshot harga dihitung server). */
+export interface BatchSubmitItem {
+  id: string;
+  submission_number: string;
+  status_token: string;
+  media_type_slug: string;
+  status: string;
+  subtotal: number;
+  ppn_amount: number;
+  total_amount: number;
+}
+
+/** Hasil POST /promo/submit-batch. */
+export interface BatchSubmitResult {
+  batch_id: string;
+  batch_number: string;
+  batch_token: string;
+  applicant_type: string;
+  created_at: string;
+  items: BatchSubmitItem[];
+}
+
+/** Ringkasan batch (tanpa fingerprint/IP). */
+export interface BatchRow {
+  id: string;
+  batch_number: string;
+  applicant_type: 'tenant' | 'non_tenant';
+  applicant_name: string;
+  unit_number: string;
+  submission_date: string;
+  notes: string;
+  created_at: string;
+}
+
+/** Data halaman status batch (publik). */
+export interface BatchStatusData {
+  batch: BatchRow;
+  items: StatusPageData[];
+}
+
+/** Baris pengingat periode berakhir (dashboard staf). */
+export interface ReminderRow {
+  id: string;
+  submission_number: string;
+  tenant_name: string;
+  applicant_type: 'tenant' | 'non_tenant';
+  media_type_slug: string;
+  status: string;
+  air_end_date: string;
+  end_date: string;
+  days_left: number | null;
+  ppn_amount: number;
+  total_amount: number;
+}
+
+export interface RemindersData {
+  days: number;
+  overdue: number;
+  due_soon: number;
+  items: ReminderRow[];
 }
