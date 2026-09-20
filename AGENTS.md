@@ -280,7 +280,7 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
   setup file `src/test/setup.ts` (`import '@testing-library/jest-dom'`).
   Konfigurasi di `vitest.config.ts`; include `src/**/*.test.ts(x)` dan
   `__tests__/**/*.test.{js,ts}`.
-- **40 berkas / 385 test, semuanya hijau.** Tidak ada test yang di-skip.
+- **40 berkas / 397 test, semuanya hijau.** Tidak ada test yang di-skip.
 - **Gaya**: `describe`/`it` (bukan `test`), deskripsi **Indonesia** dengan pola
   `<kondisi> → <harapan>`. Nama file mengikuti modul yang diuji.
 - **Lokasi**: test komponen co-located (`__tests__/` di samping komponen), test
