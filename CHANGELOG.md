@@ -10,7 +10,8 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   Seluruh dokumen (baris 1-515 saat audit) diperiksa terhadap
   `src/styles/theme.css`, `src/styles/base.css`, `index.html`,
   `src/constants/promo.ts`, dan komponen terkait. Dari 165 klaim yang
-  diperiksa, sekitar 55 bermasalah. Klaim faktual (nilai, kelas, ukuran, nama
+  diperiksa, 52 bermasalah; tabel audit yang dapat dihitung ulang ada di
+  `docs/PLAN_2026-09-20_12-15.md`. Klaim faktual (nilai, kelas, ukuran, nama
   token, keberadaan elemen) kini mengikuti kode: antara lain H1
   `text-3xl sm:text-4xl`, H3 kartu `text-lg`, eyebrow `text-xs` (bukan
   `text-[11px]`), leading `1.6`/`1.2`/`1.45`, tabel spasi landing
