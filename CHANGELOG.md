@@ -6,6 +6,16 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 ## [Unreleased]
 
 ### Ditambahkan
+- **Modul harga & PPN cetak (cermin FE↔BE).** `src/utils/pricing.ts` ↔
+  `server/src/lib/pricing.js` memuat satu sumber kebenaran perhitungan:
+  `PPN_RATE = 0.11` (**tarif efektif** — permintaan pemilik "PPN 11%";
+  regulasi 2025 memakai 12% × DPP Nilai Lain 11/12 sehingga beban efektifnya
+  tepat 11%), minimal sewa 7 hari, `subtotal = price_amount × quantity ×
+  duration_days`, `ppn_amount` dihitung di atas subtotal (atau sebagai porsi
+  di dalamnya bila harga sudah termasuk PPN), dan pembulatan 2 desimal seperti
+  `NUMERIC(14,2)`. Ditambah `REMINDER_DAYS` untuk ambang pengingat. Kesamaan
+  kedua modul dikunci `__tests__/api/cetak-pricing.test.js` (pola sama dengan
+  `lead-time`/`status-flow`) — menyimpang = test gagal.
 - **Skema & seed untuk alur "media promosi cetak".** Katalog kini punya kolom
   `media_channel` (`cetak`/`digital`) dan harga **numerik** (`price_amount`,
   `price_unit`, `ppn_included`) — `price_note` tetap sebagai teks deck yang
