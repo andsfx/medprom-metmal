@@ -19,11 +19,13 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   tabel status badge (9 kunci, kelas token `bg-brand-primary-*`). Klaim
   niat/preskriptif dipertahankan; penyimpangan kode terhadapnya ditandai
   eksplisit. Bagian baru **"Catatan Ketidaksesuaian (menunggu keputusan)"**
-  ditambahkan di akhir `DESIGN.md` untuk tujuh ketidaksesuaian kode-vs-niat yang
-  tidak dapat diselesaikan dengan mengubah dokumen saja (lebar kontainer admin,
-  `--radius-chip` tak terpakai, jumlah status 7/8/9, ukuran judul kartu, tosca
-  sebagai permukaan, `--elevation-fab` tak terpakai, dropdown tenant memakai
-  `shadow-lg` alih-alih token elevasi). Bagian "Migrasi dari Pola
+  ditambahkan di akhir `DESIGN.md` untuk delapan ketidaksesuaian kode-vs-niat
+  yang tidak dapat diselesaikan dengan mengubah dokumen saja (lebar kontainer
+  admin, `--radius-chip` tak terpakai, jumlah status 7/8/9, ukuran judul kartu,
+  tosca sebagai permukaan, `--elevation-fab` tak terpakai, dropdown tenant
+  memakai `shadow-lg` alih-alih token elevasi, dan pemindaian Tailwind v4 atas
+  berkas dokumen yang membuat kelas terkutip ter-generate ke CSS). Bagian
+  "Migrasi dari Pola
   Event" dinyatakan selesai, dan klaim mode gelap dikoreksi (varian `dark:` ada
   di komponen tenant; skeleton pra-mount mengikuti `prefers-color-scheme`).
 - **Elevasi app bar tidak lagi digerakkan listener `scroll`.** `TopAppBar` kini
