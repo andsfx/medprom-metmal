@@ -7,7 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent, type
 import { Link } from 'react-router-dom';
 import {
   AlertTriangle, ChevronLeft, ChevronRight, Copy, Download, ExternalLink, FileText, Film,
-  ImageIcon, Link2, Loader2, LogOut, Megaphone, MessageCircle, Plus, Save, Trash2, Users as UsersIcon, Wrench, X,
+  ImageIcon, Link2, Loader2, LogOut, Megaphone, MessageCircle, Plus, Save, Trash2, Upload,
+  Users as UsersIcon, Wrench, X,
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
@@ -24,9 +25,10 @@ import {
   uploadMediaImage, deleteMediaImage,
   downloadExportCsv, fetchAdminUsers, createUser, updateUser, deleteUser,
   type MediaTypeInput,
+  fetchAdminReminders, uploadInstallationProof,
 } from '../../utils/adminApi';
 import type {
-  PromoMediaType, AdminSubmissionRow, AdminUserRow, StatusPageData,
+  PromoMediaType, AdminSubmissionRow, AdminUserRow, StatusPageData, RemindersData,
 } from '../../types/promo';
 
 type Tab = 'submissions' | 'catalog' | 'users';
@@ -97,6 +99,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   const [error, setError] = useState('');
   const [summary, setSummary] = useState<Record<string, number>>({});
   const [summaryTotal, setSummaryTotal] = useState(0);
+  // Pengingat periode berakhir (query turunan, bukan cron).
+  const [reminders, setReminders] = useState<RemindersData | null>(null);
 
   const [detail, setDetail] = useState<AdminSubmissionRow | null>(null);
   const [detailData, setDetailData] = useState<StatusPageData | null>(null);
@@ -113,6 +117,9 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   const [installEnd, setInstallEnd] = useState('');
   const [installNotes, setInstallNotes] = useState('');
   const [installProof, setInstallProof] = useState('');
+  const [proofKind, setProofKind] = useState<'link' | 'upload'>('link');
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [unggahBukti, setUnggahBukti] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -149,8 +156,18 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     }
   }, []);
 
+  const loadReminders = useCallback(async () => {
+    try {
+      setReminders(await fetchAdminReminders());
+    } catch {
+      // Pengingat bersifat informatif — kegagalan tidak menghalangi daftar.
+      setReminders(null);
+    }
+  }, []);
+
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { void loadSummary(); }, [loadSummary]);
+  useEffect(() => { void loadReminders(); }, [loadReminders]);
 
   useEffect(() => {
     fetchAdminMediaTypes()
@@ -192,6 +209,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     setInstallEnd('');
     setInstallNotes('');
     setInstallProof('');
+    setProofKind('link');
+    setProofFile(null);
     setDetailLoading(true);
     fetchAdminSubmissionDetail(row.id)
       .then((data) => setDetailData(data))
@@ -245,9 +264,14 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         end_date: installEnd,
         notes: installNotes.trim(),
         proof_url: installProof.trim(),
+        proof_kind: proofKind,
       });
+      // Kanal unggahan: berkas dikirim setelah baris pemasangan ada.
+      if (proofKind === 'upload' && proofFile) {
+        await uploadInstallationProof(detail.id, proofFile);
+      }
       setDetail(null);
-      await Promise.all([load(), loadSummary()]);
+      await Promise.all([load(), loadSummary(), loadReminders()]);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Gagal mencatat pemasangan.');
     } finally {
@@ -296,6 +320,54 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         ))}
       </div>
       <p className="mb-4 text-xs ui-text-muted">Total {summaryTotal} pengajuan tercatat.</p>
+
+      {/* Pengingat periode berakhir — query turunan (bukan cron/email).
+       * Hanya media ber-pajak yang sudah dipasang; muncul bila ada yang
+       * mendekati/melewati akhir periode. */}
+      {reminders && reminders.items.length > 0 && (
+        <section
+          className="ui-admin-card mb-4 border-l-4 border-amber-400 p-3"
+          aria-labelledby="pengingat-judul"
+        >
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="pengingat-judul" className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+              Pengingat periode berakhir
+            </h2>
+            <p className="text-xs ui-text-muted">
+              {reminders.overdue > 0 && <span className="font-semibold text-red-600 dark:text-red-400">{reminders.overdue} sudah lewat</span>}
+              {reminders.overdue > 0 && reminders.due_soon > 0 && ' · '}
+              {reminders.due_soon > 0 && <span>{reminders.due_soon} dalam {reminders.days} hari</span>}
+            </p>
+          </div>
+          <ul className="mt-2 space-y-1.5">
+            {reminders.items.slice(0, 5).map((r) => {
+              const wa = submissionWaLink({
+                pic_phone: r.pic_phone, tenant_name: r.tenant_name,
+                media_type_slug: r.media_type_slug, status: r.status,
+              });
+              return (
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <span className="min-w-0">
+                    <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">{r.submission_number}</span>
+                    <span className="ml-1.5 ui-text-muted">{r.tenant_name} · {r.media_type_slug}</span>
+                  </span>
+                  <span className={`shrink-0 font-semibold tabular-nums ${r.days_left !== null && r.days_left < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                    {r.days_left === null ? r.end_date || '-' : r.days_left < 0 ? `lewat ${Math.abs(r.days_left)} hari` : `${r.days_left} hari lagi`}
+                  </span>
+                  {wa && (
+                    <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 font-medium text-brand-primary-700 dark:text-brand-primary-300">
+                      Ingatkan via WhatsApp
+                    </a>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+          {reminders.items.length > 5 && (
+            <p className="mt-2 text-xs ui-text-muted">+{reminders.items.length - 5} lainnya</p>
+          )}
+        </section>
+      )}
 
       {/* Filter bar */}
       <div className="mb-4 flex flex-wrap items-end gap-2">
@@ -846,20 +918,81 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label htmlFor="install-proof" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                          Tautan bukti pemasangan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
-                        </label>
-                        <input
-                          id="install-proof"
-                          type="url"
-                          inputMode="url"
-                          value={installProof}
-                          maxLength={500}
-                          placeholder="https://drive.google.com/…"
-                          onChange={(e) => setInstallProof(e.target.value)}
-                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
-                        />
+                        <span className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          Bukti pemasangan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
+                        </span>
+                        <div className="flex gap-2" role="group" aria-label="Cara memberi bukti pemasangan">
+                          <button
+                            type="button"
+                            aria-pressed={proofKind === 'link'}
+                            onClick={() => setProofKind('link')}
+                            className={`min-h-11 flex-1 rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                              proofKind === 'link'
+                                ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
+                                : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            Tautan
+                          </button>
+                          <button
+                            type="button"
+                            aria-pressed={proofKind === 'upload'}
+                            onClick={() => setProofKind('upload')}
+                            className={`min-h-11 flex-1 rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                              proofKind === 'upload'
+                                ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
+                                : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            Unggah Foto
+                          </button>
+                        </div>
                       </div>
+
+                      {proofKind === 'link' ? (
+                        <div className="sm:col-span-2">
+                          <label htmlFor="install-proof" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                            Tautan bukti pemasangan
+                          </label>
+                          <input
+                            id="install-proof"
+                            type="url"
+                            inputMode="url"
+                            value={installProof}
+                            maxLength={500}
+                            placeholder="https://drive.google.com/…"
+                            onChange={(e) => setInstallProof(e.target.value)}
+                            className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                          />
+                        </div>
+                      ) : (
+                        <div className="sm:col-span-2">
+                          <label htmlFor="install-proof-file" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                            Berkas bukti (JPEG, PNG, PDF, atau MP4; maks 50MB)
+                          </label>
+                          <label
+                            htmlFor="install-proof-file"
+                            className="flex cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-dashed border-brand-primary-300 bg-brand-primary-50/40 p-4 text-xs font-medium text-slate-700 transition hover:border-brand-primary-400 dark:border-brand-primary-700 dark:bg-brand-primary-950/20 dark:text-slate-200"
+                          >
+                            <Upload className="h-4 w-4 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
+                            {proofFile ? proofFile.name : 'Klik untuk memilih berkas bukti'}
+                            <input
+                              id="install-proof-file"
+                              type="file"
+                              accept="image/jpeg,image/png,application/pdf,video/mp4"
+                              className="sr-only"
+                              disabled={unggahBukti}
+                              onChange={(e) => {
+                                setProofFile(e.target.files?.[0] ?? null);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          <p className="mt-1 text-xs ui-text-muted">
+                            Berkas diunggah ke penyimpanan materi Mall setelah pemasangan dicatat.
+                          </p>
+                        </div>
+                      )}
                     </div>
                     <p className="mt-2 text-xs ui-text-muted">
                       Menyimpan pemasangan menetapkan status materi menjadi Sudah Dipasang.

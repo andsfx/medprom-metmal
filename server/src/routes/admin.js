@@ -476,7 +476,7 @@ router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, n
   try {
     const days = Math.min(365, Math.max(1, parseInt(String(req.query?.days || REMINDER_DAYS), 10) || REMINDER_DAYS));
     const { rows } = await db.query(
-      `SELECT s.id, s.submission_number, s.tenant_name, s.applicant_type,
+      `SELECT s.id, s.submission_number, s.tenant_name, s.pic_phone, s.applicant_type,
               s.media_type_slug, s.status, s.air_end_date,
               COALESCE(NULLIF(i.end_date, ''), NULLIF(s.air_end_date, '')) AS end_date,
               (CASE WHEN COALESCE(NULLIF(i.end_date, ''), NULLIF(s.air_end_date, ''))

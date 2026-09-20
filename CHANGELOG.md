@@ -99,6 +99,14 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   state lama. Dikunci `__tests__/api/media-type-update.test.js`.
 
 ### Diubah
+- **Dashboard staf: panel pengingat + pilihan kanal bukti tayang.** Tab
+  Pengajuan kini menampilkan panel **Pengingat periode berakhir** (materi
+  ber-pajak yang sudah dipasang dan periodenya mendekat/lewat) dengan tombol
+  "Ingatkan via WhatsApp" per baris; panel hanya muncul bila ada yang perlu
+  diingatkan. Form catat pemasangan kini punya sakelar kanal bukti
+  **Tautan / Unggah Foto**; memilih unggahan menampilkan pemilih berkas
+  (JPEG/PNG/PDF/MP4, maks 50MB) dan berkas dikirim ke server setelah baris
+  pemasangan tersimpan. Perilaku lama (tautan) tetap menjadi bawaan.
 - **`DESIGN.md` diaudit terhadap kode; klaim faktual yang salah diperbaiki.**
   Seluruh dokumen (baris 1-515 saat audit) diperiksa klaim per klaim terhadap
   `src/styles/theme.css`, `src/styles/base.css`, `index.html`,

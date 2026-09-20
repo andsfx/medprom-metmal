@@ -7,7 +7,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchAdminSubmissions, fetchAdminMediaTypes, updateSubmissionStatus,
   fetchAdminSummary, fetchAdminSubmissionDetail, recordInstallation,
-  fetchAdminUsers,
+  fetchAdminUsers, fetchAdminReminders, uploadInstallationProof,
 } from '../../../utils/adminApi';
 import type { AdminSubmissionRow } from '../../../types/promo';
 
@@ -25,6 +25,8 @@ vi.mock('../../../utils/adminApi', async (importOriginal) => {
     deleteSubmission: vi.fn(),
     downloadExportCsv: vi.fn(),
     fetchAdminUsers: vi.fn(),
+    fetchAdminReminders: vi.fn(),
+    uploadInstallationProof: vi.fn(),
   };
 });
 
@@ -36,6 +38,8 @@ const mockedFetchMediaTypes = vi.mocked(fetchAdminMediaTypes);
 const mockedUpdateStatus = vi.mocked(updateSubmissionStatus);
 const mockedRecordInstallation = vi.mocked(recordInstallation);
 const mockedFetchUsers = vi.mocked(fetchAdminUsers);
+const mockedFetchReminders = vi.mocked(fetchAdminReminders);
+const mockedUploadProof = vi.mocked(uploadInstallationProof);
 
 /** Bentuk baris API staf (snake_case, 8 status PRD). */
 function row(over: Partial<AdminSubmissionRow>): AdminSubmissionRow {
@@ -87,6 +91,8 @@ beforeEach(() => {
   mockedFetchSubmissions.mockResolvedValue(PAGE);
   mockedFetchMediaTypes.mockResolvedValue([]);
   mockedFetchUsers.mockResolvedValue([]);
+  mockedFetchReminders.mockResolvedValue({ days: 14, overdue: 0, due_soon: 0, items: [] });
+  mockedUploadProof.mockResolvedValue({ proof_file_id: 'p1', proof_file_url: 'https://drive.google.com/x' });
   mockedFetchSummary.mockResolvedValue({
     total: 3,
     counts: {
@@ -425,5 +431,84 @@ describe('AdminDashboardPage', () => {
     fireEvent.click(screen.getByRole('radio', { name: /Ditolak/i }));
 
     expect(await screen.findByText(/Alasan wajib diisi saat menolak materi/i)).toBeInTheDocument();
+  });
+});
+
+describe('AdminDashboardPage — pengingat periode berakhir', () => {
+  it('menampilkan panel pengingat bila ada materi mendekati akhir periode', async () => {
+    mockedFetchReminders.mockResolvedValue({
+      days: 14,
+      overdue: 1,
+      due_soon: 1,
+      items: [
+        {
+          id: 'sub-1', submission_number: 'MP-260916-ABC234', tenant_name: 'Optik Melawai',
+          pic_phone: '08123456789', applicant_type: 'tenant', media_type_slug: 'spanduk',
+          status: 'sudah_dipasang', air_end_date: '2026-10-01', end_date: '2026-10-01',
+          days_left: -2, ppn_amount: 53900, total_amount: 543900,
+        },
+        {
+          id: 'sub-2', submission_number: 'MP-260916-DEF567', tenant_name: 'Momoiro',
+          pic_phone: '08987654321', applicant_type: 'tenant', media_type_slug: 'big-banner',
+          status: 'sudah_dipasang', air_end_date: '2026-10-05', end_date: '2026-10-05',
+          days_left: 3, ppn_amount: 107800, total_amount: 1087800,
+        },
+      ],
+    });
+    renderDashboard({ id: 'u1', email: 'a@b.c', display_name: 'Admin', role: 'admin' });
+
+    expect(await screen.findByRole('heading', { name: /Pengingat periode berakhir/i })).toBeInTheDocument();
+    expect(screen.getByText(/1 sudah lewat/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 hari lagi/i)).toBeInTheDocument();
+  });
+
+  it('tidak menampilkan panel bila tidak ada pengingat', async () => {
+    renderDashboard({ id: 'u1', email: 'a@b.c', display_name: 'Admin', role: 'admin' });
+    await screen.findByText(/Total 3 pengajuan tercatat/i);
+    expect(screen.queryByRole('heading', { name: /Pengingat periode berakhir/i })).not.toBeInTheDocument();
+  });
+});
+
+describe('AdminDashboardPage — bukti tayang kanal unggahan', () => {
+  it('memilih "Unggah Foto" mengganti input tautan menjadi pemilih berkas', async () => {
+    mockedFetchDetail.mockResolvedValue({
+      submission: { ...ROWS[1]!, status: 'disetujui' },
+      history: [], files: [], installation: null,
+    });
+    renderDashboard({ id: 'u1', email: 'a@b.c', display_name: 'Admin', role: 'admin' });
+    await screen.findByText(/Optik Melawai/i);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[1]!);
+    // Legenda fieldset — bukan tombol "Catat Pemasangan".
+    await screen.findByText('Catat pemasangan', { selector: 'legend' });
+
+    // Default: kanal tautan.
+    expect(screen.getByLabelText(/Tautan bukti pemasangan/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /Unggah Foto/i }));
+    expect(await screen.findByLabelText(/Berkas bukti/i)).toBeInTheDocument();
+    expect(screen.queryByLabelText(/Tautan bukti pemasangan/i)).not.toBeInTheDocument();
+  });
+
+  it('menyimpan pemasangan dengan kanal unggahan mengirim berkas ke server', async () => {
+    mockedFetchDetail.mockResolvedValue({
+      submission: { ...ROWS[1]!, status: 'disetujui' },
+      history: [], files: [], installation: null,
+    });
+    renderDashboard({ id: 'u1', email: 'a@b.c', display_name: 'Admin', role: 'admin' });
+    await screen.findByText(/Optik Melawai/i);
+
+    fireEvent.click(screen.getAllByRole('button', { name: /Detail/i })[1]!);
+    await screen.findByText('Catat pemasangan', { selector: 'legend' });
+    fireEvent.change(screen.getByLabelText(/Media \/ lokasi pemasangan/i), { target: { value: 'Atrium 1' } });
+    fireEvent.click(screen.getByRole('button', { name: /Unggah Foto/i }));
+
+    const berkas = new File([new Uint8Array([0xff, 0xd8, 0xff])], 'bukti.jpg', { type: 'image/jpeg' });
+    fireEvent.change(await screen.findByLabelText(/Berkas bukti/i), { target: { files: [berkas] } });
+
+    fireEvent.click(screen.getByRole('button', { name: /Catat Pemasangan/i }));
+
+    await waitFor(() => expect(mockedRecordInstallation).toHaveBeenCalledTimes(1));
+    expect(mockedRecordInstallation).toHaveBeenCalledWith('sub-2', expect.objectContaining({ proof_kind: 'upload' }));
+    await waitFor(() => expect(mockedUploadProof).toHaveBeenCalledWith('sub-2', berkas));
   });
 });

@@ -3,7 +3,9 @@
  * Semua butuh sesi login (cookie sb-access-token via credentials: include).
  */
 import { apiGet, apiGetRaw, apiPost, apiUrl, ApiError } from '../lib/rest';
-import type { PromoMediaType, AdminSubmissionRow, AdminUserRow, StatusPageData } from '../types/promo';
+import type {
+  PromoMediaType, AdminSubmissionRow, AdminUserRow, StatusPageData, RemindersData,
+} from '../types/promo';
 
 export interface SubmissionsPage {
   data: AdminSubmissionRow[];
@@ -55,6 +57,38 @@ export interface InstallationInput {
   end_date?: string;
   notes?: string;
   proof_url?: string;
+  /** Kanal bukti tayang: tautan (proof_url) atau unggahan berkas. */
+  proof_kind?: 'link' | 'upload';
+}
+
+/**
+ * Pengingat periode berakhir — query turunan (bukan cron), hanya media
+ * ber-pajak yang sudah dipasang dan periodenya berakhir dalam `days` hari.
+ */
+export async function fetchAdminReminders(days = 14): Promise<RemindersData> {
+  const data = await apiGet<RemindersData>(`/admin/submissions/reminders?days=${days}`);
+  return {
+    days: data?.days ?? days,
+    overdue: data?.overdue ?? 0,
+    due_soon: data?.due_soon ?? 0,
+    items: Array.isArray(data?.items) ? data.items : [],
+  };
+}
+
+/** Unggah berkas bukti tayang (multipart, satu field `file`). */
+export async function uploadInstallationProof(id: string, file: File): Promise<{ proof_file_id: string; proof_file_url: string }> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(apiUrl(`/admin/submissions/${id}/installation/proof`), {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+  const body = await res.json().catch(() => ({} as { success?: boolean; error?: string; proof_file_id?: string; proof_file_url?: string }));
+  if (!res.ok || !body.success) {
+    throw new ApiError(body.error || 'Gagal mengunggah bukti pemasangan', 'APP');
+  }
+  return { proof_file_id: body.proof_file_id || '', proof_file_url: body.proof_file_url || '' };
 }
 
 export async function recordInstallation(id: string, input: InstallationInput): Promise<void> {

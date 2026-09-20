@@ -291,6 +291,8 @@ export interface ReminderRow {
   id: string;
   submission_number: string;
   tenant_name: string;
+  /** Telepon PIC — untuk tombol "Ingatkan via WhatsApp". */
+  pic_phone: string;
   applicant_type: 'tenant' | 'non_tenant';
   media_type_slug: string;
   status: string;
