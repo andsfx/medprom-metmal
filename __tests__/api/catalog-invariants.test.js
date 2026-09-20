@@ -68,6 +68,44 @@ describe('invarian seed katalog', () => {
     const aktif = seedUpserts().filter((q) => q.params[10] !== false);
     expect(aktif.length).toBe(13);
   });
+
+  // Indeks parameter (lihat seed-media-types.mjs): array index 12 = $13
+  // (flag --reset-gambar); parameter baru mulai index 13 → 13 media_channel,
+  // 14 price_amount, 15 price_unit, 16 ppn_included.
+  it('kanal cetak tepat tiga media: spanduk, big-banner, umbul-umbul', async () => {
+    await import('../../server/scripts/seed-media-types.mjs');
+    const cetak = seedUpserts()
+      .filter((q) => q.params[13] === 'cetak')
+      .map((q) => q.params[0])
+      .sort();
+    expect(cetak).toEqual(['big-banner', 'spanduk', 'umbul-umbul']);
+    // Sisanya digital — tidak ada kanal lain.
+    const kanal = new Set(seedUpserts().map((q) => q.params[13]));
+    expect([...kanal].sort()).toEqual(['cetak', 'digital']);
+  });
+
+  it('tiga media cetak berharga harian numerik > 0', async () => {
+    await import('../../server/scripts/seed-media-types.mjs');
+    const cetak = seedUpserts().filter((q) => q.params[13] === 'cetak');
+    const harga = Object.fromEntries(cetak.map((q) => [q.params[0], Number(q.params[14])]));
+    expect(harga).toEqual({ spanduk: 70000, 'big-banner': 160000, 'umbul-umbul': 288000 });
+    // Satuan mengikuti deck: umbul-umbul dihitung per hari untuk 16 tiang.
+    const unit = Object.fromEntries(cetak.map((q) => [q.params[0], q.params[15]]));
+    expect(unit).toEqual({ spanduk: 'hari', 'big-banner': 'hari', 'umbul-umbul': 'hari/16 tiang' });
+    for (const q of cetak) expect(Number(q.params[14])).toBeGreaterThan(0);
+  });
+
+  it('ppn_included diturunkan dari teks rules, bukan ditulis manual', async () => {
+    await import('../../server/scripts/seed-media-types.mjs');
+    for (const q of seedUpserts()) {
+      const rules = String(q.params[8] || '');
+      const diharapkan = /harga sudah termasuk ppn/i.test(rules);
+      expect(q.params[16], `${q.params[0]} ppn_included`).toBe(diharapkan);
+    }
+    // Media cetak semuanya "Harga belum termasuk PPN." → false.
+    const cetak = seedUpserts().filter((q) => q.params[13] === 'cetak');
+    for (const q of cetak) expect(q.params[16]).toBe(false);
+  });
 });
 
 // ── Bagian 2: handler katalog publik memfilter is_active ────────

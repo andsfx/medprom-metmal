@@ -5,6 +5,29 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 
+### Ditambahkan
+- **Skema & seed untuk alur "media promosi cetak".** Katalog kini punya kolom
+  `media_channel` (`cetak`/`digital`) dan harga **numerik** (`price_amount`,
+  `price_unit`, `ppn_included`) — `price_note` tetap sebagai teks deck yang
+  ditampilkan verbatim, karena isinya (termasuk tangga tarif multi-baris)
+  tidak dapat dijumlahkan. Kanal cetak diisi tepat tiga media yang disebut
+  pemilik: **spanduk, big-banner, umbul-umbul** (masing-masing bertarif harian
+  70.000 / 160.000 / 288.000). `ppn_included` **diturunkan dari teks `rules`**
+  ("Harga sudah termasuk PPN." → true), bukan dikarang. Pengajuan juga
+  menyiapkan `applicant_type` (tenant/non-tenant), `submission_date`,
+  `batch_id`, dan snapshot harga/pajak (`subtotal`, `ppn_amount`,
+  `total_amount`, `duration_days`, `quantity`); tabel baru
+  `promo_submission_batches` mengelompokkan satu kirim berisi beberapa media;
+  `promo_installations` menyiapkan bukti tayang dua kanal (`proof_kind`).
+  CHECK `source_type` diperluas dengan `'none'` (pengajuan cetak tidak meminta
+  berkas materi) memakai urutan **lepas CHECK → remap → pasang CHECK** —
+  urutan ini dikunci `__tests__/api/schema-migration.test.js`. Semua pernyataan
+  idempotent dan blok baru diletakkan **setelah** blok migrasi status agar
+  heuristik test urutan tetap sah. Seed menambahkan parameter baru **setelah
+  `$13`** sehingga indeks parameter yang dikunci test lama tidak bergeser.
+  **Operator: jalankan `npm run db:migrate` lalu `npm run db:seed` sebelum
+  kode baru dilayani** (kode + skema harus naik bersamaan — pitfall #10).
+
 ### Diperbaiki
 - **Mengosongkan field teks katalog media kini benar-benar tersimpan.**
   `POST /admin/media-types/:id` melewati setiap nilai kosong (`if (!value)

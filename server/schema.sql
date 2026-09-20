@@ -169,6 +169,184 @@ BEGIN
   END IF;
 END $$;
 
+-- ════════════════════════════════════════════════════════════════
+-- Alur "media promosi cetak" (rencana: docs/PLAN_2026-09-20_16-00.md).
+--
+-- Seluruh blok di bawah SENGAJA diletakkan SETELAH blok migrasi status di
+-- atas: `__tests__/api/schema-migration.test.js` memakai heuristik
+-- `indexOf('DO $$')` untuk mengisolasi blok pelepasan CHECK lama, jadi blok
+-- baru yang disisipkan sebelumnya akan membuat potongan itu kabur.
+-- ════════════════════════════════════════════════════════════════
+
+-- ── Kanal katalog: 'cetak' (Tenant Relations) vs 'digital' (Marcom).
+-- Deck memisahkan keduanya lewat blok "Contact Person", BUKAN lewat kategori
+-- (kategori deck tetap outdoor/indoor/social — CHECK-nya tidak disentuh).
+ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS media_channel TEXT NOT NULL DEFAULT 'digital';
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'promo_media_types'::regclass
+       AND conname = 'promo_media_types_channel_chk'
+  ) THEN
+    ALTER TABLE promo_media_types
+      ADD CONSTRAINT promo_media_types_channel_chk
+      CHECK (media_channel IN ('cetak','digital'));
+  END IF;
+END $$;
+
+-- ── Harga numerik untuk PPN. `price_note` TETAP: ia teks deck yang ditampilkan
+-- verbatim (termasuk tangga tarif multi-baris) dan tidak dapat dijumlahkan.
+ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS price_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS price_unit   TEXT DEFAULT '';
+-- Diturunkan dari teks `rules`: 'Harga belum termasuk PPN.' → false;
+-- 'Harga sudah termasuk PPN.' → true.
+ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS ppn_included BOOLEAN NOT NULL DEFAULT false;
+
+-- Backfill kanal dari slug — kebijakan operasional, bukan klaim deck baru.
+-- Pemilik menyebut persis tiga media ini sebagai "media promosi cetak".
+UPDATE promo_media_types
+   SET media_channel = 'cetak'
+ WHERE media_channel <> 'cetak'
+   AND slug IN ('spanduk','big-banner','umbul-umbul');
+
+-- Backfill ppn_included dari teks rules (sumber yang sama dengan seed).
+UPDATE promo_media_types
+   SET ppn_included = true
+ WHERE ppn_included = false
+   AND rules ILIKE '%harga sudah termasuk ppn%';
+
+-- ── Pengajuan cetak: jenis pemohon, tanggal, batch, snapshot harga.
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS applicant_type TEXT NOT NULL DEFAULT 'tenant';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS submission_date TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS batch_id UUID;
+
+-- Snapshot harga & pajak (dihitung server, bukan klien). Rincian rumus ada di
+-- server/src/lib/pricing.js (cermin src/utils/pricing.ts).
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS price_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS price_unit   TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS ppn_included BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS ppn_rate     NUMERIC(6,4) NOT NULL DEFAULT 0;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS quantity     INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS duration_days INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS subtotal     NUMERIC(14,2) NOT NULL DEFAULT 0;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS ppn_amount   NUMERIC(14,2) NOT NULL DEFAULT 0;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS total_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'promo_submissions'::regclass
+       AND conname = 'promo_submissions_applicant_type_chk'
+  ) THEN
+    ALTER TABLE promo_submissions
+      ADD CONSTRAINT promo_submissions_applicant_type_chk
+      CHECK (applicant_type IN ('tenant','non_tenant'));
+  END IF;
+END $$;
+
+-- ── Perluasan CHECK `source_type`: tambah 'none' (pengajuan cetak tidak
+-- meminta berkas materi; materi menyusul lewat alur revisi).
+--
+-- URUTAN PENTING (pitfall #6): CHECK lama hanya mengizinkan 'upload'/'link',
+-- jadi constraint itu WAJIB dilepas SEBELUM baris ditulis dengan nilai baru.
+-- Sasaran dipilih lewat DEFINISI (bukan nama — nama inline bergantung versi
+-- skema), mengikuti pola blok status di atas.
+DO $$
+DECLARE
+  con RECORD;
+BEGIN
+  FOR con IN
+    SELECT c.conname, pg_get_constraintdef(c.oid) AS def
+      FROM pg_constraint c
+     WHERE c.conrelid = 'promo_submissions'::regclass
+       AND c.contype = 'c'
+  LOOP
+    IF con.def ILIKE '%''upload''%'
+       AND con.def ILIKE '%''link''%'
+       AND con.def NOT ILIKE '%''none''%'
+    THEN
+      EXECUTE format('ALTER TABLE promo_submissions DROP CONSTRAINT %I', con.conname);
+    END IF;
+  END LOOP;
+END $$;
+
+UPDATE promo_submissions
+   SET source_type = 'upload'
+ WHERE source_type IS NULL
+    OR source_type NOT IN ('upload','link','none');
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'promo_submissions'::regclass
+       AND conname = 'promo_submissions_source_type_chk'
+  ) THEN
+    ALTER TABLE promo_submissions
+      ADD CONSTRAINT promo_submissions_source_type_chk
+      CHECK (source_type IN ('upload','link','none'));
+  END IF;
+END $$;
+
+-- ── Batch pengajuan cetak: satu kirim form = satu batch; tiap media terpilih
+-- = satu baris promo_submissions (single-media, seperti sebelumnya).
+-- `batch_id` di promo_submissions SENGAJA tanpa FK — mengikuti pola
+-- media_type_slug: jejak historis tidak boleh putus saat baris batch hilang.
+CREATE TABLE IF NOT EXISTS promo_submission_batches (
+  id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+  batch_number TEXT DEFAULT '',
+  batch_token TEXT DEFAULT '',
+  applicant_type TEXT NOT NULL DEFAULT 'tenant'
+    CHECK (applicant_type IN ('tenant','non_tenant')),
+  applicant_name TEXT NOT NULL,
+  tenant_id TEXT DEFAULT '',
+  unit_number TEXT DEFAULT '',
+  pic_name TEXT NOT NULL,
+  pic_phone TEXT NOT NULL,
+  submission_date TEXT DEFAULT '',
+  notes TEXT DEFAULT '',
+  device_fingerprint TEXT DEFAULT '',
+  ip_address TEXT DEFAULT '',
+  user_agent TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- ── Bukti tayang: dua kanal. `proof_url` tetap untuk kanal 'link' (data lama
+-- utuh); kanal 'upload' menyimpan metadata berkas hasil unggahan staf.
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_kind TEXT NOT NULL DEFAULT 'link';
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_file_id   TEXT DEFAULT '';
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_file_url  TEXT DEFAULT '';
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_file_name TEXT DEFAULT '';
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_mime      TEXT DEFAULT '';
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_size_bytes BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_uploaded_by TEXT DEFAULT '';
+ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_uploaded_at TIMESTAMPTZ;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'promo_installations'::regclass
+       AND conname = 'promo_installations_proof_kind_chk'
+  ) THEN
+    ALTER TABLE promo_installations
+      ADD CONSTRAINT promo_installations_proof_kind_chk
+      CHECK (proof_kind IN ('link','upload'));
+  END IF;
+END $$;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_number ON promo_submission_batches (batch_number) WHERE batch_number != '';
+CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_token  ON promo_submission_batches (batch_token)  WHERE batch_token  != '';
+CREATE INDEX IF NOT EXISTS idx_ps_batch ON promo_submissions (batch_id) WHERE batch_id IS NOT NULL;
+-- Pengingat: cari periode berakhir pada materi yang sudah terpasang.
+CREATE INDEX IF NOT EXISTS idx_ps_status_airend ON promo_submissions (status, air_end_date)
+  WHERE status = 'sudah_dipasang';
+CREATE INDEX IF NOT EXISTS idx_amt_channel ON promo_media_types (media_channel);
+
 -- Versi materi (Data Model: Material File). Satu baris per unggahan/revisi;
 -- versi terbaru juga dicerminkan pada kolom file_*/link_url promo_submissions.
 CREATE TABLE IF NOT EXISTS promo_submission_files (

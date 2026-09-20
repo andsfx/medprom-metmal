@@ -37,6 +37,8 @@ const MEDIA_TYPES = [
     image_path: '/media/spanduk.webp',
     size_spec: '0.9 M x 6.0 M', material_spec: 'Flexi 280gr',
     accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 70.000,-/hari',
+    // Kanal cetak (Tenant Relations) + harga numerik untuk perhitungan PPN.
+    media_channel: 'cetak', price_amount: 70000, price_unit: 'hari',
     location_note: 'Sisi Pintu Tol Bekasi Barat', sort_order: 1,
     rules: [
       'Harga belum termasuk PPN.',
@@ -53,6 +55,7 @@ const MEDIA_TYPES = [
     image_path: '/media/big-banner.webp',
     size_spec: '5 x 10 M', material_spec: 'Flexi 280gr',
     accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 160.000,-/hari',
+    media_channel: 'cetak', price_amount: 160000, price_unit: 'hari',
     location_note: 'Sisi Pintu Tol Bekasi Barat', sort_order: 2,
     rules: [
       'Harga belum termasuk PPN.',
@@ -69,6 +72,7 @@ const MEDIA_TYPES = [
     image_path: '/media/umbul-umbul.webp',
     size_spec: '0.9 x 4.8 M', material_spec: 'Flexi 440gr',
     accepted_formats: 'JPEG,PNG,PDF', price_note: 'Rp. 288.000,-/hari/16 tiang',
+    media_channel: 'cetak', price_amount: 288000, price_unit: 'hari/16 tiang',
     location_note: 'Area Parkir Timur, Lobby Utara 2 dan Lobby Utara 1', sort_order: 3,
     rules: [
       'Harga belum termasuk PPN.',
@@ -290,8 +294,9 @@ try {
     const { rows } = await pool.query(
       `INSERT INTO promo_media_types
         (slug, category, name, size_spec, material_spec, accepted_formats,
-         price_note, location_note, rules, image_path, is_active, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         price_note, location_note, rules, image_path, is_active, sort_order,
+         media_channel, price_amount, price_unit, ppn_included)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$14,$15,$16,$17)
        ON CONFLICT (slug) DO UPDATE
          SET image_path = CASE WHEN $13 THEN EXCLUDED.image_path
                                ELSE promo_media_types.image_path END,
@@ -305,24 +310,38 @@ try {
              rules = EXCLUDED.rules,
              is_active = EXCLUDED.is_active,
              sort_order = EXCLUDED.sort_order,
+             media_channel = EXCLUDED.media_channel,
+             price_amount = EXCLUDED.price_amount,
+             price_unit = EXCLUDED.price_unit,
+             ppn_included = EXCLUDED.ppn_included,
              updated_at = now()
          WHERE (promo_media_types.category, promo_media_types.name,
                 promo_media_types.size_spec, promo_media_types.material_spec,
                 promo_media_types.accepted_formats, promo_media_types.price_note,
                 promo_media_types.location_note, promo_media_types.rules,
-                promo_media_types.is_active, promo_media_types.sort_order)
+                promo_media_types.is_active, promo_media_types.sort_order,
+                promo_media_types.media_channel, promo_media_types.price_amount,
+                promo_media_types.price_unit, promo_media_types.ppn_included)
                IS DISTINCT FROM
                (EXCLUDED.category, EXCLUDED.name,
                 EXCLUDED.size_spec, EXCLUDED.material_spec,
                 EXCLUDED.accepted_formats, EXCLUDED.price_note,
                 EXCLUDED.location_note, EXCLUDED.rules,
-                EXCLUDED.is_active, EXCLUDED.sort_order)
+                EXCLUDED.is_active, EXCLUDED.sort_order,
+                EXCLUDED.media_channel, EXCLUDED.price_amount,
+                EXCLUDED.price_unit, EXCLUDED.ppn_included)
             OR ($13 AND promo_media_types.image_path IS DISTINCT FROM EXCLUDED.image_path)
        RETURNING id, (xmax = 0) AS is_insert`,
       [
         m.slug, m.category, m.name, m.size_spec, m.material_spec,
         m.accepted_formats, m.price_note, m.location_note, m.rules, m.image_path,
         m.is_active === false ? false : true, m.sort_order, RESET_GAMBAR,
+        // Parameter baru di-append SETELAH $13 (RESET_GAMBAR) supaya indeks
+        // parameter yang dikunci test lama tidak bergeser.
+        m.media_channel || 'digital', m.price_amount || 0, m.price_unit || '',
+        // ppn_included diturunkan dari teks `rules` (sumber yang sama dengan
+        // blok migrasi schema.sql), bukan ditulis manual per entri.
+        /harga sudah termasuk ppn/i.test(m.rules || ''),
       ],
     );
     if (rows[0]?.is_insert) inserted += 1;

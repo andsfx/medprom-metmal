@@ -50,6 +50,8 @@ describe('seed-media-types — sync rules', () => {
     const KOLOM = [
       'category', 'name', 'size_spec', 'material_spec', 'accepted_formats',
       'price_note', 'location_note', 'rules', 'is_active', 'sort_order',
+      // Kanal cetak/digital + harga numerik untuk PPN (alur media cetak).
+      'media_channel', 'price_amount', 'price_unit', 'ppn_included',
     ];
     for (const kolom of KOLOM) {
       expect(sql, `${kolom} harus diset dari EXCLUDED`).toContain(`${kolom} = EXCLUDED.${kolom}`);
