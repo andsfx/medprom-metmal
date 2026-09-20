@@ -36,6 +36,34 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   Tidak ada em-dash maupun en-dash tersisa di teks terlihat (0 pada 5 rute ×
   3 viewport, dan 0 pada bundle produksi). Sisa em-dash hanya di komentar kode,
   yang tidak pernah dirender.
+- **Katalog `/` memakai label metadata yang terlihat.** `src/components/promo/PromoLandingPage.tsx`
+  kini menulis label kata `Ukuran`, `Bahan`, `Harga`, `Lokasi` alih-alih label
+  `sr-only`, dan ikon metadata dihapus karena ambigu: `Tag` dipakai untuk
+  "Materi" sekaligus "Harga", `Ruler` dipakai untuk "Bahan". Label kecil dan
+  muted, bukan huruf besar.
+- **`price_note` berbaris-baris dirender sebagai tangga tarif.** Baris berlabel
+  (mis. `Mingguan Rp. 10.000.000,-`) jadi dua kolom dengan nominal rata kanan
+  supaya durasi berbeda bisa dibandingkan sekilas, sedangkan baris tanpa kata di
+  depan dibiarkan rata kiri — sufiksnya (`/hari`, `/30 hari`) lebarnya berbeda,
+  jadi memaksa rata kanan hanya membuat angka menggantung tanpa jangkar. Semua
+  karakter nominal dipertahankan verbatim.
+- **Baris lead time per kartu katalog.** Diturunkan dari teks `rules` lewat
+  `parseLeadTime` + `describeLeadTime` (`src/utils/leadTime.ts`), bukan
+  diasumsikan per kategori karena ketentuan deck tidak seragam; tidak
+  ditampilkan bila media tidak mengatur lead time.
+- **Aksi kartu katalog menjadi tautan teks tosca, bukan tombol solid.**
+  Sebelumnya setiap kartu memakai `.ui-btn-primary`, sehingga jumlah CTA primer
+  solid pada satu halaman jauh melebihi aturan `DESIGN.md` "satu CTA primer per
+  viewport" dan "Aksi: link teks tosca (bukan tombol solid)". Kontras terukur
+  7.20:1 (`#006260` di putih), target sentuh tetap 44px.
+- **Subjudul hero `/` ditulis ulang** (aktif, sentence case, menyebut media
+  konkret) tanpa em-dash.
+- **Dua kelas radius mati dihapus dari kartu katalog.** `rounded-md` dan
+  `rounded-lg` tidak pernah berefek karena tertimpa `border-radius` tak-berlapis
+  dari `.ui-btn-primary`/`.ui-control` (`src/styles/base.css`); `DESIGN.md`
+  melarang mengandalkan radius dari kelas utilitas.
+- **3 test baru mengunci pemecahan harga per baris dan kemunculan baris lead
+  time** (`src/components/promo/__tests__/PromoLandingPage.test.tsx`).
 
 ### Diperbaiki
 - **15 slot pesan galat wizard menggeser konten saat pesan muncul.** Pesan
@@ -161,6 +189,12 @@ regresi, suite 33 berkas / 292 test hijau.
   yang tidak dapat diverifikasi. Perlu sesi audit mode gelap tersendiri.
 - **Bentuk badge/radius.** Lihat laporan untuk rincian (di luar cakupan audit
   ini).
+- **Ukuran judul kartu katalog berbeda dari tabel `DESIGN.md`.** Kartu memakai
+  `text-lg` (18px) yang cocok dengan token `--text-title` (`src/styles/theme.css:21`,
+  yang `DESIGN.md` sendiri sebut sebagai sumber kebenaran), sedangkan tabel
+  "Skala Tipografi" di `DESIGN.md` menulis `text-xl`; tabel itu juga menyebut
+  bobot `700` sementara bagian "Kartu Media (Landing)" menulis `600`.
+  **Tidak diubah** — perlu keputusan pemilik desain soal mana yang benar.
 
 ### Sebelumnya — penyelarasan kebijakan dokumentasi
 

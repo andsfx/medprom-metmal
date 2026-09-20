@@ -4,8 +4,9 @@
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, MapPin, Ruler, Tag, ArrowRight, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ArrowRight, AlertTriangle } from 'lucide-react';
 import { fetchMediaTypes } from '../../utils/promoApi';
+import { parseLeadTime, describeLeadTime } from '../../utils/leadTime';
 import AppShell from '../layout/AppShell';
 import { CATEGORY_LABELS, CATEGORY_ORDER } from '../../constants/promo';
 import type { PromoMediaType } from '../../types/promo';
@@ -17,6 +18,11 @@ const CONTACTS = [
 
 function MediaCard({ media }: { media: PromoMediaType }) {
   const [rulesOpen, setRulesOpen] = useState(false);
+  // Aturan lead time diturunkan dari teks `rules`; null = media tak mengatur.
+  const lead = parseLeadTime(media.rules);
+  // Satu baris per baris `\n`; baris kosong dibuang agar tak menyisakan
+  // baris menggantung di tangga tarif.
+  const priceLines = (media.price_note || '').split('\n').map((s) => s.trim()).filter(Boolean);
   return (
     <article className="ui-card flex flex-col p-5">
       {/* Foto contoh dari deck 2026 — mempercepat tenant mengenali medianya.
@@ -36,48 +42,69 @@ function MediaCard({ media }: { media: PromoMediaType }) {
         <h3 className="font-display text-lg font-bold text-slate-900 dark:text-white">{media.name}</h3>
       </div>
 
-      {/* `<dl>` hanya boleh berisi `<dt>`/`<dd>` (atau `<div>` pembungkus
-       * langsung). Setiap baris memakai satu `<div>` langsung, dengan
-       * `<dt>`+`<dd>` di dalamnya; ikon diletakkan di dalam `<dt>` agar
-       * tidak ada pembungkus bersarang yang membuat `<dd>` kehilangan
-       * induk `<dl>` (axe: definition-list + dlitem). */}
-      <dl className="mt-3 space-y-2 text-sm">
+      {/* `<dl>` hanya boleh berisi `<dt>`/`<dd>`; keduanya diletakkan sebagai
+       * anak langsung supaya `<dd>` tidak kehilangan induk `<dl>` (axe:
+       * definition-list + dlitem). Label kini terlihat — ikon metadata
+       * dihapus karena tidak menambah makna pada baris data. */}
+      <dl className="mt-3 grid grid-cols-[4.5rem_1fr] items-baseline gap-x-3 gap-y-2 text-sm">
         {media.size_spec && (
-          <div className="flex items-start gap-2">
-            <dt className="sr-only">Ukuran</dt>
-            <Ruler className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
+          <>
+            <dt className="ui-meta ui-text-muted">Ukuran</dt>
             <dd className="ui-text-muted">{media.size_spec}</dd>
-          </div>
+          </>
         )}
         {media.material_spec && (
-          <div className="flex items-start gap-2">
-            <dt className="sr-only">Materi</dt>
-            <Tag className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
+          <>
+            <dt className="ui-meta ui-text-muted">Bahan</dt>
             <dd className="ui-text-muted">{media.material_spec}</dd>
-          </div>
+          </>
         )}
         {media.price_note && (
-          <div className="flex items-start gap-2">
-            <dt className="sr-only">Harga</dt>
-            <Tag className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
-            {/* Satu tarif per baris: sebagian media punya beberapa tarif
-             * (per hari/7 hari/14 hari/30 hari) yang tak terbaca bila
-             * didorong jadi satu baris panjang. */}
+          <>
+            <dt className="ui-meta ui-text-muted">Harga</dt>
+            {/* Tangga tarif: keputusan tata letak dibuat PER BARIS. Baris
+             * berlabel (kata sebelum `Rp.`, mis. "Mingguan") jadi dua kolom
+             * — kata di kiri, nominal rata kanan — sehingga tarif berdurasi
+             * berbeda sejajar dan bisa dibandingkan sekilas. Baris tanpa
+             * kata di depan (`Rp. 600.000,-/hari`) dibiarkan apa adanya
+             * sebagai satu baris rata kiri: sufiksnya (`/hari`, `/30 hari`)
+             * lebarnya berbeda, jadi memaksanya rata kanan hanya membuat
+             * angka menggantung tanpa jangkar. Setiap karakter dipertahankan
+             * verbatim. */}
             <dd className="font-semibold text-slate-900 dark:text-slate-100">
-              {media.price_note.split('\n').map((line, i) => (
-                <span key={i} className="block">{line}</span>
-              ))}
+              {priceLines.map((line, i) => {
+                const at = line.indexOf('Rp.');
+                if (at > 0) {
+                  return (
+                    <span key={i} className="flex items-baseline justify-between gap-3">
+                      <span>{line.slice(0, at).trim()}</span>
+                      <span className="whitespace-nowrap tabular-nums">{line.slice(at)}</span>
+                    </span>
+                  );
+                }
+                return (
+                  <span key={i} className="block tabular-nums">{line}</span>
+                );
+              })}
             </dd>
-          </div>
+          </>
         )}
         {media.location_note && (
-          <div className="flex items-start gap-2">
-            <dt className="sr-only">Lokasi</dt>
-            <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
+          <>
+            <dt className="ui-meta ui-text-muted">Lokasi</dt>
             <dd className="ui-text-muted">{media.location_note}</dd>
-          </div>
+          </>
         )}
       </dl>
+
+      {/* Lead time diturunkan dari teks `rules` (bukan dari kategori) —
+       * ketentuan deck tidak seragam, jadi media tanpa aturan tidak
+       * menampilkan baris ini sama sekali. */}
+      {lead && (
+        <p className="ui-meta ui-text-muted mt-2">
+          Materi diterima paling lambat {describeLeadTime(lead)}.
+        </p>
+      )}
 
       {media.rules && (
         <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
@@ -106,7 +133,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
       <div className="mt-5 flex-1" />
       <Link
         to={`/ajukan?media=${encodeURIComponent(media.slug)}`}
-        className="ui-btn-primary app-pressable ui-focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+        className="app-pressable ui-focus-ring inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-primary-700 transition-colors hover:text-brand-primary-800 dark:text-brand-primary-300 dark:hover:text-brand-primary-200"
       >
         Ajukan Materi
         <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -149,8 +176,8 @@ export default function PromoLandingPage() {
           Ajukan Materi Promosi Tenant Anda
         </h1>
         <p className="ui-body ui-text-muted mt-2 max-w-lg">
-          Kirim promosi Anda ke Tim Tenant Relations, dari spanduk, LED, dan
-          videotron hingga media sosial. Statusnya bisa dipantau kapan saja.
+          Pilih media promosi dari katalog: spanduk, LED banner, videotron,
+          hingga media sosial. Kirim materinya, lalu pantau statusnya.
         </p>
         <div className="mt-5 flex flex-wrap gap-2.5">
           <Link
@@ -233,7 +260,7 @@ export default function PromoLandingPage() {
                       href={wa}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="ui-control app-pressable ui-focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                      className="ui-control app-pressable ui-focus-ring inline-flex min-h-11 items-center gap-1.5 px-3 text-xs font-medium text-brand-primary-700 transition-colors hover:text-brand-primary-800 dark:text-brand-primary-300"
                     >
                       WhatsApp
                       <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
