@@ -84,6 +84,25 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   kode baru dilayani** (kode + skema harus naik bersamaan — pitfall #10).
 
 ### Diperbaiki
+- **Katalog publik tidak mengirim kanal/harga, sehingga form cetak tampil
+  kosong.** `GET /api/v1/promo/media-types` tidak menyertakan `media_channel`,
+  `price_amount`, `price_unit`, dan `ppn_included` pada `SELECT` — padahal
+  wizard cetak menyaring `media_channel === 'cetak'` dan menghitung PPN dari
+  `price_amount`/`ppn_included`. Akibatnya `/ajukan-cetak` menampilkan **0
+  media** dan harga/PPN selalu 0. Parameter `?channel=cetak|digital` juga
+  diabaikan server (handler masih `_req`). Kini keempat kolom ikut dikirim dan
+  filter kanal diterapkan secara **aditif** — tanpa parameter, perilaku
+  katalog/landing persis seperti sebelumnya; nilai kanal divalidasi terhadap
+  daftar (bukan interpolasi mentah) dan yang tak dikenal dibalas `400` sebelum
+  menyentuh DB. Regresi ini tidak tertangkap mock FE karena fixture-nya sudah
+  memuat kolom tersebut, jadi ditambahkan **test seam nyata** yang memanggil
+  handler `GET /media-types` sungguhan lewat `router.stack` dan meng-assert
+  kolom ada di respons serta filter kanal benar-benar menyaring
+  (`__tests__/api/catalog-invariants.test.js`). **Plus** kanal katalog kini
+  dapat diubah dari dashboard: `POST /admin/media-types` (bawaan `digital`) dan
+  `POST /admin/media-types/:id` menerima `media_channel` dengan validasi
+  `cetak|digital`, dan `CatalogTab` menampilkan pemilih **Kanal** serta label
+  kanal di daftar.
 - **Mengosongkan field teks katalog media kini benar-benar tersimpan.**
   `POST /admin/media-types/:id` melewati setiap nilai kosong (`if (!value)
   continue`), sehingga menghapus isi **Ketentuan** (`rules`) — yang tampil

@@ -165,4 +165,75 @@ describe('GET /promo/media-types — hanya media aktif', () => {
     expect(res.body.data.map((m) => m.slug)).toEqual(['spanduk', 'videotron']);
     expect(res.body.data.some((m) => m.slug === 'vertical-banner')).toBe(false);
   });
+
+  // Regresi seam: wizard cetak memfilter `media_channel === 'cetak'` dan
+  // menghitung PPN dari `price_amount`/`ppn_included`. Bila kolom ini tidak
+  // ikut di-SELECT, form menampilkan 0 media dan PPN selalu 0 di produksi —
+  // mock FE tidak menangkapnya karena fixture sudah memuat kolom tersebut.
+  it('SELECT memuat media_channel + kolom harga numerik (seam wizard cetak)', async () => {
+    mockedQuery.mockResolvedValue({ rows: [] });
+    const handler = getHandler('/media-types', 'get');
+    const res = { statusCode: 200, body: null, status(c) { this.statusCode = c; return this; }, json(d) { this.body = d; return this; }, setHeader() { return this; } };
+    await handler({ method: 'GET', headers: {}, socket: {} }, res, () => {});
+
+    const sql = String(mockedQuery.mock.calls[0][0]);
+    for (const kolom of ['media_channel', 'price_amount', 'price_unit', 'ppn_included']) {
+      expect(sql, `${kolom} wajib ada di SELECT katalog publik`).toContain(kolom);
+    }
+    // Tanpa parameter channel, tidak ada nilai yang di-bind (perilaku lama).
+    expect(mockedQuery.mock.calls[0][1]).toEqual([]);
+  });
+
+  it('?channel=cetak menyaring lewat parameter terikat, bukan interpolasi', async () => {
+    mockedQuery.mockResolvedValue({ rows: [{ slug: 'spanduk', media_channel: 'cetak' }] });
+    const handler = getHandler('/media-types', 'get');
+    const res = { statusCode: 200, body: null, status(c) { this.statusCode = c; return this; }, json(d) { this.body = d; return this; }, setHeader() { return this; } };
+    await handler({ method: 'GET', headers: {}, socket: {}, query: { channel: 'cetak' } }, res, () => {});
+
+    const [sql, values] = mockedQuery.mock.calls[0];
+    expect(String(sql)).toContain('media_channel = $1');
+    expect(values).toEqual(['cetak']);
+    expect(res.body.data.map((m) => m.slug)).toEqual(['spanduk']);
+  });
+
+  it('?channel=digital diterima; kanal tak dikenal → 400 tanpa menyentuh DB', async () => {
+    mockedQuery.mockResolvedValue({ rows: [] });
+    const handler = getHandler('/media-types', 'get');
+    const mkRes = () => ({ statusCode: 200, body: null, status(c) { this.statusCode = c; return this; }, json(d) { this.body = d; return this; }, setHeader() { return this; } });
+
+    const resOk = mkRes();
+    await handler({ method: 'GET', headers: {}, socket: {}, query: { channel: 'digital' } }, resOk, () => {});
+    expect(resOk.statusCode).toBe(200);
+    expect(mockedQuery.mock.calls[0][1]).toEqual(['digital']);
+
+    mockedQuery.mockClear();
+    const resBad = mkRes();
+    await handler({ method: 'GET', headers: {}, socket: {}, query: { channel: "'; DROP TABLE users; --" } }, resBad, () => {});
+    expect(resBad.statusCode).toBe(400);
+    expect(resBad.body.error).toMatch(/Kanal media tidak dikenal/);
+    // Nilai tak sah tidak pernah sampai ke DB.
+    expect(mockedQuery).not.toHaveBeenCalled();
+  });
+
+  it('respons meneruskan media_channel & harga dari DB apa adanya', async () => {
+    mockedQuery.mockResolvedValue({
+      rows: [{
+        slug: 'spanduk', category: 'outdoor', name: 'Spanduk', size_spec: '0.9 M x 6.0 M',
+        material_spec: 'Flexi 280gr', accepted_formats: 'JPEG,PNG,PDF',
+        price_note: 'Rp. 70.000,-/hari', location_note: '', rules: '', image_path: '',
+        sort_order: 1, media_channel: 'cetak', price_amount: 70000,
+        price_unit: 'hari', ppn_included: false,
+      }],
+    });
+    const handler = getHandler('/media-types', 'get');
+    const res = { statusCode: 200, body: null, status(c) { this.statusCode = c; return this; }, json(d) { this.body = d; return this; }, setHeader() { return this; } };
+    await handler({ method: 'GET', headers: {}, socket: {}, query: { channel: 'cetak' } }, res, () => {});
+
+    const row = res.body.data[0];
+    expect(row.media_channel).toBe('cetak');
+    expect(row.price_amount).toBe(70000);
+    expect(row.ppn_included).toBe(false);
+    // Yang dibaca wizard: filter kanal + dasar perhitungan PPN tersedia.
+    expect(row.media_channel === 'cetak').toBe(true);
+  });
 });

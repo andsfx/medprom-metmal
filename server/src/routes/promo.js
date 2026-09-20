@@ -216,14 +216,33 @@ async function insertHistory(client, { submissionId, fromStatus, toStatus, comme
 }
 
 // ─── GET /promo/media-types — katalog aktif ─────────────────────
-router.get('/media-types', async (_req, res, next) => {
+// `?channel=cetak|digital` bersifat ADITIF: tanpa parameter perilakunya persis
+// seperti sebelumnya (landing tidak berubah); dengan parameter, katalog
+// disaring per kanal. Nilai divalidasi terhadap daftar (bukan interpolasi).
+const MEDIA_CHANNELS = ['cetak', 'digital'];
+
+router.get('/media-types', async (req, res, next) => {
   try {
+    const channel = sanitize(req.query?.channel || '', 20);
+    const where = ['is_active = true'];
+    const values = [];
+    if (channel) {
+      if (!MEDIA_CHANNELS.includes(channel)) {
+        return res.status(400).json({ success: false, error: 'Kanal media tidak dikenal.' });
+      }
+      values.push(channel);
+      where.push(`media_channel = $${values.length}`);
+    }
+
     const { rows } = await db.query(
       `SELECT slug, category, name, size_spec, material_spec, accepted_formats,
-              price_note, location_note, rules, image_path, sort_order
+              price_note, location_note, rules, image_path, sort_order,
+              media_channel, price_amount::float8 AS price_amount,
+              price_unit, ppn_included
        FROM promo_media_types
-       WHERE is_active = true
+       WHERE ${where.join(' AND ')}
        ORDER BY sort_order, name`,
+      values,
     );
     return res.json({ success: true, data: rows });
   } catch (err) {

@@ -122,6 +122,8 @@ export async function fetchAdminMediaTypes(): Promise<PromoMediaType[]> {
 export interface MediaTypeInput {
   slug?: string;
   category?: string;
+  /** Kanal katalog: 'cetak' (Tenant Relations) atau 'digital' (Marcom). */
+  media_channel?: 'cetak' | 'digital';
   name?: string;
   size_spec?: string;
   material_spec?: string;

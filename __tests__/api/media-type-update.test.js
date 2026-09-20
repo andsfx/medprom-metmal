@@ -146,3 +146,71 @@ describe('POST /admin/media-types/:id — kosong vs tidak dikirim', () => {
     expect(updateCall()).toBeUndefined();
   });
 });
+
+describe('POST /admin/media-types — kanal katalog', () => {
+  async function callCreate(body) {
+    const handler = getHandler('/media-types', 'post');
+    const req = {
+      method: 'POST', body, params: {}, headers: {}, socket: {},
+      auth: { user: { id: 'u1', display_name: 'Admin' } },
+    };
+    const res = createMockResponse();
+    await handler(req, res, (err) => { if (err) { res.statusCode = 500; res.body = { error: err.message }; } });
+    return res;
+  }
+
+  it('create menyimpan media_channel', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT id FROM promo_media_types WHERE slug')) return Promise.resolve({ rows: [] });
+      if (text.includes('INSERT INTO promo_media_types')) return Promise.resolve({ rows: [{ id: 'mt-new' }] });
+      return Promise.resolve({ rows: [] });
+    });
+    const res = await callCreate({ slug: 'banner-baru', name: 'Banner Baru', category: 'outdoor', media_channel: 'cetak' });
+    expect(res.statusCode).toBe(200);
+    const insert = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_media_types'));
+    expect(String(insert[0])).toContain('media_channel');
+    expect(insert[1]).toContain('cetak');
+  });
+
+  it('create tanpa media_channel → default digital', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT id FROM promo_media_types WHERE slug')) return Promise.resolve({ rows: [] });
+      if (text.includes('INSERT INTO promo_media_types')) return Promise.resolve({ rows: [{ id: 'mt-new' }] });
+      return Promise.resolve({ rows: [] });
+    });
+    await callCreate({ slug: 'x', name: 'X', category: 'indoor' });
+    const insert = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_media_types'));
+    expect(insert[1]).toContain('digital');
+  });
+
+  it('create dengan kanal tak dikenal → 400 tanpa INSERT', async () => {
+    const res = await callCreate({ slug: 'x', name: 'X', category: 'indoor', media_channel: 'aneh' });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('Kanal media harus cetak atau digital');
+    expect(mockedQuery.mock.calls.every((c) => !String(c[0]).includes('INSERT INTO promo_media_types'))).toBe(true);
+  });
+
+  it('update mengubah media_channel', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT id, slug FROM promo_media_types')) {
+        return Promise.resolve({ rows: [{ id: 'mt-1', slug: 'spanduk' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    const res = await callUpdate({ media_channel: 'digital' });
+    expect(res.statusCode).toBe(200);
+    const call = updateCall();
+    expect(String(call[0])).toContain('media_channel = $1');
+    expect(call[1][0]).toBe('digital');
+  });
+
+  it('update dengan kanal tak dikenal → 400 tanpa UPDATE', async () => {
+    const res = await callUpdate({ media_channel: 'aneh' });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.error).toBe('Kanal media harus cetak atau digital');
+    expect(updateCall()).toBeUndefined();
+  });
+});

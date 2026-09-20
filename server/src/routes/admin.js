@@ -67,6 +67,8 @@ function csvEscape(val) {
 const STATUSES = SUBMISSION_STATUSES;
 const SLUG_RE = /^[a-z0-9-]+$/;
 const CATEGORIES = ['outdoor', 'indoor', 'social'];
+/** Kanal katalog — cermin CHECK `promo_media_types_channel_chk` di schema. */
+const MEDIA_CHANNELS = ['cetak', 'digital'];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // ══════════ SUBMISSIONS ══════════
@@ -562,6 +564,7 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
     const slug = sanitize(d.slug || '', 60);
     const name = sanitize(d.name || '', 100);
     const category = sanitize(d.category || '', 20);
+    const mediaChannel = sanitize(d.media_channel || 'digital', 20);
 
     if (!slug || !SLUG_RE.test(slug)) {
       return res.status(400).json({ success: false, error: 'Slug wajib huruf kecil/angka/tanda hubung' });
@@ -569,6 +572,9 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
     if (!name) return res.status(400).json({ success: false, error: 'Nama wajib diisi' });
     if (!CATEGORIES.includes(category)) {
       return res.status(400).json({ success: false, error: 'Kategori harus outdoor, indoor, atau social' });
+    }
+    if (!MEDIA_CHANNELS.includes(mediaChannel)) {
+      return res.status(400).json({ success: false, error: 'Kanal media harus cetak atau digital' });
     }
 
     const { rows: dupe } = await db.query(
@@ -580,8 +586,9 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
     const { rows } = await db.query(
       `INSERT INTO promo_media_types
         (slug, category, name, size_spec, material_spec, accepted_formats,
-         price_note, location_note, rules, image_path, is_active, sort_order)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+         price_note, location_note, rules, image_path, is_active, sort_order,
+         media_channel)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
        RETURNING id`,
       [
         slug,
@@ -596,10 +603,11 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
         sanitize(d.image_path || '', 200),
         d.is_active === false ? false : true,
         parseInt(String(d.sort_order ?? '0'), 10) || 0,
+        mediaChannel,
       ],
     );
     const id = rows[0]?.id || '';
-    logActivity(req.auth.user, 'create_media_type', 'promo_media_type', id, { slug }, req);
+    logActivity(req.auth.user, 'create_media_type', 'promo_media_type', id, { slug, mediaChannel }, req);
     return res.json({ success: true, id });
   } catch (err) {
     return next(err);
@@ -662,6 +670,15 @@ router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next)
     ];
     for (const [key, maxLen] of KOLOM_TEKS) {
       if (d[key] !== undefined) fields[key] = sanitize(d[key], maxLen);
+    }
+
+    // Kanal katalog: hanya bila dikirim, dan wajib salah satu nilai sah.
+    if (d.media_channel !== undefined) {
+      const mediaChannel = sanitize(d.media_channel, 20);
+      if (!MEDIA_CHANNELS.includes(mediaChannel)) {
+        return res.status(400).json({ success: false, error: 'Kanal media harus cetak atau digital' });
+      }
+      fields.media_channel = mediaChannel;
     }
 
     for (const [key, value] of Object.entries(fields)) {

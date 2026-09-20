@@ -7,7 +7,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchAdminSubmissions, fetchAdminMediaTypes, updateSubmissionStatus,
   fetchAdminSummary, fetchAdminSubmissionDetail, recordInstallation,
-  fetchAdminUsers, fetchAdminReminders, uploadInstallationProof,
+  fetchAdminUsers, fetchAdminReminders, uploadInstallationProof, createMediaType,
 } from '../../../utils/adminApi';
 import type { AdminSubmissionRow } from '../../../types/promo';
 
@@ -27,6 +27,7 @@ vi.mock('../../../utils/adminApi', async (importOriginal) => {
     fetchAdminUsers: vi.fn(),
     fetchAdminReminders: vi.fn(),
     uploadInstallationProof: vi.fn(),
+    createMediaType: vi.fn(),
   };
 });
 
@@ -40,6 +41,7 @@ const mockedRecordInstallation = vi.mocked(recordInstallation);
 const mockedFetchUsers = vi.mocked(fetchAdminUsers);
 const mockedFetchReminders = vi.mocked(fetchAdminReminders);
 const mockedUploadProof = vi.mocked(uploadInstallationProof);
+const mockedCreateMediaType = vi.mocked(createMediaType);
 
 /** Bentuk baris API staf (snake_case, 8 status PRD). */
 function row(over: Partial<AdminSubmissionRow>): AdminSubmissionRow {
@@ -386,6 +388,36 @@ describe('AdminDashboardPage', () => {
 
     const pesan = await screen.findByText(/Belum ada media di katalog/i);
     expect(pesan.closest('[role="status"]')).not.toBeNull();
+  });
+
+  it('form katalog menyediakan pilihan kanal Cetak/Digital dan mengirimnya', async () => {
+    mockedFetchMediaTypes.mockResolvedValue([{
+      slug: 'spanduk', category: 'outdoor', name: 'Spanduk',
+      size_spec: '', material_spec: '', accepted_formats: 'JPEG,PDF',
+      image_path: '', price_note: 'Rp. 70.000,-/hari', location_note: '', rules: '',
+      sort_order: 1, media_channel: 'cetak', price_amount: 70000,
+      price_unit: 'hari', ppn_included: false,
+    }]);
+    mockedCreateMediaType.mockResolvedValue('mt-baru');
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getByRole('tab', { name: /Katalog Media/i }));
+    // Baris daftar menampilkan kanal, kategori, dan slug.
+    expect(await screen.findByText(/\/spanduk/)).toBeInTheDocument();
+    expect(screen.getByText(/Media Promosi Cetak/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /Tambah Media/i }));
+    const kanal = await screen.findByLabelText(/^Kanal$/i);
+    expect(kanal).toHaveValue('digital');
+    fireEvent.change(kanal, { target: { value: 'cetak' } });
+
+    fireEvent.change(screen.getByLabelText(/Slug/i), { target: { value: 'banner-baru' } });
+    fireEvent.change(screen.getByLabelText(/^Nama$/i), { target: { value: 'Banner Baru' } });
+    fireEvent.click(screen.getByRole('button', { name: /Simpan/i }));
+
+    await waitFor(() => expect(mockedCreateMediaType).toHaveBeenCalledTimes(1));
+    expect(mockedCreateMediaType).toHaveBeenCalledWith(expect.objectContaining({ media_channel: 'cetak' }));
   });
 
   it('pengguna kosong → panel keadaan kosong (superadmin)', async () => {

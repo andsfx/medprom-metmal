@@ -14,7 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useConfirmDialog } from '../ConfirmDialog';
 import Sheet from '../ui/Sheet';
-import { STATUS_LABELS, STATUS_ORDER, CATEGORY_LABELS } from '../../constants/promo';
+import { STATUS_LABELS, STATUS_ORDER, CATEGORY_LABELS, CHANNEL_LABELS } from '../../constants/promo';
 import { submissionWaLink } from '../../utils/whatsapp';
 import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
 import { STATUS_TRANSITIONS, isInstallableStatus } from '../../utils/statusFlow';
@@ -1045,6 +1045,8 @@ interface CatalogFormState {
   id: string;
   slug: string;
   category: string;
+  /** Kanal katalog — dipisahkan deck lewat blok Contact Person. */
+  media_channel: 'cetak' | 'digital';
   name: string;
   size_spec: string;
   material_spec: string;
@@ -1058,7 +1060,8 @@ interface CatalogFormState {
 }
 
 const EMPTY_CATALOG_FORM: CatalogFormState = {
-  id: '', slug: '', category: 'outdoor', name: '', size_spec: '', material_spec: '',
+  id: '', slug: '', category: 'outdoor', media_channel: 'digital', name: '',
+  size_spec: '', material_spec: '',
   accepted_formats: 'JPEG', price_note: '', location_note: '', rules: '',
   image_path: '', is_active: true, sort_order: 0,
 };
@@ -1095,6 +1098,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
     try {
       const input: MediaTypeInput = {
         slug: form.slug, category: form.category, name: form.name,
+        media_channel: form.media_channel,
         size_spec: form.size_spec, material_spec: form.material_spec,
         accepted_formats: form.accepted_formats, price_note: form.price_note,
         location_note: form.location_note, rules: form.rules,
@@ -1218,7 +1222,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{m.name}</p>
-                  <p className="text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category} · /{m.slug}</p>
+                  <p className="text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category} · {CHANNEL_LABELS[m.media_channel ?? 'digital']} · /{m.slug}</p>
                 </div>
                 {/* State nonaktif dibawa badge "Nonaktif", bukan opacity-70:
                  * opacity menurunkan kontras SEMUA teks di dalam kartu
@@ -1239,6 +1243,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                         size_spec: m.size_spec, material_spec: m.material_spec,
                         accepted_formats: m.accepted_formats, price_note: m.price_note,
                         location_note: m.location_note, rules: m.rules,
+                        media_channel: m.media_channel === 'cetak' ? 'cetak' : 'digital',
                         image_path: m.image_path || '',
                         is_active: m.is_active !== false, sort_order: m.sort_order,
                       });
@@ -1286,6 +1291,18 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                   <option value="outdoor">Outdoor</option>
                   <option value="indoor">Indoor</option>
                   <option value="social">Media Sosial</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="cf-channel" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Kanal</label>
+                <select
+                  id="cf-channel"
+                  value={form.media_channel}
+                  onChange={(e) => setForm((f) => (f ? { ...f, media_channel: e.target.value as 'cetak' | 'digital' } : f))}
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                >
+                  <option value="cetak">Media Promosi Cetak</option>
+                  <option value="digital">Media Promosi Digital</option>
                 </select>
               </div>
               {textInput('Format diterima', 'accepted_formats', 'JPEG,PDF')}
