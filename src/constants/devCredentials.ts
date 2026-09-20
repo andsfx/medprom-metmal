@@ -10,7 +10,7 @@
  * `isUploadModeEnabled` di `./promo.ts`: sebelum dipakai publik, set
  * `VITE_PROMO_SHOW_DEV_LOGIN='0'` lalu build + deploy ulang (nilai VITE_*
  * di-inline saat build, bukan dibaca runtime). Saat flag mati, panelnya tidak
- * dirender sama sekali. Kode kredensial tetap ikut ter-bundle — flag hanya
+ * dirender sama sekali. Kode kredensial tetap ikut ter-bundle - flag hanya
  * menggerbangi perenderan, jadi **jangan** mengandalkan tree-shaking.
  *
  * Ganti password akun nyata sebelum go-live: `create-admin.mjs --reset`.

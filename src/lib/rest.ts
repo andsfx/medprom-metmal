@@ -1,5 +1,5 @@
 /**
- * REST client — akses FE ke backend Express/Postgres (pola schedule-event-v2
+ * REST client - akses FE ke backend Express/Postgres (pola schedule-event-v2
  * src/lib/rest.ts, disalin utuh).
  */
 
@@ -8,7 +8,7 @@ const ACCESS_TOKEN_COOKIE = 'sb-access-token';
 const API_V1_BASE = ((import.meta.env.VITE_API_URL as string | undefined) || '')
   .replace(/\/+$/, '') + '/api/v1';
 
-/** URL absolut ke REST — untuk kebutuhan non-JSON (download blob/CSV). */
+/** URL absolut ke REST - untuk kebutuhan non-JSON (download blob/CSV). */
 export function apiUrl(path: string): string {
   return `${API_V1_BASE}${path.startsWith('/') ? path : `/${path}`}`;
 }
@@ -86,7 +86,7 @@ async function request<T>(
       const { error: _e, message: _m, code: _c, success: _s, ...rest } = parsed;
       if (Object.keys(rest).length > 0) payload = rest;
     } catch {
-      // body bukan JSON — pakai fallback
+      // body bukan JSON - pakai fallback
     }
     const fallback =
       options.errorMessageFallback?.(response.status) ?? `Permintaan gagal (HTTP ${response.status})`;
@@ -97,7 +97,7 @@ async function request<T>(
 }
 
 /**
- * GET publik (tanpa auth): unwrap envelope — kembalikan `data`.
+ * GET publik (tanpa auth): unwrap envelope - kembalikan `data`.
  * Saat body `{ success: false }` di HTTP 200 → lempar ApiError.
  */
 export async function apiGet<T>(path: string, options: RestOptions = {}): Promise<T> {
@@ -109,7 +109,7 @@ export async function apiGet<T>(path: string, options: RestOptions = {}): Promis
 }
 
 /**
- * GET respons penuh TANPA unwrap `data` — untuk endpoint non-envelope
+ * GET respons penuh TANPA unwrap `data` - untuk endpoint non-envelope
  * seperti /auth/me yang membalas { success, user } langsung.
  */
 export async function apiGetRaw<T>(path: string, options: RestOptions = {}): Promise<T> {

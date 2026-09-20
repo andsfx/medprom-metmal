@@ -1,5 +1,5 @@
 /**
- * db-migrate.mjs — eksekusi server/schema.sql (multi-statement, idempotent).
+ * db-migrate.mjs: eksekusi server/schema.sql (multi-statement, idempotent).
  *
  *   node scripts/db-migrate.mjs
  *

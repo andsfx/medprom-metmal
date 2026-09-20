@@ -1,5 +1,5 @@
 /**
- * Halaman status batch pengajuan cetak — publik, tanpa login.
+ * Halaman status batch pengajuan cetak - publik, tanpa login.
  *
  * Token batch adalah kredensial tautan: halaman ini hanya menampilkan batch
  * yang tokennya cocok. Isi tiap item dirender komponen bersama

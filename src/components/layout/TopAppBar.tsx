@@ -1,11 +1,11 @@
 /**
- * Top app bar — judul kontekstual + aksi balik.
+ * Top app bar - judul kontekstual + aksi balik.
  *
  * Terangkat (`data-elevated`) begitu konten menggulir di belakangnya; ini
  * penanda kedalaman yang dipakai aplikasi asli, menggantikan garis statis.
  *
  * Elevasi digerakkan IntersectionObserver atas sentinel setinggi 0 di titik
- * awal area gulir — bukan listener `scroll`/`scrollTop` (aturan performa
+ * awal area gulir - bukan listener `scroll`/`scrollTop` (aturan performa
  * motion: jangan menggerakkan animasi dari peristiwa gulir atau posisi gulir).
  */
 import type { ReactNode } from 'react';
@@ -41,7 +41,7 @@ export default function TopAppBar({ title, back, backTo, onBack, actions, nav, s
   useEffect(() => {
     // Lingkungan tanpa IntersectionObserver (jsdom di test) tidak melempar:
     // elevasi cukup dibiarkan `false`. Sengaja TIDAK kembali ke listener
-    // `scroll` — aturan performa motion melarang menggerakkan animasi dari
+    // `scroll` - aturan performa motion melarang menggerakkan animasi dari
     // peristiwa gulir, dan di test tidak ada gulir nyata yang perlu dilacak.
     // Peramban yang didukung aplikasi ini semuanya punya API tersebut.
     if (typeof IntersectionObserver === 'undefined') return;
@@ -56,7 +56,7 @@ export default function TopAppBar({ title, back, backTo, onBack, actions, nav, s
     sentinel.style.cssText = 'height:0;margin:0;display:flow-root';
 
     // Area gulir (`<main id="app-scroll">`) adalah SAUDARA app bar, bukan
-    // leluhurnya — karena itu sentinel disisipkan ke dalam elemen target,
+    // leluhurnya - karena itu sentinel disisipkan ke dalam elemen target,
     // bukan dirender sebagai keturunan bar.
     const container: HTMLElement = target ?? document.body;
     container.prepend(sentinel);

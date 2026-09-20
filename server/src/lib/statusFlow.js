@@ -1,21 +1,21 @@
 /**
- * Alur status pengajuan materi — sumber kebenaran transisi.
+ * Alur status pengajuan materi - sumber kebenaran transisi.
  *
  * Delapan status PRD:
- *   draft            — belum dikirim (disimpan sementara di klien)
- *   menunggu_review  — terkirim, menunggu pemeriksaan admin
- *   perlu_revisi     — admin meminta PIC memperbaiki/mengunggah ulang materi
- *   disetujui        — materi lolos review
- *   ditolak          — materi tidak dapat digunakan
- *   siap_dipasang    — disetujui dan menunggu proses pemasangan
- *   sudah_dipasang   — materi telah dipasang tim operasional
- *   selesai          — periode pemasangan berakhir
+ *   draft            - belum dikirim (disimpan sementara di klien)
+ *   menunggu_review  - terkirim, menunggu pemeriksaan admin
+ *   perlu_revisi     - admin meminta PIC memperbaiki/mengunggah ulang materi
+ *   disetujui        - materi lolos review
+ *   ditolak          - materi tidak dapat digunakan
+ *   siap_dipasang    - disetujui dan menunggu proses pemasangan
+ *   sudah_dipasang   - materi telah dipasang tim operasional
+ *   selesai          - periode pemasangan berakhir
  *
  * Catatan FR-040/AC 11.4: pemasangan hanya untuk materi **disetujui**, sehingga
  * `disetujui` boleh langsung ke `sudah_dipasang`. `siap_dipasang` adalah langkah
  * opsional yang tetap disediakan agar tabel transisi PRD terpenuhi.
  *
- * Duplikat cermin: src/utils/statusFlow.ts — jaga keduanya sinkron
+ * Duplikat cermin: src/utils/statusFlow.ts - jaga keduanya sinkron
  * (dikunci __tests__/api/status-flow.test.js).
  */
 

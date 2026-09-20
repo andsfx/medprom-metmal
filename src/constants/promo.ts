@@ -1,4 +1,4 @@
-/** Label status & kategori pengajuan — satu sumber untuk publik + admin. */
+/** Label status & kategori pengajuan - satu sumber untuk publik + admin. */
 
 /**
  * Label 8 status PRD §8. Urutannya mengikuti alur kerja (bukan alfabetis) agar
@@ -35,7 +35,7 @@ export const CATEGORY_LABELS: Record<string, string> = {
 export const CATEGORY_ORDER: string[] = ['outdoor', 'indoor', 'social'];
 
 /**
- * Kanal katalog — dipisahkan deck lewat blok "Contact Person", BUKAN kategori.
+ * Kanal katalog - dipisahkan deck lewat blok "Contact Person", BUKAN kategori.
  * Kategori tetap outdoor/indoor/social (CHECK keras di DB).
  */
 export const CHANNEL_LABELS: Record<string, string> = {
@@ -49,10 +49,10 @@ export const APPLICANT_TYPE_LABELS: Record<string, string> = {
   non_tenant: 'Non-tenant',
 };
 
-/** Batas jumlah media dalam satu pengajuan cetak — cermin server MAX_BATCH_ITEMS. */
+/** Batas jumlah media dalam satu pengajuan cetak - cermin server MAX_BATCH_ITEMS. */
 export const MAX_BATCH_ITEMS = 10;
 
-/** Jenis materi (field form PRD §9.3) — nilai disimpan apa adanya. */
+/** Jenis materi (field form PRD §9.3) - nilai disimpan apa adanya. */
 export const MATERIAL_TYPES: string[] = [
   'Promosi',
   'Event',
@@ -66,7 +66,7 @@ export const MATERIAL_TYPES: string[] = [
  * PRD menetapkan unggah berkas sebagai salah satu kanal materi (FR-008..FR-015),
  * berdampingan dengan kanal tautan (kanonis). Karena itu kanal unggah
  * **menyala secara bawaan**; `VITE_PROMO_UPLOAD_MODE='0'` adalah saklar
- * opt-out untuk instance yang belum punya kredensial Google Drive — pada
+ * opt-out untuk instance yang belum punya kredensial Google Drive - pada
  * instance seperti itu server menolak bersih dengan 503 (fail-closed,
  * lihat `driveReady` di server/src/drive.js), jadi lebih baik tombolnya tidak
  * ditampilkan sama sekali.
@@ -77,7 +77,7 @@ export function isUploadModeEnabled(): boolean {
   return (import.meta.env.VITE_PROMO_UPLOAD_MODE as string | undefined) !== '0';
 }
 
-/** Kap ukuran file FE — sinkron server MAX_UPLOAD_BYTES (50MB). */
+/** Kap ukuran file FE - sinkron server MAX_UPLOAD_BYTES (50MB). */
 export const MAX_FILE_BYTES = 50 * 1024 * 1024;
 
 /** Mime → label tampilan. */

@@ -1,82 +1,82 @@
 /*
- * Design tokens — medprom-metmal (arah "App Produk").
+ * Design tokens: medprom-metmal (arah "App Produk").
  * Geist memimpin antarmuka; Fraunces jadi aksen display (judul besar + angka).
  * Tosca hemat sebagai aksen aksi, bukan permukaan.
  */
 
 :root {
-  /* ─── Typography ─── */
+  /* Typography */
   --font-display: "Fraunces", Georgia, serif;
   --font-body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
 
-  /* ─── Skala teks per PERAN (bukan per angka) ───
+  /* Skala teks per PERAN (bukan per angka)
    * Terukur di peramban sebelum perubahan: h1 app bar 16px sementara isi 20px
    * (hierarki terbalik), dan h2 seasal 30px vs 24px. Satu peran = satu ukuran,
    * sehingga judul tidak bisa lagi lebih kecil daripada isinya.
    * Diukur pada 390px; `sm:` menaikkan peran layar/judul di layar lebar. */
-  --text-meta: 0.75rem; /* 12px — label, cap; batas bawah (ui-ux-pro-max: jangan < 12px) */
-  --text-dense: 0.875rem; /* 14px — peran PADAT: baris data & lencana (impeccable mengizinkan
+  --text-meta: 0.75rem; /* 12px: label, cap; batas bawah (ui-ux-pro-max: jangan < 12px) */
+  --text-dense: 0.875rem; /* 14px: peran PADAT: baris data & lencana (impeccable mengizinkan
                              * pengecualian peran padat dari lantai 1rem) */
-  --text-body: 1rem; /* 16px — dasar teks isi (impeccable: lantai 1rem) */
-  --text-title: 1.125rem; /* 18px — judul kartu/butir */
-  --text-section: 1.25rem; /* 20px — judul bagian (h2) */
-  --text-screen: 1.5rem; /* 24px — nama layar & judul halaman (h1) */
+  --text-body: 1rem; /* 16px: dasar teks isi (impeccable: lantai 1rem) */
+  --text-title: 1.125rem; /* 18px: judul kartu/butir */
+  --text-section: 1.25rem; /* 20px: judul bagian (h2) */
+  --text-screen: 1.5rem; /* 24px: nama layar & judul halaman (h1) */
   /* Skala modular 12-14-16-18-20-24; langkah >=2px, tidak ada seri. */
 
   --leading-tight: 1.2;
   --leading-body: 1.6;
 
-  /* Lebar baca nyaman — ~65 karakter. Terukur sebelum perubahan: paragraf
+  /* Lebar baca nyaman: ~65 karakter. Terukur sebelum perubahan: paragraf
    * riwayat 116ch dan status 100ch di desktop, jauh di atas ambang nyaman. */
   --measure: 65ch;
 
-  /* ─── Surfaces (white / stone, bukan cream) ─── */
+  /* Surfaces (white / stone, bukan cream) */
   --surface-page: #ffffff;
   --surface-offset: #fafaf9;
   --surface-card: #ffffff;
   --surface-hover: #f5f5f4;
 
-  /* ─── Ink ─── */
+  /* Ink */
   --ink-primary: #11151a;
   --ink-secondary: #334155; /* slate-700 */
   --ink-muted: #64748b; /* slate-500 */
 
-  /* ─── Rules ─── */
+  /* Rules */
   --rule-color: #e7e5e4; /* stone-200 */
   --rule: 1px solid var(--rule-color);
 
-  /* ─── Brand tosca (Metmal — hemat, aksen saja) ─── */
+  /* Brand tosca (Metmal: hemat, aksen saja) */
   --brand-tosca: #00918e;
-  --brand-tosca-600: #007a78; /* solid CTA bg — AA 5.18:1 with white */
+  --brand-tosca-600: #007a78; /* solid CTA bg: AA 5.18:1 with white */
   --brand-tosca-soft: #33a8a5;
 
-  /* ─── Focus ─── */
+  /* Focus */
   --focus-ring-color: var(--brand-tosca);
 
-  /* ─── Radius (app terasa lunak, bukan cetakan) ─── */
+  /* Radius (app terasa lunak, bukan cetakan) */
   --radius-card: 0.875rem;
   --radius-control: 0.625rem;
   --radius-chip: 9999px;
   --radius-sheet: 1.25rem;
 
-  /* ─── Elevasi — HANYA untuk elemen mengapung (bar sticky, sheet, FAB).
-   * Kartu statis tetap dipisah hairline, bukan shadow. ─── */
+  /* Elevasi: HANYA untuk elemen mengapung (bar sticky, sheet, FAB).
+   * Kartu statis tetap dipisah hairline, bukan shadow. */
   --elevation-bar: 0 1px 2px rgb(17 21 26 / 0.04), 0 4px 12px rgb(17 21 26 / 0.06);
   --elevation-sheet: 0 -2px 8px rgb(17 21 26 / 0.06), 0 -12px 32px rgb(17 21 26 / 0.12);
   --elevation-fab: 0 4px 12px rgb(0 122 120 / 0.28), 0 1px 3px rgb(17 21 26 / 0.12);
 
-  /* ─── Metrik app shell ─── */
+  /* Metrik app shell */
   --app-bar-h: 3.5rem;
   --app-tabbar-h: 3.75rem;
   --tap-min: 44px; /* target sentuh nyaman (di atas ambang AA 24px, WCAG 2.2 2.5.8) */
 
-  /* ─── Safe area (PWA standalone di perangkat berlekuk) ─── */
+  /* Safe area (PWA standalone di perangkat berlekuk) */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @theme {
-  /* Brand primary — tosca Metmal (skala lengkap untuk Tailwind) */
+  /* Brand primary: tosca Metmal (skala lengkap untuk Tailwind) */
   --color-brand-primary: #00918e;
   --color-brand-primary-50: #e6f7f6;
   --color-brand-primary-100: #ccefef;
@@ -90,7 +90,7 @@
   --color-brand-primary-900: #003230;
   --color-brand-primary-950: #001a18;
 
-  /* Aksen tosca terang — dipadankan dengan --brand-tosca-soft. */
+  /* Aksen tosca terang: dipadankan dengan --brand-tosca-soft. */
   --color-brand-soft: #33a8a5;
 
   /* Editorial surfaces */

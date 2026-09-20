@@ -1,5 +1,5 @@
 /**
- * verify-e2e.mjs — verifikasi produksi medprom (Playwright dari node_modules
+ * verify-e2e.mjs: verifikasi produksi medprom (Playwright dari node_modules
  * project ini; install: npm i -D playwright && npx playwright install chromium).
  *
  *   node scripts/verify-e2e.mjs
@@ -15,7 +15,7 @@ const PASSWORD = process.env.VERIFY_PASSWORD || '';
 const results = [];
 const check = (name, ok, detail = '') => {
   results.push({ name, ok, detail });
-  console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`);
+  console.log(`${ok ? '✓' : '✗'} ${name}${detail ? `: ${detail}` : ''}`);
 };
 
 const browser = await chromium.launch();

@@ -1,12 +1,12 @@
 /**
- * Perhitungan harga & PPN pengajuan media promosi cetak — CERMIN dari
+ * Perhitungan harga & PPN pengajuan media promosi cetak - CERMIN dari
  * src/utils/pricing.ts (jaga keduanya sinkron; dikunci
  * __tests__/api/cetak-pricing.test.js).
  *
  * Konteks tarif: permintaan pemilik adalah **PPN 11%**. Regulasi Indonesia
  * sejak 2025 memakai tarif PPN 12% dengan DPP Nilai Lain 11/12 untuk
  * barang/jasa non-mewah, sehingga beban efektifnya tepat 11%. Karena itu
- * konstanta di sini adalah tarif EFEKTIF — jangan "perbaiki" menjadi 12% tanpa
+ * konstanta di sini adalah tarif EFEKTIF - jangan "perbaiki" menjadi 12% tanpa
  * mengubah pemisahan DPP di kedua sisi.
  *
  * Aturan yang ditegakkan (keputusan pemilik, docs/PLAN_2026-09-20_16-00.md):
@@ -23,10 +23,10 @@ export const PPN_RATE = 0.11;
 /** Minimal durasi sewa media promosi cetak (deck: "minimal 1 minggu (7 hari)"). */
 export const MIN_DURATION_DAYS = 7;
 
-/** Ambang pengingat periode berakhir (hari) — query turunan dashboard. */
+/** Ambang pengingat periode berakhir (hari) - query turunan dashboard. */
 export const REMINDER_DAYS = 14;
 
-/** Bulatkan ke 2 desimal seperti NUMERIC(14,2) — hindari galat floating point. */
+/** Bulatkan ke 2 desimal seperti NUMERIC(14,2) - hindari galat floating point. */
 export function round2(value) {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;

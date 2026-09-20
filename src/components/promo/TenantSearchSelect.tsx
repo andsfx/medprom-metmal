@@ -1,11 +1,11 @@
 /**
- * Combobox pencarian tenant MID — pola TenantSearchSelect
+ * Combobox pencarian tenant MID - pola TenantSearchSelect
  * (schedule-event-v2/src/components/survey/TenantSurveyShared.tsx):
  * debounce 250ms, q>=2, aria combobox/listbox, keyboard nav, clear.
  *
  * Fallback: bila MID_API_KEY server belum dikonfigurasi/tidak terjangkau,
  * komponen beralih ke mode isian manual (nama tenant diketik) supaya pengajuan
- * tenant tetap bisa masuk — TR melihat nama tenant apa adanya.
+ * tenant tetap bisa masuk - TR melihat nama tenant apa adanya.
  */
 import { useEffect, useRef, useState } from 'react';
 import { Info, Loader2, Store, X } from 'lucide-react';

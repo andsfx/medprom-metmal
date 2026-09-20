@@ -1,5 +1,5 @@
 /**
- * Sheet — bottom sheet di mobile, dialog terpusat di desktop (lihat .app-sheet).
+ * Sheet - bottom sheet di mobile, dialog terpusat di desktop (lihat .app-sheet).
  *
  * Menangani: kunci gulir latar, tutup dengan Escape, tutup dengan klik scrim,
  * jebakan fokus (Tab melingkar), dan pemulihan fokus ke pemicu saat ditutup.
@@ -27,7 +27,7 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
   // Semua pemanggil mengirim arrow function inline (`onClose={() => setX(null)}`),
   // jadi identitasnya berubah setiap render. Bila ia jadi dependency, efek
   // "buka" akan berjalan ulang tiap render: cleanup-nya mengembalikan fokus ke
-  // pemicu lalu `panelRef.focus()` merebutnya kembali — akibatnya pengguna
+  // pemicu lalu `panelRef.focus()` merebutnya kembali - akibatnya pengguna
   // hanya bisa mengetik SATU karakter per fokus di seluruh dialog staf.
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;

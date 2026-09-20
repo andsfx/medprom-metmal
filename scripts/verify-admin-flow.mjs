@@ -1,11 +1,11 @@
 /**
- * verify-admin-flow.mjs — verifikasi alur staf di produksi:
+ * verify-admin-flow.mjs: verifikasi alur staf di produksi:
  * login → dashboard → buka detail pengajuan → set status + catatan → cek
  * perubahan tercermin di riwayat tenant (GET /promo/submissions/mine).
  *
  *   VERIFY_PASSWORD='...' node scripts/verify-admin-flow.mjs
  *
- * Catatan: status mengikuti alur PRD §8 — dari Menunggu Review hanya
+ * Catatan: status mengikuti alur PRD §8: dari Menunggu Review hanya
  * Perlu Revisi / Disetujui / Ditolak yang sah (lompatan ke Sudah Dipasang
  * ditolak server). Jadi alur uji di sini adalah **setujui** materi.
  */
@@ -20,7 +20,7 @@ const FINGERPRINT = process.env.VERIFY_FP || 'verify-fp-e2e-1';
 const results = [];
 const check = (name, ok, detail = '') => {
   results.push({ name, ok });
-  console.log(`${ok ? '✓' : '✗'} ${name}${detail ? ` — ${detail}` : ''}`);
+  console.log(`${ok ? '✓' : '✗'} ${name}${detail ? `: ${detail}` : ''}`);
 };
 
 // Riwayat tenant sebelum review (via API, deterministik).

@@ -1,10 +1,10 @@
 /**
- * Detail pengajuan — dipakai bersama halaman status ber-token dan halaman
+ * Detail pengajuan - dipakai bersama halaman status ber-token dan halaman
  * pelacakan nomor, supaya kedua jalur publik menampilkan bentuk yang identik.
  *
  * Isinya: ringkasan pengajuan, catatan tim, materi terkini, informasi
  * pemasangan, form revisi (bila Perlu Revisi), riwayat status, dan riwayat
- * versi materi. Tidak mengambil data sendiri — pemanggil yang memuat.
+ * versi materi. Tidak mengambil data sendiri - pemanggil yang memuat.
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
@@ -43,7 +43,7 @@ function formatDateTime(value: string | null): string {
     : d.toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-/** Label pelaku riwayat — admin memakai display_name, tenant/system generik. */
+/** Label pelaku riwayat - admin memakai display_name, tenant/system generik. */
 function actorLabel(actorType: string, actorName: string): string {
   if (actorType === 'admin') return actorName || 'Tim Tenant Relations';
   if (actorType === 'tenant') return 'Anda (tenant)';
@@ -57,7 +57,7 @@ interface SubmissionDetailProps {
 }
 
 export default function SubmissionDetail({ data, onReload }: SubmissionDetailProps) {
-  // Halaman pelacakan sudah menampilkan formulir nomor — jangan tautkan ke
+  // Halaman pelacakan sudah menampilkan formulir nomor - jangan tautkan ke
   // dirinya sendiri dari catatan di bawah.
   const onTrackPage = useLocation().pathname.startsWith('/lacak');
   // Form revisi.
@@ -226,7 +226,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
         </div>
       )}
 
-      {/* Form revisi — hanya saat status Perlu Revisi (FR-021) */}
+      {/* Form revisi - hanya saat status Perlu Revisi (FR-021) */}
       {data.submission.status === 'perlu_revisi' && (
         <div className="ui-card p-5">
           <h2 className="ui-title-card text-slate-900 dark:text-white">Kirim Materi Revisi</h2>

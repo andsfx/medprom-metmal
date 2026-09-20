@@ -1,7 +1,7 @@
 /**
- * routes/media.js — penyajian gambar katalog yang diunggah staf.
+ * routes/media.js - penyajian gambar katalog yang diunggah staf.
  *
- *   GET /api/v1/media/:nama   — sajikan gambar (publik, cache selamanya)
+ *   GET /api/v1/media/:nama   - sajikan gambar (publik, cache selamanya)
  *
  * Hanya melayani berkas dari MEDIA_DIR (volume Docker). Foto bawaan deck
  * disajikan Vercel dari /media/*, bukan dari sini.

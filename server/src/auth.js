@@ -1,9 +1,9 @@
 /**
- * Auth — JWT (jose HS256) + cookie sb-access-token / sb-refresh-token.
+ * Auth - JWT (jose HS256) + cookie sb-access-token / sb-refresh-token.
  * Pola schedule-event-v2/server/src/auth.js.
  *
  * Cookie produksi cross-site (Vercel FE → API domain lain): COOKIE_SAMESITE=none
- * + Secure (keduanya wajib — browser menolak SameSite=None tanpa Secure).
+ * + Secure (keduanya wajib - browser menolak SameSite=None tanpa Secure).
  */
 import { SignJWT, jwtVerify } from 'jose';
 import { db } from './db.js';
@@ -25,7 +25,7 @@ function secretKey() {
 
 /** Cookie flags: HttpOnly selalu; Secure kecuali COOKIE_SECURE=false di non-prod.
  *  SameSite: 'lax' default. 'none' wajib untuk frontend cross-site (Vercel →
- *  api domain lain) — hanya valid bersama Secure. */
+ *  api domain lain) - hanya valid bersama Secure. */
 function cookieBase() {
   const isSecure = process.env.COOKIE_SECURE === undefined
     ? process.env.NODE_ENV === 'production'
@@ -150,7 +150,7 @@ export async function authenticate(req, res) {
 }
 
 /**
- * Middleware requireRole — default STAFF_ROLES (superadmin/admin).
+ * Middleware requireRole - default STAFF_ROLES (superadmin/admin).
  * 401 tanpa sesi; 403 bila role tidak diizinkan.
  */
 export function requireRole(allowedRoles = STAFF_ROLES) {
@@ -173,7 +173,7 @@ export function requireRole(allowedRoles = STAFF_ROLES) {
 }
 
 /**
- * Catat aktivitas staf — fire-and-forget (tidak menggagalkan request).
+ * Catat aktivitas staf - fire-and-forget (tidak menggagalkan request).
  */
 export async function logActivity(user, action, resourceType, resourceId, details, req) {
   try {

@@ -1,5 +1,5 @@
 /**
- * Google Drive — penyimpanan materi promosi tenant (pengganti R2).
+ * Google Drive - penyimpanan materi promosi tenant (pengganti R2).
  *
  * Arsitektur: file dikirim browser → API (streaming, 50MB) → verifikasi
  * magic bytes SEBELUM ditulis ke Drive → upload resumable → permission
@@ -14,8 +14,8 @@
  *   DRIVE_ROOT_FOLDER_ID  (opsional) folder induk; default My Drive root
  *
  * Endpoint (mount di /api/v1/drive):
- *   POST /drive/upload — tenant (tanpa login, rate-limited): multipart file
- *   POST /drive/delete — staf: hapus by fileId
+ *   POST /drive/upload - tenant (tanpa login, rate-limited): multipart file
+ *   POST /drive/delete - staf: hapus by fileId
  */
 import { Router } from 'express';
 import { Readable } from 'node:stream';
@@ -23,7 +23,7 @@ import { Readable } from 'node:stream';
 import { requireRole, logActivity } from './auth.js';
 import { enforceRateLimit } from './lib/rateLimit.js';
 
-// ─── Konfigurasi ────────────────────────────────────────────────
+// Konfigurasi.
 const CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const REFRESH_TOKEN = process.env.GOOGLE_REFRESH_TOKEN || '';
@@ -31,7 +31,7 @@ const ROOT_FOLDER = process.env.DRIVE_ROOT_FOLDER_ID || '';
 
 export const driveReady = Boolean(CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN);
 
-export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB — sinkron FE wizard.
+export const MAX_UPLOAD_BYTES = 50 * 1024 * 1024; // 50MB - sinkron FE wizard.
 
 const ALLOWED_MIME = new Set([
   'image/jpeg',
@@ -51,7 +51,7 @@ const MIME_MAGIC = {
   'video/mp4': [], // ftyp box: dicek khusus di bawah
 };
 
-// ─── OAuth: access token (cache + refresh) ──────────────────────
+// OAuth: access token (cache + refresh).
 let cachedAccess = { token: '', expiresAt: 0 };
 
 async function getAccessToken() {
@@ -120,7 +120,7 @@ export function checkMagicBytes(buf, mimeType) {
   return { ok: true };
 }
 
-// ─── Operasi Drive (REST v3, fetch — tanpa SDK) ─────────────────
+// Operasi Drive (REST v3, fetch - tanpa SDK).
 async function driveFetch(path, init = {}) {
   const token = await getAccessToken();
   const res = await fetch(`https://www.googleapis.com/${path.replace(/^\/+/, '')}`, {
@@ -194,7 +194,7 @@ export async function uploadToDrive({ stream, length, name, mimeType }) {
 }
 
 /**
- * Ambil metadata file (size, name, mimeType) — dipakai submit untuk
+ * Ambil metadata file (size, name, mimeType) - dipakai submit untuk
  * memverifikasi keberadaan + ukuran, menggantikan klaim klien.
  */
 export async function getDriveFile(fileId) {
@@ -232,7 +232,7 @@ export async function deleteDriveFile(fileId) {
   }
 }
 
-/** Hapus file Drive yang MELEMPAR saat gagal — alur butuh kepastian. */
+/** Hapus file Drive yang MELEMPAR saat gagal - alur butuh kepastian. */
 export async function deleteDriveFileOrThrow(fileId) {
   if (!fileId) throw new Error('File ID tidak valid');
   await driveFetch(`drive/v3/files/${encodeURIComponent(fileId)}?supportsAllDrives=true`, {
@@ -240,7 +240,7 @@ export async function deleteDriveFileOrThrow(fileId) {
   });
 }
 
-/** Set permission anyone-with-link reader — paritas URL publik R2 lama. */
+/** Set permission anyone-with-link reader - paritas URL publik R2 lama. */
 async function setPublicReader(fileId) {
   await driveFetch(`drive/v3/files/${encodeURIComponent(fileId)}/permissions?supportsAllDrives=true`, {
     method: 'POST',
@@ -249,7 +249,7 @@ async function setPublicReader(fileId) {
   });
 }
 
-// ─── Router ─────────────────────────────────────────────────────
+// Router.
 const router = Router();
 
 /** 503 bersih bila Drive belum dikonfigurasi. */
@@ -261,9 +261,9 @@ router.use((_req, res, next) => {
 });
 
 /**
- * POST /drive/upload — tenant (tanpa login).
+ * POST /drive/upload - tenant (tanpa login).
  * Multipart: field `file` (satu). Verifikasi magic bytes dari kepala
- * stream SEBELUM upload — file tidak valid tidak pernah ditulis ke Drive.
+ * stream SEBELUM upload - file tidak valid tidak pernah ditulis ke Drive.
  */
 router.post('/upload', (req, res, next) => {
   // 5 upload / 15 mnt / IP (satu file per pengajuan).
@@ -335,7 +335,7 @@ router.post('/upload', async (req, res, next) => {
   }
 });
 
-// ─── POST /drive/delete — staf ──────────────────────────────────
+// POST /drive/delete - staf.
 router.post('/delete', requireRole(['superadmin', 'admin']), async (req, res, next) => {
   try {
     const { fileId } = req.body || {};
@@ -353,11 +353,11 @@ router.post('/delete', requireRole(['superadmin', 'admin']), async (req, res, ne
   }
 });
 
-// ─── Parser multipart streaming (tanpa dependency) ─────────────
+// Parser multipart streaming (tanpa dependency).
 /**
  * Baca satu file dari multipart/form-data request secara streaming:
  * - head 32 byte pertama ditampung untuk magic bytes.
- * - Semua chunk ditampung di memori (maks 50MB — sudah divalidasi
+ * - Semua chunk ditampung di memori (maks 50MB - sudah divalidasi
  *   per-chunk; kelebihan → error segera, koneksi dibatalkan).
  * - Field non-file (mis. name) diabaikan; hanya field pertama bertipe file.
  *   Wizard selalu mengirim tepat satu field `file`.
@@ -365,7 +365,7 @@ router.post('/delete', requireRole(['superadmin', 'admin']), async (req, res, ne
  * Catatan: menampung di memori dipilih agar verifikasi magic bytes bisa
  * terjadi SEBELUM satu byte ditulis ke Drive (tidak ada orphan file
  * sampah di storage milik akun Google). 50MB per upload × 5 slot rate
- * limit = maks ~250MB memori sesaat — aman untuk VPS ini.
+ * limit = maks ~250MB memori sesaat - aman untuk VPS ini.
  */
 const HEAD_BYTES = 32;
 
@@ -462,7 +462,7 @@ export function readMultipartFile(req) {
 
     req.on('end', () => {
       if (overflow || tailSeen) return;
-      // Stream berakhir tanpa penutup terlihat — anggap sisa buffer file penuh.
+      // Stream berakhir tanpa penutup terlihat - anggap sisa buffer file penuh.
       if (started && buffer.length > 0) {
         chunks.push(buffer);
         length += buffer.length;

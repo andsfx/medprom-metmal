@@ -1,5 +1,5 @@
 /**
- * Riwayat pengajuan per perangkat — publik (fingerprint = identitas soft).
+ * Riwayat pengajuan per perangkat - publik (fingerprint = identitas soft).
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';

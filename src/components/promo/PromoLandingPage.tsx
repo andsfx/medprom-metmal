@@ -1,5 +1,5 @@
 /**
- * Landing publik — katalog media promosi (3 kategori) + kontak TR.
+ * Landing publik - katalog media promosi (3 kategori) + kontak TR.
  * Data dari GET /promo/media-types; kartu expandable rules (pola FAQ).
  */
 import { useEffect, useState } from 'react';
@@ -25,7 +25,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
   const priceLines = (media.price_note || '').split('\n').map((s) => s.trim()).filter(Boolean);
   return (
     <article className="ui-card flex flex-col p-5">
-      {/* Foto contoh dari deck 2026 — mempercepat tenant mengenali medianya.
+      {/* Foto contoh dari deck 2026 - mempercepat tenant mengenali medianya.
        * Rasio dikunci 4:3 agar tinggi kartu tidak melompat saat gambar tiba. */}
       {media.image_path && (
         <img
@@ -44,7 +44,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
 
       {/* `<dl>` hanya boleh berisi `<dt>`/`<dd>`; keduanya diletakkan sebagai
        * anak langsung supaya `<dd>` tidak kehilangan induk `<dl>` (axe:
-       * definition-list + dlitem). Label kini terlihat — ikon metadata
+       * definition-list + dlitem). Label kini terlihat - ikon metadata
        * dihapus karena tidak menambah makna pada baris data. */}
       <dl className="mt-3 grid grid-cols-[4.5rem_1fr] items-baseline gap-x-3 gap-y-2 text-sm">
         {media.size_spec && (
@@ -64,7 +64,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
             <dt className="ui-meta ui-text-muted">Harga</dt>
             {/* Tangga tarif: keputusan tata letak dibuat PER BARIS. Baris
              * berlabel (kata sebelum `Rp.`, mis. "Mingguan") jadi dua kolom
-             * — kata di kiri, nominal rata kanan — sehingga tarif berdurasi
+             * - kata di kiri, nominal rata kanan - sehingga tarif berdurasi
              * berbeda sejajar dan bisa dibandingkan sekilas. Baris tanpa
              * kata di depan (`Rp. 600.000,-/hari`) dibiarkan apa adanya
              * sebagai satu baris rata kiri: sufiksnya (`/hari`, `/30 hari`)
@@ -97,7 +97,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
         )}
       </dl>
 
-      {/* Lead time diturunkan dari teks `rules` (bukan dari kategori) —
+      {/* Lead time diturunkan dari teks `rules` (bukan dari kategori) -
        * ketentuan deck tidak seragam, jadi media tanpa aturan tidak
        * menampilkan baris ini sama sekali. */}
       {lead && (
@@ -167,7 +167,7 @@ export default function PromoLandingPage() {
         </Link>
       }
     >
-      {/* Hero — padat, langsung ke aksi (bukan halaman pembuka panjang) */}
+      {/* Hero - padat, langsung ke aksi (bukan halaman pembuka panjang) */}
       <section className="mx-auto max-w-6xl px-4 pb-6 pt-6 sm:pb-10 sm:pt-10">
         <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-primary-600">
           Tenant Relations · 2026

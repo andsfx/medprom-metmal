@@ -1,13 +1,13 @@
 /**
- * Routes promo — publik, mount di /api/v1/promo.
+ * Routes promo - publik, mount di /api/v1/promo.
  *
- *   GET  /promo/media-types                    — katalog aktif (tanpa rate limit)
- *   GET  /promo/tenants?q=                     — cari tenant MID aktif (q >= 2 char)
- *   POST /promo/submit                        — kirim pengajuan (10 / 60 mnt / IP)
- *   GET  /promo/submissions/mine?fingerprint= — riwayat per perangkat (60 / 15 mnt / IP)
- *   GET  /promo/submissions/track?number=     — lacak via nomor pengajuan (60 / 15 mnt / IP + captcha)
- *   GET  /promo/submissions/status/:token     — status pengajuan via token (FR-019)
- *   POST /promo/submissions/:id/revision      — unggah ulang materi (Perlu Revisi)
+ *   GET  /promo/media-types                    - katalog aktif (tanpa rate limit)
+ *   GET  /promo/tenants?q=                     - cari tenant MID aktif (q >= 2 char)
+ *   POST /promo/submit                        - kirim pengajuan (10 / 60 mnt / IP)
+ *   GET  /promo/submissions/mine?fingerprint= - riwayat per perangkat (60 / 15 mnt / IP)
+ *   GET  /promo/submissions/track?number=     - lacak via nomor pengajuan (60 / 15 mnt / IP + captcha)
+ *   GET  /promo/submissions/status/:token     - status pengajuan via token (FR-019)
+ *   POST /promo/submissions/:id/revision      - unggah ulang materi (Perlu Revisi)
  *
  * Envelope: GET → { success: true, data: ... }; POST → flat { success, id, ... }.
  * Server mengembalikan row snake_case; mapping camelCase hanya di FE.
@@ -27,7 +27,7 @@ import { PPN_RATE, hitungHarga, cekDurasiMinimal } from '../lib/pricing.js';
 
 const router = Router();
 
-// ─── Helpers ───────────────────────────────────────────────────
+// Helpers.
 const MID_API_KEY = process.env.MID_API_KEY || '';
 const MID_API_URL = 'https://apiloyalty.metropolitanland.com/getAllTenants';
 
@@ -36,7 +36,7 @@ function midConfigured() {
   return Boolean(MID_API_KEY);
 }
 
-/** Fetch tenant aktif dari API loyalitas MID — tanpa PIC (pola app lama). */
+/** Fetch tenant aktif dari API loyalitas MID - tanpa PIC (pola app lama). */
 async function fetchMidActiveTenants() {
   const resp = await fetch(MID_API_URL, {
     headers: { 'mid-api-key': MID_API_KEY },
@@ -68,10 +68,10 @@ function sanitize(val, maxLen = 1000) {
 
 const PHONE_RE = /^[+0-9][0-9\s-]{7,19}$/;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-/** Tautan materi (Google Drive/Dropbox/WeTransfer/dll) — http(s) saja. */
+/** Tautan materi (Google Drive/Dropbox/WeTransfer/dll) - http(s) saja. */
 const LINK_RE = /^https?:\/\/[^\s]+$/i;
 
-/** Kolom publik pengajuan — sengaja tanpa fingerprint/IP (metadata internal). */
+/** Kolom publik pengajuan - sengaja tanpa fingerprint/IP (metadata internal). */
 const SUBMISSION_PUBLIC_COLUMNS = `
   id, submission_number, media_type_slug, tenant_name, unit_number,
   material_title, material_description, campaign_name, material_type, media_target,
@@ -84,7 +84,7 @@ const SUBMISSION_PUBLIC_COLUMNS = `
   subtotal::float8 AS subtotal, ppn_amount::float8 AS ppn_amount,
   total_amount::float8 AS total_amount`;
 
-/** Nomor pengajuan yang dilacak tenant — normalisasi ke bentuk kanonis. */
+/** Nomor pengajuan yang dilacak tenant - normalisasi ke bentuk kanonis. */
 const SUBMISSION_NUMBER_RE = /^MP-\d{6}-[0-9A-Z]{6}$/;
 
 /** Normalisasi input nomor pengajuan (huruf besar, tanpa spasi) untuk dibandingkan. */
@@ -135,7 +135,7 @@ async function loadSubmissionDetail(submission) {
   };
 }
 
-/** Pesan seragam untuk pengajuan tak ditemukan — jangan bocorkan mana yang ada. */
+/** Pesan seragam untuk pengajuan tak ditemukan - jangan bocorkan mana yang ada. */
 const NOT_FOUND_MESSAGE =
   'Pengajuan tidak ditemukan. Periksa kembali nomor atau tautan status Anda.';
 
@@ -215,7 +215,7 @@ async function insertHistory(client, { submissionId, fromStatus, toStatus, comme
   );
 }
 
-// ─── GET /promo/media-types — katalog aktif ─────────────────────
+// GET /promo/media-types - katalog aktif.
 // `?channel=cetak|digital` bersifat ADITIF: tanpa parameter perilakunya persis
 // seperti sebelumnya (landing tidak berubah); dengan parameter, katalog
 // disaring per kanal. Nilai divalidasi terhadap daftar (bukan interpolasi).
@@ -250,7 +250,7 @@ router.get('/media-types', async (req, res, next) => {
   }
 });
 
-// ─── GET /promo/tenants — pencarian tenant MID ───────────────────
+// GET /promo/tenants - pencarian tenant MID.
 router.get('/tenants', async (req, res, next) => {
   const q = String(req.query?.q || '').trim().toLowerCase();
   if (q.length < 2) {
@@ -280,7 +280,7 @@ router.get('/tenants', async (req, res, next) => {
   }
 });
 
-// ─── POST /promo/submit — publik ────────────────────────────────
+// POST /promo/submit - publik.
 router.post('/submit', async (req, res, next) => {
   // 10 pengajuan / 60 mnt / IP.
   if (!enforceRateLimit(req, res, 'promo-submit', 10, 60 * 60 * 1000)) return;
@@ -344,7 +344,7 @@ router.post('/submit', async (req, res, next) => {
     }
 
     // Lead time: materi harus diterima N hari sebelum pasang (aturan per media
-    // diturunkan dari teks `rules` — kalender atau hari kerja, lihat lib/leadTime.js).
+    // diturunkan dari teks `rules` - kalender atau hari kerja, lihat lib/leadTime.js).
     const leadCheck = checkInstallationDate(
       installationDate, mtRows[0].rules || '', toIsoDate(),
     );
@@ -432,7 +432,7 @@ router.post('/submit', async (req, res, next) => {
   }
 });
 
-// ─── GET /promo/submissions/mine — riwayat per perangkat ─────────
+// GET /promo/submissions/mine - riwayat per perangkat.
 // Token status ikut dikirim karena akses endpoint ini sudah digerbangi
 // fingerprint perangkat: tanpa token, tenant yang kehilangan tautan status
 // tidak punya jalan ke form revisi meski pengajuannya ada di riwayat ini.
@@ -460,7 +460,7 @@ router.get('/submissions/mine', async (req, res, next) => {
   }
 });
 
-// ─── GET /promo/submissions/track?number= — lacak via nomor pengajuan ──
+// GET /promo/submissions/track?number= - lacak via nomor pengajuan.
 // Jalur kedua bagi tenant tanpa tautan: cukup masukkan nomor `MP-YYMMDD-XXXXXX`
 // yang tercetak di layar sukses. Nomor memang bukan rahasia (dibacakan ke PIC),
 // jadi gerbangnya bukan kerahasiaan melainkan captcha Cloudflare Turnstile +
@@ -508,7 +508,7 @@ router.get('/submissions/track', async (req, res, next) => {
   }
 });
 
-// ─── GET /promo/submissions/status/:token — halaman status PIC ───
+// GET /promo/submissions/status/:token - halaman status PIC.
 // Token status adalah kredensial tautan (FR-018..FR-022); rate limit ketat agar
 // token tidak bisa di-brute force.
 router.get('/submissions/status/:token', async (req, res, next) => {
@@ -524,7 +524,7 @@ router.get('/submissions/status/:token', async (req, res, next) => {
       [token],
     );
     const submission = rows[0] || null;
-    // Pesan seragam untuk token salah — jangan bocorkan token mana yang ada.
+    // Pesan seragam untuk token salah - jangan bocorkan token mana yang ada.
     if (!submission) {
       return res.status(404).json({ success: false, error: NOT_FOUND_MESSAGE });
     }
@@ -535,7 +535,7 @@ router.get('/submissions/status/:token', async (req, res, next) => {
   }
 });
 
-// ─── POST /promo/submissions/:id/revision — unggah ulang materi ──
+// POST /promo/submissions/:id/revision - unggah ulang materi.
 // FR-015/FR-021 + AC 11.3: hanya saat status Perlu Revisi; versi baru disimpan
 // sebagai versi terbaru, versi lama tetap ada untuk admin; status kembali ke
 // Menunggu Review.
@@ -622,7 +622,7 @@ router.post('/submissions/:id/revision', async (req, res, next) => {
   }
 });
 
-// ══════════ BATCH CETAK (multi-media dalam satu kirim) ══════════
+// BATCH CETAK (multi-media dalam satu kirim).
 //
 // Satu kirim form cetak = satu baris `promo_submission_batches` + N baris
 // `promo_submissions` (fan-out). Tiap baris tetap SINGLE-MEDIA seperti alur
@@ -634,7 +634,7 @@ router.post('/submissions/:id/revision', async (req, res, next) => {
 /** Batas jumlah media dalam satu batch (keputusan sementara; lihat dokumen). */
 const MAX_BATCH_ITEMS = 10;
 
-/** Format nomor batch — dipakai endpoint pelacakan. */
+/** Format nomor batch - dipakai endpoint pelacakan. */
 const BATCH_NUMBER_RE = /^MPB-\d{6}-[0-9A-Z]{6}$/;
 
 /** Ambil media aktif berkanal cetak untuk slug-slug terpilih (satu query). */
@@ -649,7 +649,7 @@ async function loadCetakMedia(slugs) {
   return new Map(rows.map((r) => [r.slug, r]));
 }
 
-// ─── POST /promo/submit-batch — publik (media cetak) ────────────
+// POST /promo/submit-batch - publik (media cetak).
 router.post('/submit-batch', async (req, res, next) => {
   // Bucket SAMA dengan /submit: satu perangkat tidak bisa memutar dua endpoint
   // untuk menggandakan kuota.
@@ -729,7 +729,7 @@ router.post('/submit-batch', async (req, res, next) => {
       }
     }
 
-    // Anti-spam per perangkat: maks 5 BATCH / 24 jam (bukan 5 baris — fan-out
+    // Anti-spam per perangkat: maks 5 BATCH / 24 jam (bukan 5 baris - fan-out
     // tidak boleh menghabiskan kuota dalam sekali kirim).
     const { rows: fpRows } = await db.query(
       `SELECT COUNT(DISTINCT COALESCE(batch_id::text, id::text))::int AS n
@@ -897,7 +897,7 @@ async function loadBatchDetail(batch, submissions) {
   return { batch, items: detail };
 }
 
-// ─── GET /promo/batches/status/:token — publik ──────────────────
+// GET /promo/batches/status/:token - publik.
 router.get('/batches/status/:token', async (req, res, next) => {
   if (!enforceRateLimit(req, res, 'status-lookup', 60, 15 * 60 * 1000)) return;
 
@@ -925,7 +925,7 @@ router.get('/batches/status/:token', async (req, res, next) => {
   }
 });
 
-// ─── GET /promo/batches/track?number= — publik (captcha) ────────
+// GET /promo/batches/track?number= - publik (captcha).
 router.get('/batches/track', async (req, res, next) => {
   if (!enforceRateLimit(req, res, 'status-lookup', 60, 15 * 60 * 1000)) return;
 

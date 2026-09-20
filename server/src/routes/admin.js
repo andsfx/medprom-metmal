@@ -1,18 +1,18 @@
 /**
- * Routes admin — mount di /api/v1/admin (semua requireRole).
+ * Routes admin - mount di /api/v1/admin (semua requireRole).
  *
- *   GET  /admin/submissions?status=&media_type=&page=   — daftar paginasi (read roles)
- *   POST /admin/submissions/:id/status                  — review status (staff)
- *   POST /admin/submissions/:id/delete                  — hapus + bersihkan Drive (staff)
- *   GET  /admin/media-types                             — semua katalog (read roles)
- *   POST /admin/media-types                              — create (staff)
- *   POST /admin/media-types/:id                          — update (staff)
- *   POST /admin/media-types/:id/delete                   — delete (staff)
- *   GET  /admin/export                                   — CSV UTF-8 BOM (read roles)
- *   GET  /admin/users                                    — user mgmt (superadmin)
- *   POST /admin/users                                    — create (superadmin)
- *   POST /admin/users/:id                                — update (superadmin)
- *   POST /admin/users/:id/delete                         — delete (superadmin)
+ *   GET  /admin/submissions?status=&media_type=&page=   - daftar paginasi (read roles)
+ *   POST /admin/submissions/:id/status                  - review status (staff)
+ *   POST /admin/submissions/:id/delete                  - hapus + bersihkan Drive (staff)
+ *   GET  /admin/media-types                             - semua katalog (read roles)
+ *   POST /admin/media-types                              - create (staff)
+ *   POST /admin/media-types/:id                          - update (staff)
+ *   POST /admin/media-types/:id/delete                   - delete (staff)
+ *   GET  /admin/export                                   - CSV UTF-8 BOM (read roles)
+ *   GET  /admin/users                                    - user mgmt (superadmin)
+ *   POST /admin/users                                    - create (superadmin)
+ *   POST /admin/users/:id                                - update (superadmin)
+ *   POST /admin/users/:id/delete                         - delete (superadmin)
  */
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
@@ -36,7 +36,7 @@ import { enforceRateLimit } from '../lib/rateLimit.js';
 
 const router = Router();
 
-// ─── Helpers ───────────────────────────────────────────────────
+// Helpers.
 function sanitize(val, maxLen = 1000) {
   if (typeof val !== 'string') return '';
   return val.replace(/\0/g, '').trim().slice(0, maxLen);
@@ -48,7 +48,7 @@ function sanitize(val, maxLen = 1000) {
  * Excel/Sheets mengeksekusi sel yang dimulai `=`, `+`, `-`, atau `@` sebagai
  * rumus, dan TAB/CR bisa memecah sel. Nilai kiriman tenant (nama campaign,
  * judul materi, catatan) dan nomor telepon `+62...` masuk ke CSV ini, jadi
- * sel berawalan salah satu karakter itu diberi awalan `'` — di Excel tanda
+ * sel berawalan salah satu karakter itu diberi awalan `'` - di Excel tanda
  * itu disembunyikan (teks tampil utuh), sedangkan pembaca CSV lain melihatnya
  * sebagai penanda teks, bukan rumus.
  */
@@ -67,7 +67,7 @@ function csvEscape(val) {
 const STATUSES = SUBMISSION_STATUSES;
 const SLUG_RE = /^[a-z0-9-]+$/;
 const CATEGORIES = ['outdoor', 'indoor', 'social'];
-/** Kanal katalog — cermin CHECK `promo_media_types_channel_chk` di schema. */
+/** Kanal katalog - cermin CHECK `promo_media_types_channel_chk` di schema. */
 const MEDIA_CHANNELS = ['cetak', 'digital'];
 
 /**
@@ -81,11 +81,11 @@ function parseHarga(val) {
 }
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// ══════════ SUBMISSIONS ══════════
+// SUBMISSIONS.
 
-// ─── GET /admin/submissions ─────────────────────────────────────
+// GET /admin/submissions.
 // Filter: status, media_type, tenant, rentang tanggal, plus pencarian bebas
-// (nomor pengajuan / tenant / judul materi) — FR-026, FR-027.
+// (nomor pengajuan / tenant / judul materi) - FR-026, FR-027.
 function buildSubmissionFilters(query) {
   const status = String(query?.status || '').trim();
   const mediaType = String(query?.media_type || '').trim();
@@ -162,7 +162,7 @@ router.get('/submissions', requireRole(READ_ROLES), async (req, res, next) => {
   }
 });
 
-// ─── GET /admin/submissions/summary — jumlah per status (FR-025) ─
+// GET /admin/submissions/summary - jumlah per status (FR-025).
 router.get('/submissions/summary', requireRole(READ_ROLES), async (_req, res, next) => {
   try {
     const { rows } = await db.query(
@@ -181,7 +181,7 @@ router.get('/submissions/summary', requireRole(READ_ROLES), async (_req, res, ne
   }
 });
 
-// ─── GET /admin/submissions/:id — detail lengkap (FR-028..FR-030) ─
+// GET /admin/submissions/:id - detail lengkap (FR-028..FR-030).
 router.get('/submissions/:id', requireRole(READ_ROLES), async (req, res, next) => {
   try {
     const id = String(req.params?.id || '').trim();
@@ -237,7 +237,7 @@ router.get('/submissions/:id', requireRole(READ_ROLES), async (req, res, next) =
   }
 });
 
-// ─── POST /admin/submissions/:id/status ─────────────────────────
+// POST /admin/submissions/:id/status.
 // FR-032..FR-037: transisi divalidasi terhadap alur status; komentar wajib saat
 // meminta revisi, alasan wajib saat menolak; nama admin + waktu tercatat.
 router.post('/submissions/:id/status', requireRole(STAFF_ROLES), async (req, res, next) => {
@@ -297,7 +297,7 @@ router.post('/submissions/:id/status', requireRole(STAFF_ROLES), async (req, res
   }
 });
 
-// ─── POST /admin/submissions/:id/installation ───────────────────
+// POST /admin/submissions/:id/installation.
 // FR-040..FR-046: pemasangan hanya untuk materi Disetujui/Siap Dipasang, wajib
 // menentukan media/lokasi; status menjadi Sudah Dipasang.
 router.post('/submissions/:id/installation', requireRole(STAFF_ROLES), async (req, res, next) => {
@@ -389,9 +389,9 @@ router.post('/submissions/:id/installation', requireRole(STAFF_ROLES), async (re
   }
 });
 
-// ─── POST /admin/submissions/:id/installation/proof — unggah bukti ──
+// POST /admin/submissions/:id/installation/proof - unggah bukti.
 // Kanal kedua bukti tayang (selain tautan). Berkas disimpan ke Google Drive
-// yang sama dengan materi, memakai helper drive.js yang sudah ada — BUKAN
+// yang sama dengan materi, memakai helper drive.js yang sudah ada - BUKAN
 // MEDIA_DIR (batasnya 4MB dan penyajiannya publik + cache selamanya).
 // Fail-closed: tanpa kredensial Drive → 503 (pola middleware drive.js).
 router.post('/submissions/:id/installation/proof', requireRole(STAFF_ROLES), async (req, res, next) => {
@@ -456,7 +456,7 @@ router.post('/submissions/:id/installation/proof', requireRole(STAFF_ROLES), asy
           file.length, req.auth.user.display_name, id],
       );
     } else {
-      // Belum ada baris pemasangan — buat baris ringkas dengan lokasi dari
+      // Belum ada baris pemasangan - buat baris ringkas dengan lokasi dari
       // pengajuan agar bukti tidak menggantung tanpa induk.
       await db.query(
         `INSERT INTO promo_installations
@@ -478,11 +478,11 @@ router.post('/submissions/:id/installation/proof', requireRole(STAFF_ROLES), asy
   }
 });
 
-// ─── GET /admin/submissions/reminders — periode berakhir (turunan) ──
+// GET /admin/submissions/reminders - periode berakhir (turunan).
 // Notifikasi dashboard TURUNAN DATA (bukan cron/worker): menghitung materi
 // yang sudah dipasang dan periodenya berakhir dalam N hari. Hanya media
 // ber-pajak yang disertakan (`ppn_amount > 0` atau harga belum termasuk PPN).
-// `end_date` bertipe TEXT, jadi WAJIB dijaga regex sebelum di-cast — satu nilai
+// `end_date` bertipe TEXT, jadi WAJIB dijaga regex sebelum di-cast - satu nilai
 // cacat akan menggagalkan seluruh query.
 router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, next) => {
   try {
@@ -527,7 +527,7 @@ router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, n
   }
 });
 
-// ─── POST /admin/submissions/:id/delete ─────────────────────────
+// POST /admin/submissions/:id/delete.
 router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res, next) => {
   try {
     const id = String(req.params?.id || '').trim();
@@ -540,9 +540,9 @@ router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res
     const existing = rows[0] || null;
     if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
 
-    // Pengajuan bertautan atau legacy R2 (tanpa drive_file_id) — tak ada yang dihapus dari Drive.
+    // Pengajuan bertautan atau legacy R2 (tanpa drive_file_id) - tak ada yang dihapus dari Drive.
     if (existing.source_type !== 'link' && existing.drive_file_id) {
-      // Hapus Drive DULU dengan kepastian (throw) — gagal → row tetap, retry aman.
+      // Hapus Drive DULU dengan kepastian (throw) - gagal → row tetap, retry aman.
       try {
         await deleteDriveFileOrThrow(existing.drive_file_id);
       } catch (delErr) {
@@ -559,9 +559,9 @@ router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res
   }
 });
 
-// ══════════ MEDIA TYPES (katalog) ══════════
+// MEDIA TYPES (katalog).
 
-// ─── GET /admin/media-types ────────────────────────────────────
+// GET /admin/media-types.
 router.get('/media-types', requireRole(READ_ROLES), async (_req, res, next) => {
   try {
     const { rows } = await db.query(
@@ -573,7 +573,7 @@ router.get('/media-types', requireRole(READ_ROLES), async (_req, res, next) => {
   }
 });
 
-// ─── POST /admin/media-types — create ───────────────────────────
+// POST /admin/media-types - create.
 router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => {
   try {
     const d = req.body || {};
@@ -633,7 +633,7 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
   }
 });
 
-// ─── POST /admin/media-types/:id — update ───────────────────────
+// POST /admin/media-types/:id - update.
 router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next) => {
   try {
     const id = String(req.params?.id || '').trim();
@@ -666,8 +666,8 @@ router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next)
     // Kolom teks: bedakan "tidak dikirim" dari "dikirim kosong".
     //
     // Sebelumnya setiap nilai kosong di-skip (`if (!value) continue`), sehingga
-    // mengosongkan field teks — termasuk `rules` (Ketentuan) yang tampil sebagai
-    // deskripsi media — tidak pernah tersimpan: nilai lama diam-diam bertahan dan
+    // mengosongkan field teks - termasuk `rules` (Ketentuan) yang tampil sebagai
+    // deskripsi media - tidak pernah tersimpan: nilai lama diam-diam bertahan dan
     // pengguna mengira sudah tersimpan. Kini kunci yang HADIR di body (walau
     // bernilai '') ikut ditulis; kunci yang absen tidak disentuh sama sekali.
     //
@@ -701,7 +701,7 @@ router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next)
     }
 
     // Harga numerik + PPN: hanya bila dikirim. `price_amount` 0 SAH (media
-    // gratis), jadi jangan disamakan dengan "kosong" — pola kunci-hadir.
+    // gratis), jadi jangan disamakan dengan "kosong" - pola kunci-hadir.
     if (d.price_amount !== undefined) fields.price_amount = parseHarga(d.price_amount);
     if (d.price_unit !== undefined) fields.price_unit = sanitize(d.price_unit, 60);
     if (d.ppn_included !== undefined) fields.ppn_included = d.ppn_included === true;
@@ -733,7 +733,7 @@ router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next)
   }
 });
 
-// ─── POST /admin/media-types/:id/delete ─────────────────────────
+// POST /admin/media-types/:id/delete.
 router.post('/media-types/:id/delete', requireRole(STAFF_ROLES), async (req, res, next) => {
   try {
     const id = String(req.params?.id || '').trim();
@@ -763,7 +763,7 @@ router.post('/media-types/:id/delete', requireRole(STAFF_ROLES), async (req, res
   }
 });
 
-// ─── POST /admin/media-types/:id/image — ganti foto katalog ─────
+// POST /admin/media-types/:id/image - ganti foto katalog.
 // Multipart, satu field `file`. Berkas disimpan di volume MEDIA_DIR, BUKAN di
 // repo (repo read-only di produksi). Foto lama dihapus setelah yang baru
 // berhasil disimpan, supaya tidak ada berkas yatim bila unggahan gagal.
@@ -810,7 +810,7 @@ router.post('/media-types/:id/image', requireRole(STAFF_ROLES), async (req, res,
   }
 });
 
-// ─── POST /admin/media-types/:id/image/delete — hapus foto ──────
+// POST /admin/media-types/:id/image/delete - hapus foto.
 // Menghapus foto berarti katalog menampilkan kartu tanpa gambar; tidak ada
 // pengembalian otomatis ke foto bawaan deck (seed sengaja tidak menimpa
 // image_path). Jalankan seed dengan `--reset-gambar` bila ingin kembali.
@@ -837,9 +837,9 @@ router.post('/media-types/:id/image/delete', requireRole(STAFF_ROLES), async (re
   }
 });
 
-// ══════════ EXPORT CSV ══════════
+// EXPORT CSV.
 
-// ─── GET /admin/export ──────────────────────────────────────────
+// GET /admin/export.
 router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
   try {
     const { rows } = await db.query(
@@ -882,7 +882,7 @@ router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
     // BOM UTF-8 agar Excel membaca dengan benar.
     res.setHeader('Content-Type', 'text/csv; charset=utf-8');
     res.setHeader('Content-Disposition', 'attachment; filename="pengajuan-media-promosi.csv"');
-    // Ekspor memuat PII (telepon, IP) — catat siapa mengunduhnya.
+    // Ekspor memuat PII (telepon, IP) - catat siapa mengunduhnya.
     logActivity(req.auth.user, 'export_submissions', 'promo_submission', '',
       { count: rows.length }, req);
     return res.send(`\uFEFF${lines.join('\r\n')}`);
@@ -891,11 +891,11 @@ router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
   }
 });
 
-// ══════════ USERS (superadmin) ══════════
+// USERS (superadmin).
 
 const USER_ROLES = ['superadmin', 'admin', 'tenant_relation'];
 
-// ─── GET /admin/users ───────────────────────────────────────────
+// GET /admin/users.
 router.get('/users', requireRole(['superadmin']), async (_req, res, next) => {
   try {
     const { rows } = await db.query(
@@ -907,7 +907,7 @@ router.get('/users', requireRole(['superadmin']), async (_req, res, next) => {
   }
 });
 
-// ─── POST /admin/users — create ─────────────────────────────────
+// POST /admin/users - create.
 router.post('/users', requireRole(['superadmin']), async (req, res, next) => {
   try {
     const d = req.body || {};
@@ -937,7 +937,7 @@ router.post('/users', requireRole(['superadmin']), async (req, res, next) => {
   }
 });
 
-// ─── POST /admin/users/:id — update ─────────────────────────────
+// POST /admin/users/:id - update.
 router.post('/users/:id', requireRole(['superadmin']), async (req, res, next) => {
   try {
     const id = String(req.params?.id || '').trim();
@@ -983,7 +983,7 @@ router.post('/users/:id', requireRole(['superadmin']), async (req, res, next) =>
   }
 });
 
-// ─── POST /admin/users/:id/delete ───────────────────────────────
+// POST /admin/users/:id/delete.
 router.post('/users/:id/delete', requireRole(['superadmin']), async (req, res, next) => {
   try {
     const id = String(req.params?.id || '').trim();

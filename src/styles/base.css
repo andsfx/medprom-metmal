@@ -1,7 +1,7 @@
-/* Base styles — arah "App Produk" (Geist memimpin, Fraunces aksen display). */
+/* Base styles: arah "App Produk" (Geist memimpin, Fraunces aksen display). */
 
 /* Jaring pengaman anti-scroll-horizontal. `clip` (bukan `hidden`) dipakai
- * supaya `position: sticky`/`fixed` pada keturunan tetap bekerja — `hidden`
+ * supaya `position: sticky`/`fixed` pada keturunan tetap bekerja: `hidden`
  * akan mematikan keduanya karena membuat elemen jadi scroll container.
  * Audit 2026-09-18 menemukan satu elemen meluber di 320px; aturan ini
  * memastikan luber berikutnya tidak langsung membuka scroll horizontal. */
@@ -20,7 +20,7 @@ body {
   font-family: var(--font-display);
 }
 
-/* ─── Editorial surfaces ─── */
+/* Editorial surfaces */
 
 .ui-page {
   background: var(--surface-page);
@@ -48,7 +48,7 @@ body {
 }
 
 /* Safari iOS memperbesar halaman saat input difokuskan bila font-size-nya di
- * bawah 16px — keyboard muncul dengan halaman sudah ter-zoom, lalu tidak
+ * bawah 16px: keyboard muncul dengan halaman sudah ter-zoom, lalu tidak
  * kembali. Dinaikkan hanya pada layar kecil, dan hanya untuk kontrol isian
  * (bukan tombol/tautan ber-`.ui-control`), supaya kepadatan desktop tetap.
  * Pinch-zoom tidak diblokir: memakai `maximum-scale=1` akan melanggar WCAG. */
@@ -74,14 +74,14 @@ body {
   background: #fef2f2;
 }
 
-/* Panel galat — nama historis, dipakai wizard + dashboard (4 callsite). */
+/* Panel galat: nama historis, dipakai wizard + dashboard (4 callsite). */
 .ui-alert-panel {
   border-radius: var(--radius-card);
   border: 1px solid #fecaca;
   background: #fef2f2;
 }
 
-/* Panel kosong — nama historis, dipakai halaman riwayat. */
+/* Panel kosong: nama historis, dipakai halaman riwayat. */
 .ui-empty-panel {
   border-radius: var(--radius-card);
   border: 1px dashed #d6d3d1;
@@ -90,7 +90,7 @@ body {
   color: var(--ink-muted);
 }
 
-/* ─── Buttons ─── */
+/* Buttons */
 
 /* Tailwind v4 tidak lagi memberi `cursor: pointer` pada <button> (checklist
  * skill ui-ux-pro-max). Kembalikan secara global; pengecualian `:disabled`
@@ -101,7 +101,7 @@ button:not(:disabled) {
 
 /* Kanal ketiga untuk keadaan disabled (Gate 39). Aturan `button:not(:disabled)`
  * di atas tidak menyentuh tombol nonaktif, sehingga kursor mereka jatuh ke
- * panah bawaan — hanya opacity + atribut `disabled` yang tersisa. Audit
+ * panah bawaan: hanya opacity + atribut `disabled` yang tersisa. Audit
  * 2026-09-19 menemukan 5 tombol admin (ekspor, paginasi, simpan instalasi,
  * simpan status, unggah foto) dengan `disabled:opacity-*` tanpa `cursor:
  * not-allowed`. Satu aturan global ini menutup semuanya sekaligus mencegah
@@ -119,14 +119,14 @@ textarea:disabled {
   background: var(--brand-tosca-600);
   color: #fff;
   /* Target sentuh 44px (DESIGN.md). Sebelumnya hanya `.ui-control` yang
-   * memikul aturan ini, sehingga CTA primer/sekunder — yang mengandalkan
-   * padding per pemakaian — jatuh di 36–42px. Ditaruh di sini agar setiap
+   * memikul aturan ini, sehingga CTA primer/sekunder: yang mengandalkan
+   * padding per pemakaian: jatuh di 36-42px. Ditaruh di sini agar setiap
    * CTA patuh secara sistemik, bukan ditambal `min-h-11` per instance. */
   min-height: var(--tap-min);
 }
 
 .ui-btn-primary:hover {
-  background: #00554c; /* brand-tosca-dark, lebih gelap — kontras naik, bukan turun */
+  background: #00554c; /* brand-tosca-dark, lebih gelap: kontras naik, bukan turun */
 }
 
 .ui-btn-primary:focus-visible {
@@ -143,7 +143,7 @@ textarea:disabled {
   border: 1px solid var(--rule-color);
   border-radius: var(--radius-control);
   color: var(--ink-secondary);
-  /* Target sentuh 44px (DESIGN.md) — lihat catatan di `.ui-btn-primary`. */
+  /* Target sentuh 44px (DESIGN.md): lihat catatan di `.ui-btn-primary`. */
   min-height: var(--tap-min);
 }
 
@@ -151,7 +151,7 @@ textarea:disabled {
   background: var(--surface-hover);
 }
 
-/* ─── Text utilities ─── */
+/* Text utilities */
 
 .ui-text-muted {
   color: var(--ink-muted);
@@ -165,7 +165,7 @@ textarea:disabled {
  * `fieldErrors.*` terisi; tanpa cadangan, kemunculannya mendorong field di
  * bawahnya turun (layout shift) tepat saat pengguna sedang memperbaiki isian.
  * `min-height` (bukan `height`) dipakai supaya pesan lebih dari satu baris
- * tetap tumbuh utuh — tidak ada `overflow: hidden` yang memotongnya.
+ * tetap tumbuh utuh: tidak ada `overflow: hidden` yang memotongnya.
  *
  * Ukuran mengikuti peran teks galat di dalamnya (`text-xs` = 12px, line-height
  * 16px = `--text-meta` + 1rem), jadi `1lh` = tinggi satu baris pesan. Baris
@@ -177,14 +177,14 @@ textarea:disabled {
   min-height: 1lh;
 }
 
-/* ─── Skala tipografi per peran ───
+/* Skala tipografi per peran
  * Mencegah nilai ad-hoc: satu peran, satu pemanggil. */
-.ui-title-screen { /* h1 — nama layar */
+.ui-title-screen { /* h1: nama layar */
   font-family: var(--font-display);
   font-size: var(--text-screen);
   font-weight: 700;
   line-height: var(--leading-tight);
-  /* `balance` mencegah baris judul menggantung satu kata (widow) — diminta
+  /* `balance` mencegah baris judul menggantung satu kata (widow): diminta
    * ui-ux-pro-max (html-tailwind) dan baseline-ui. */
   text-wrap: balance;
   /* Gate 51: judul ukuran display harus boleh mematahkan kata majemuk
@@ -196,9 +196,9 @@ textarea:disabled {
 }
 
 /* Judul nama layar di header konsol staf turun satu langkah skala di bawah
- * 640px: "Media Promosi — Admin" membungkus tiga baris di layar sempit dan
+ * 640px: "Media Promosi - Admin" membungkus tiga baris di layar sempit dan
  * mendorong app bar setinggi ~130px. Sengaja TIDAK diterapkan ke semua
- * .ui-title-screen — di layar tenant, h1 app bar 24px harus tetap di atas h2
+ * .ui-title-screen: di layar tenant, h1 app bar 24px harus tetap di atas h2
  * 20px. Aturan ini harus tinggal di sini, bukan sebagai utility Tailwind
  * `text-xl`: Tailwind v4 menaruh utility di @layer, sehingga kelas tak
  * berlapis ini selalu menang. */
@@ -206,24 +206,24 @@ textarea:disabled {
   .ui-admin-title { font-size: var(--text-section); }
 }
 
-.ui-title-section { /* h2 — judul bagian */
+.ui-title-section { /* h2: judul bagian */
   font-family: var(--font-display);
   font-size: var(--text-section);
   font-weight: 700;
   line-height: var(--leading-tight);
   text-wrap: balance;
-  /* Gate 51 — lihat catatan di `.ui-title-screen`. */
+  /* Gate 51: lihat catatan di `.ui-title-screen`. */
   overflow-wrap: anywhere;
   min-width: 0;
 }
 
-.ui-title-card { /* h3 — kartu, butir, sub-judul */
+.ui-title-card { /* h3: kartu, butir, sub-judul */
   font-family: var(--font-body);
   font-size: var(--text-title);
   font-weight: 600;
   line-height: var(--leading-tight);
   text-wrap: balance;
-  /* Gate 51 — lihat catatan di `.ui-title-screen`. */
+  /* Gate 51: lihat catatan di `.ui-title-screen`. */
   overflow-wrap: anywhere;
   min-width: 0;
 }
@@ -232,7 +232,7 @@ textarea:disabled {
  * memakai kelas Tailwind langsung (`font-display text-3xl sm:text-4xl` di
  * PromoLandingPage) alih-alih `.ui-title-*`, sehingga aturan di atas tidak
  * menjangkaunya. Terukur di peramban (320px, kata majemuk panjang pada H1/H2
- * beranda): `scrollWidth` 637px vs `clientWidth` 273px — teks meluber keluar
+ * beranda): `scrollWidth` 637px vs `clientWidth` 273px: teks meluber keluar
  * kotak dan terpotong oleh `overflow-x: clip` di `html`/`body`.
  *
  * Ditaruh di `@layer base` supaya tetap berada di bawah lapisan `utilities`:
@@ -258,7 +258,7 @@ textarea:disabled {
   text-wrap: pretty;
 }
 
-.ui-dense { /* peran padat — baris data, lencana, sel tabel */
+.ui-dense { /* peran padat: baris data, lencana, sel tabel */
   font-size: var(--text-dense);
   line-height: 1.45;
 }
@@ -274,7 +274,7 @@ textarea:disabled {
   max-width: var(--measure);
 }
 
-/* ─── Focus ─── */
+/* Focus */
 
 .ui-focus-ring {
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2;
@@ -291,7 +291,7 @@ textarea:disabled {
  *     ikut ditransisikan.
  * Terukur di Chromium dengan fokus keyboard sungguhan (`:focus-visible` aktif):
  * `outline-color` bergerak dari `rgb(0,0,0)` ke `rgb(0,145,142)` frame demi
- * frame selama ~150ms — pengguna keyboard tidak melihat indikator apa pun pada
+ * frame selama ~150ms: pengguna keyboard tidak melihat indikator apa pun pada
  * frame pertama. Terbukti pada tombol tab admin, tombol akun demo `/login`,
  * tombol Logout, dan tautan "Beranda".
  *
@@ -300,7 +300,7 @@ textarea:disabled {
  * sebenarnya sudah aman karena aturan tak berlapis `transition: transform …`
  * di `base.css` menang atas utility Tailwind; aturan ini menutup sisanya dan
  * mencegah regresi. `outline` bawaan peramban tidak beranimasi, jadi mematikan
- * transisi tidak menghilangkan indikator — ia hanya membuatnya langsung ada. */
+ * transisi tidak menghilangkan indikator: ia hanya membuatnya langsung ada. */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
@@ -312,13 +312,13 @@ summary:focus-visible,
 }
 
 /* Jaring pengaman fokus (Gate 26). Audit 2026-09-19 menemukan 51 dari 77
- * tombol/tautan tanpa cincin fokus bergaya sendiri — mereka hanya mengandalkan
+ * tombol/tautan tanpa cincin fokus bergaya sendiri: mereka hanya mengandalkan
  * outline bawaan peramban, sehingga indikator fokus berbeda-beda antar
  * elemen. Aturan ini memberi mereka cincin tosca yang sama.
  *
  * Sengaja ditaruh di `@layer base`, bukan tanpa lapisan: lapisan Tailwind
  * menang atas `@layer base` tanpa peduli spesifisitas. Akibatnya elemen yang
- * SUDAH punya gaya fokus sendiri tidak berubah sama sekali —
+ * SUDAH punya gaya fokus sendiri tidak berubah sama sekali:
  * `.ui-focus-ring` (tanpa lapisan) dan `focus:outline-none`/`focus:ring-2`
  * (lapisan `utilities`) keduanya tetap menang, jadi tidak ada cincin ganda.
  * Hanya elemen yang belum punya apa pun yang mendapatkan aturan ini. */
@@ -334,13 +334,13 @@ summary:focus-visible,
   }
 }
 
-/* ─── Rule (hairline separator) ─── */
+/* Rule (hairline separator) */
 
 .ui-rule {
   border-top: var(--rule);
 }
 
-/* ─── Number XL (statistical / step counters) ─── */
+/* Number XL (statistical / step counters) */
 
 .ui-number {
   font-family: var(--font-display);
@@ -348,7 +348,7 @@ summary:focus-visible,
   color: var(--brand-tosca);
 }
 
-/* ─── Admin surfaces ─── */
+/* Admin surfaces */
 
 .ui-admin-page {
   background: var(--surface-offset);
@@ -360,7 +360,7 @@ summary:focus-visible,
   background: var(--surface-card);
 }
 
-/* ─── Dark mode (admin only — editorial landing tetap terang) ─── */
+/* Dark mode (admin only: editorial landing tetap terang) */
 
 .dark .ui-admin-page {
   background: #0f172a;
@@ -418,10 +418,10 @@ summary:focus-visible,
   border-color: #334155;
 }
 
-/* ═══ App shell — kerangka aplikasi (bar, tab bar, sheet, FAB) ═══ */
+/* App shell: kerangka aplikasi (bar, tab bar, sheet, FAB) */
 
 /* Kanvas app: mengunci tinggi viewport agar hanya area konten yang menggulir,
- * seperti aplikasi asli — bukan seluruh dokumen. */
+ * seperti aplikasi asli: bukan seluruh dokumen. */
 .app-shell {
   display: flex;
   flex-direction: column;
@@ -463,7 +463,7 @@ summary:focus-visible,
 }
 
 @media (min-width: 640px) {
-  /* Tab bar hanya mobile — di desktop ruang bawah tidak perlu disisakan. */
+  /* Tab bar hanya mobile: di desktop ruang bawah tidak perlu disisakan. */
   .app-scroll {
     padding-bottom: 0;
   }
@@ -475,7 +475,7 @@ summary:focus-visible,
   padding-bottom: var(--safe-bottom);
 }
 
-/* Top app bar — sticky, buram, terangkat saat konten lewat di belakangnya. */
+/* Top app bar: sticky, buram, terangkat saat konten lewat di belakangnya. */
 .app-bar {
   position: sticky;
   top: 0;
@@ -496,7 +496,7 @@ summary:focus-visible,
   box-shadow: var(--elevation-bar);
 }
 
-/* Bottom tab bar — navigasi utama di mobile. */
+/* Bottom tab bar: navigasi utama di mobile. */
 .app-tabbar {
   position: fixed;
   inset-inline: 0;
@@ -538,7 +538,7 @@ summary:focus-visible,
   font-weight: 600;
 }
 
-/* Navigasi utama versi desktop — di dalam app bar. Hanya ≥640px; di bawah itu
+/* Navigasi utama versi desktop: di dalam app bar. Hanya ≥640px; di bawah itu
  * tab bar bawah yang bertugas. `AppShell` sudah memilih satu berdasarkan
  * viewport, aturan ini menjaga tampilan tetap benar bila JS/CSS sempat tidak
  * sinkron (mis. saat resize). */
@@ -590,7 +590,7 @@ summary:focus-visible,
   color: var(--brand-tosca-soft);
 }
 
-/* Umpan balik sentuh — pengganti :hover yang tidak ada di layar sentuh. */
+/* Umpan balik sentuh: pengganti :hover yang tidak ada di layar sentuh. */
 .app-pressable {
   -webkit-tap-highlight-color: transparent;
   transition: transform 120ms ease, background-color 150ms ease;
@@ -606,7 +606,7 @@ summary:focus-visible,
    * regresi saat ada gerakan baru ditambahkan. Yang paling penting pada
    * audit 2026-09-19: `transition-transform` pada chevron "Ketentuan"
    * (`rotate-180`, PromoUploadWizard + PromoLandingPage) dan kelas arbitrer
-   * `animate-[shake_0.4s_ease]` di AdminLoginPage — keduanya sebelumnya lolos
+   * `animate-[shake_0.4s_ease]` di AdminLoginPage: keduanya sebelumnya lolos
    * dari blok ini. Durasi dipangkas (bukan `none`) agar event `transitionend`
    * yang mungkin ditunggu kode tetap terpicu, dan status akhir tetap identik.
    * `animation-iteration-count: 1` menghentikan animasi berulang; regangan ini
@@ -622,7 +622,7 @@ summary:focus-visible,
   .app-pressable:active {
     transform: none;
   }
-  /* Animasi berulang dimatikan — status tetap terbaca karena setiap spinner
+  /* Animasi berulang dimatikan: status tetap terbaca karena setiap spinner
    * di repo ini selalu didampingi teks ("Mengirim…", "Memuat riwayat…",
    * "Unduh CSV"). `animate-pulse` skeleton menyisakan kartu statis; ikon
    * Loader2 menyisakan ikon statis. */
@@ -631,14 +631,14 @@ summary:focus-visible,
     animation: none;
   }
   /* Chevron yang berputar saat panel dibuka: lompat langsung ke sudut akhir,
-   * tanpa transisi — informasi (terbuka/tertutup) tetap terbaca dari arah
+   * tanpa transisi: informasi (terbuka/tertutup) tetap terbaca dari arah
    * panah. */
   .transition-transform {
     transition: none;
   }
 }
 
-/* Sheet — bottom sheet di mobile, dialog terpusat di desktop. */
+/* Sheet: bottom sheet di mobile, dialog terpusat di desktop. */
 .app-scrim {
   position: fixed;
   inset: 0;
@@ -661,7 +661,7 @@ summary:focus-visible,
   box-shadow: var(--elevation-sheet);
 }
 
-/* Pegangan geser — penanda visual bahwa sheet bisa ditutup. */
+/* Pegangan geser: penanda visual bahwa sheet bisa ditutup. */
 .app-sheet-grip {
   width: 2.25rem;
   height: 0.25rem;

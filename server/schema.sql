@@ -1,15 +1,15 @@
 /**
- * Skema database — medprom-metmal (platform media promosi tenant).
+ * Skema database: medprom-metmal (platform media promosi tenant).
  * Idempotent (IF NOT EXISTS); eksekusi via scripts/db-migrate.mjs.
  *
  * Tabel:
- *   promo_media_types        — katalog media (admin CRUD; seed dari deck 2026)
- *   promo_submissions        — pengajuan tenant (publik, tanpa login)
- *   promo_submission_files   — versi materi (Data Model: Material File)
- *   promo_submission_history — riwayat perubahan status (Review History)
- *   promo_installations      — catatan pemasangan (Installation Record)
- *   users                    — akun staf (TR/admin/superadmin, bcrypt + JWT)
- *   activity_logs            — jejak aksi staf
+ *   promo_media_types       : katalog media (admin CRUD; seed dari deck 2026)
+ *   promo_submissions       : pengajuan tenant (publik, tanpa login)
+ *   promo_submission_files  : versi materi (Data Model: Material File)
+ *   promo_submission_history: riwayat perubahan status (Review History)
+ *   promo_installations     : catatan pemasangan (Installation Record)
+ *   users                   : akun staf (TR/admin/superadmin, bcrypt + JWT)
+ *   activity_logs           : jejak aksi staf
  *
  * Status pengajuan memakai 8 nilai PRD §8 (menunggu_review … selesai).
  * Definisi transisinya ada di server/src/lib/statusFlow.js (cermin FE).
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS promo_media_types (
 -- media_type_slug = snapshot teks TANPA FK: media type bisa dinonaktifkan
 -- tanpa memutus jejak historis submission (hapus ditolak bila masih dipakai).
 -- source_type: 'upload' = file di Google Drive kami (drive_file_id terisi);
--- 'link' = tautan eksternal (Drive/Dropbox/WeTransfer) — file_url/file_name/mime_type kosong.
+-- 'link' = tautan eksternal (Drive/Dropbox/WeTransfer): file_url/file_name/mime_type kosong.
 -- tenant_name/unit_number = SNAPSHOT saat submit (PRD §9.2): data MID bisa berubah,
 -- jejak historis pengajuan tidak boleh ikut berubah.
 -- Kolom file_*/link_url pada baris ini menyimpan VERSI TERBARU; riwayat lengkap
@@ -110,13 +110,13 @@ ALTER TABLE promo_submissions ALTER COLUMN status SET DEFAULT 'menunggu_review';
 -- Status lama (4 nilai) → 8 nilai PRD.
 --
 -- URUTAN PENTING: CHECK lama hanya mengizinkan 'pending'/'approved'/'rejected'/
--- 'installed', jadi constraint itu WAJIB dilepas SEBELUM baris diremap — kalau
+-- 'installed', jadi constraint itu WAJIB dilepas SEBELUM baris diremap: kalau
 -- tidak, UPDATE pertama langsung melanggar CHECK dan migrasi gagal di DB yang
 -- sudah jalan (DB baru tetap hijau, jadi bug-nya hanya muncul di produksi).
 --
 -- Sasaran dipilih lewat NILAI lama, bukan nama constraint: nama lama bergantung
 -- versi skema (`promo_submissions_status_check`), sedangkan definisi CHECK baru
--- tidak memuat satu pun nilai lama — sehingga pada DB baru (yang CHECK-nya sudah
+-- tidak memuat satu pun nilai lama: sehingga pada DB baru (yang CHECK-nya sudah
 -- benar) blok ini tidak melepas apa pun.
 DO $$
 DECLARE
@@ -144,7 +144,7 @@ UPDATE promo_submissions SET status = 'ditolak'         WHERE status = 'rejected
 UPDATE promo_submissions SET status = 'sudah_dipasang'  WHERE status = 'installed';
 
 -- Backfill nomor + token pengajuan lama yang belum punya.
--- Token backfill memakai md5 (bukan CSPRNG) — hanya untuk baris warisan; semua
+-- Token backfill memakai md5 (bukan CSPRNG): hanya untuk baris warisan; semua
 -- pengajuan baru memakai crypto.randomBytes (server/src/lib/identifiers.js).
 UPDATE promo_submissions
    SET submission_number = 'MP-' || to_char(created_at, 'YYMMDD') || '-' || upper(substr(md5(id::text), 1, 6))
@@ -169,18 +169,16 @@ BEGIN
   END IF;
 END $$;
 
--- ════════════════════════════════════════════════════════════════
 -- Alur "media promosi cetak" (rencana: docs/PLAN_2026-09-20_16-00.md).
 --
 -- Seluruh blok di bawah SENGAJA diletakkan SETELAH blok migrasi status di
 -- atas: `__tests__/api/schema-migration.test.js` memakai heuristik
 -- `indexOf('DO $$')` untuk mengisolasi blok pelepasan CHECK lama, jadi blok
 -- baru yang disisipkan sebelumnya akan membuat potongan itu kabur.
--- ════════════════════════════════════════════════════════════════
 
--- ── Kanal katalog: 'cetak' (Tenant Relations) vs 'digital' (Marcom).
+-- Kanal katalog: 'cetak' (Tenant Relations) vs 'digital' (Marcom).
 -- Deck memisahkan keduanya lewat blok "Contact Person", BUKAN lewat kategori
--- (kategori deck tetap outdoor/indoor/social — CHECK-nya tidak disentuh).
+-- (kategori deck tetap outdoor/indoor/social: CHECK-nya tidak disentuh).
 ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS media_channel TEXT NOT NULL DEFAULT 'digital';
 
 DO $$
@@ -196,7 +194,7 @@ BEGIN
   END IF;
 END $$;
 
--- ── Harga numerik untuk PPN. `price_note` TETAP: ia teks deck yang ditampilkan
+-- Harga numerik untuk PPN. `price_note` TETAP: ia teks deck yang ditampilkan
 -- verbatim (termasuk tangga tarif multi-baris) dan tidak dapat dijumlahkan.
 ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS price_amount NUMERIC(14,2) NOT NULL DEFAULT 0;
 ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS price_unit   TEXT DEFAULT '';
@@ -204,7 +202,7 @@ ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS price_unit   TEXT DEFAULT
 -- 'Harga sudah termasuk PPN.' → true.
 ALTER TABLE promo_media_types ADD COLUMN IF NOT EXISTS ppn_included BOOLEAN NOT NULL DEFAULT false;
 
--- Backfill kanal dari slug — kebijakan operasional, bukan klaim deck baru.
+-- Backfill kanal dari slug: kebijakan operasional, bukan klaim deck baru.
 -- Pemilik menyebut persis tiga media ini sebagai "media promosi cetak".
 UPDATE promo_media_types
    SET media_channel = 'cetak'
@@ -217,7 +215,7 @@ UPDATE promo_media_types
  WHERE ppn_included = false
    AND rules ILIKE '%harga sudah termasuk ppn%';
 
--- ── Pengajuan cetak: jenis pemohon, tanggal, batch, snapshot harga.
+-- Pengajuan cetak: jenis pemohon, tanggal, batch, snapshot harga.
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS applicant_type TEXT NOT NULL DEFAULT 'tenant';
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS submission_date TEXT DEFAULT '';
 ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS batch_id UUID;
@@ -252,7 +250,7 @@ END $$;
 --
 -- URUTAN PENTING (pitfall #6): CHECK lama hanya mengizinkan 'upload'/'link',
 -- jadi constraint itu WAJIB dilepas SEBELUM baris ditulis dengan nilai baru.
--- Sasaran dipilih lewat DEFINISI (bukan nama — nama inline bergantung versi
+-- Sasaran dipilih lewat DEFINISI (bukan nama: nama inline bergantung versi
 -- skema), mengikuti pola blok status di atas.
 DO $$
 DECLARE
@@ -293,7 +291,7 @@ END $$;
 
 -- ── Batch pengajuan cetak: satu kirim form = satu batch; tiap media terpilih
 -- = satu baris promo_submissions (single-media, seperti sebelumnya).
--- `batch_id` di promo_submissions SENGAJA tanpa FK — mengikuti pola
+-- `batch_id` di promo_submissions SENGAJA tanpa FK: mengikuti pola
 -- media_type_slug: jejak historis tidak boleh putus saat baris batch hilang.
 CREATE TABLE IF NOT EXISTS promo_submission_batches (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
@@ -315,7 +313,7 @@ CREATE TABLE IF NOT EXISTS promo_submission_batches (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
--- ── Bukti tayang: dua kanal. `proof_url` tetap untuk kanal 'link' (data lama
+-- Bukti tayang: dua kanal. `proof_url` tetap untuk kanal 'link' (data lama
 -- utuh); kanal 'upload' menyimpan metadata berkas hasil unggahan staf.
 ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_kind TEXT NOT NULL DEFAULT 'link';
 ALTER TABLE promo_installations ADD COLUMN IF NOT EXISTS proof_file_id   TEXT DEFAULT '';

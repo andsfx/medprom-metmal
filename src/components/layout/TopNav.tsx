@@ -1,5 +1,5 @@
 /**
- * Navigasi utama versi desktop — hidup di dalam app bar.
+ * Navigasi utama versi desktop - hidup di dalam app bar.
  *
  * Kontrak desain (`DESIGN.md`): "Tab bar hanya mobile (`< 640px`). Di desktop
  * navigasi ada di app bar." Sebelum ini, tab bar mobile menyembunyikan dirinya

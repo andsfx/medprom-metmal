@@ -1,5 +1,5 @@
 /**
- * In-memory sliding-window rate limit — pola schedule-event-v2/server/src/lib/rateLimit.js.
+ * In-memory sliding-window rate limit - pola schedule-event-v2/server/src/lib/rateLimit.js.
  * Cukup untuk single-instance; multi-instance → ganti shared store (Redis),
  * kontrak endpoint tidak berubah.
  */

@@ -1,5 +1,5 @@
 /**
- * Perhitungan harga & PPN pengajuan media promosi cetak — CERMIN dari
+ * Perhitungan harga & PPN pengajuan media promosi cetak - CERMIN dari
  * server/src/lib/pricing.js (duplikasi disengaja; proyek tanpa paket bersama).
  * Kesamaannya dikunci __tests__/api/cetak-pricing.test.js.
  *

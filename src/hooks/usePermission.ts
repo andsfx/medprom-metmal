@@ -15,7 +15,7 @@ export interface Permissions {
 }
 
 /**
- * usePermission — derives permissions dari role.
+ * usePermission - derives permissions dari role.
  * Role hierarchy: superadmin > admin > tenant_relation (read-only).
  */
 export function usePermission(user: AuthUser | null): Permissions {

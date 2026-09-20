@@ -1,4 +1,4 @@
-/** Tipe domain promo — bentuk row API (snake_case) + bentuk FE (camelCase). */
+/** Tipe domain promo - bentuk row API (snake_case) + bentuk FE (camelCase). */
 
 export interface PromoMediaType {
   slug: string;
@@ -9,7 +9,7 @@ export interface PromoMediaType {
   accepted_formats: string;
   /** Path foto contoh media ('/media/<slug>.webp'); '' = tanpa foto. */
   image_path: string;
-  /** Teks harga deck (verbatim, bisa multi-baris) — hanya untuk tampilan. */
+  /** Teks harga deck (verbatim, bisa multi-baris) - hanya untuk tampilan. */
   price_note: string;
   /** Kanal katalog: 'cetak' (Tenant Relations) atau 'digital' (Marcom). */
   media_channel?: 'cetak' | 'digital';
@@ -122,7 +122,7 @@ export interface InstallationRow {
 
 /**
  * Pengajuan seperti yang dilihat tenant lewat token status (FR-019..FR-022).
- * Sengaja tanpa fingerprint/IP — halaman status publik tidak boleh membocorkan
+ * Sengaja tanpa fingerprint/IP - halaman status publik tidak boleh membocorkan
  * metadata internal.
  */
 export interface StatusPageData {
@@ -291,7 +291,7 @@ export interface ReminderRow {
   id: string;
   submission_number: string;
   tenant_name: string;
-  /** Telepon PIC — untuk tombol "Ingatkan via WhatsApp". */
+  /** Telepon PIC - untuk tombol "Ingatkan via WhatsApp". */
   pic_phone: string;
   applicant_type: 'tenant' | 'non_tenant';
   media_type_slug: string;

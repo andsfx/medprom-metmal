@@ -1,6 +1,6 @@
 /**
  * Lightweight device fingerprint for duplicate detection.
- * No external dependencies — uses built-in Web APIs.
+ * No external dependencies - uses built-in Web APIs.
  * (Pola schedule-event-v2/src/utils/fingerprint.ts, disalin utuh.)
  *
  * Combines: canvas, screen, timezone, language, platform
@@ -9,7 +9,7 @@
 
 const STORAGE_KEY = 'metmal_device_fp';
 
-/** Simple string hash (djb2) — fast, no crypto needed for fingerprint */
+/** Simple string hash (djb2) - fast, no crypto needed for fingerprint */
 function hashString(str: string): string {
   let hash = 5381;
   for (let i = 0; i < str.length; i++) {
@@ -18,7 +18,7 @@ function hashString(str: string): string {
   return (hash >>> 0).toString(36);
 }
 
-/** Canvas fingerprint — draws text and extracts pixel data hash */
+/** Canvas fingerprint - draws text and extracts pixel data hash */
 function getCanvasFingerprint(): string {
   try {
     const canvas = document.createElement('canvas');
@@ -68,7 +68,7 @@ function generateFingerprint(): string {
 }
 
 /**
- * Get device fingerprint — cached in localStorage.
+ * Get device fingerprint - cached in localStorage.
  * Returns a short alphanumeric string (8-12 chars).
  */
 export function getDeviceFingerprint(): string {
@@ -80,7 +80,7 @@ export function getDeviceFingerprint(): string {
     localStorage.setItem(STORAGE_KEY, fp);
     return fp;
   } catch {
-    // localStorage blocked (incognito, etc.) — generate fresh each time
+    // localStorage blocked (incognito, etc.) - generate fresh each time
     return generateFingerprint();
   }
 }

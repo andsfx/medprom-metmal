@@ -1,5 +1,5 @@
 /**
- * Client API media promosi — pola surveysApi.ts app lama
+ * Client API media promosi - pola surveysApi.ts app lama
  * (ApiError → degradasi list kosong sesuai konteks; error diteruskan bila
  * UI butuh menampilkan pesan/tombol coba lagi).
  */
@@ -50,7 +50,7 @@ export interface UploadResult {
   file_size_bytes: number;
 }
 
-/** Upload satu file ke API (streaming multipart) — server verifikasi magic
+/** Upload satu file ke API (streaming multipart) - server verifikasi magic
  *  bytes sebelum menyimpan ke Drive, lalu mengembalikan metadata terverifikasi. */
 export async function uploadFile(file: File, onProgress?: (pct: number) => void): Promise<UploadResult> {
   const { promise, resolve, reject } = Promise.withResolvers<UploadResult>();
@@ -191,7 +191,7 @@ export async function submitPromo(payload: PromoSubmissionPayload): Promise<{
  *
  * Galat **diteruskan** (bukan didegradasi jadi daftar kosong): halaman Riwayat
  * harus bisa membedakan "belum ada pengajuan" dari "gagal memuat". Sebelumnya
- * setiap `ApiError` — termasuk server 503 dan koneksi putus — dikembalikan
+ * setiap `ApiError` - termasuk server 503 dan koneksi putus - dikembalikan
  * sebagai `[]`, sehingga tenant melihat "Belum ada pengajuan dari perangkat
  * ini" padahal pengajuannya ada dan hanya gagal dimuat. Terverifikasi di
  * produksi: respons 503 → layar kosong, tanpa galat apa pun.
@@ -216,7 +216,7 @@ export async function fetchStatusByToken(token: string): Promise<StatusPageData>
 /**
  * Lacak pengajuan lewat nomor `MP-YYMMDD-XXXXXX` (tanpa tautan token).
  *
- * Nomor bukan rahasia — ia dibacakan ke PIC di layar sukses, jadi jalur ini
+ * Nomor bukan rahasia - ia dibacakan ke PIC di layar sukses, jadi jalur ini
  * setara dengan halaman status ber-token. Gerbangnya adalah captcha Cloudflare
  * Turnstile: token dari widget ikut dikirim dan diverifikasi server sebelum
  * data apa pun dibaca, sehingga endpoint tidak bisa dipanen otomatis.

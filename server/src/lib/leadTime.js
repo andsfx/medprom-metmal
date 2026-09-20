@@ -1,5 +1,5 @@
 /**
- * Lead time materi — CERMIN dari src/utils/leadTime.ts (jaga keduanya sinkron).
+ * Lead time materi - CERMIN dari src/utils/leadTime.ts (jaga keduanya sinkron).
  *
  * Aturan diturunkan dari teks `rules` katalog karena tidak seragam:
  * "2 hari sebelum pemasangan" (kalender) vs "3 hari kerja sebelum pemasangan",
@@ -69,7 +69,7 @@ export function describeLeadTime(lead) {
   return `${lead.days} hari ${lead.businessDays ? 'kerja ' : ''}sebelum pemasangan`;
 }
 
-/** Alamat email kanal materi — sumbernya teks `rules` katalog (deck 2026). */
+/** Alamat email kanal materi - sumbernya teks `rules` katalog (deck 2026). */
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 
 /** Kanal email materi bila `rules` menyebutkannya; null bila tidak. */

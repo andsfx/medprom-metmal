@@ -3,7 +3,7 @@
  *
  * Satu sumber kebenaran untuk dua penyaji: `BottomTabBar` (mobile) dan
  * `TopNav` (desktop, di dalam app bar). Sebelumnya daftar ini hanya hidup di
- * tab bar, sehingga menambah tujuan (mis. `/lacak`) hanya muncul di mobile —
+ * tab bar, sehingga menambah tujuan (mis. `/lacak`) hanya muncul di mobile -
  * desktop kehilangan jalan ke halaman baru. Jangan duplikasi daftar ini.
  */
 import { LayoutGrid, FilePlus2, ClipboardList, Search } from 'lucide-react';
@@ -25,7 +25,7 @@ export const NAV_ITEMS: readonly NavItem[] = [
 /**
  * Rute dianggap aktif bila cocok persis (`/`) atau berawalan (`/lacak`).
  *
- * Dipakai bersama oleh tab bar mobile, navigasi desktop, dan test — tiga
+ * Dipakai bersama oleh tab bar mobile, navigasi desktop, dan test - tiga
  * pemanggil yang wajib berperilaku identik. Aturan cocok-persis untuk `/`
  * mudah salah bila disalin ulang ( `/` berawalan setiap rute).
  */

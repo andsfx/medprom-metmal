@@ -1,12 +1,12 @@
 /**
- * Service worker medprom-metmal — shell offline + cache aset.
+ * Service worker medprom-metmal: shell offline + cache aset.
  *
  * Aturan yang TIDAK boleh dilanggar:
  *  1. Permintaan API tidak pernah di-cache. Status pengajuan wajib mutakhir;
  *     menyajikan status basi lebih buruk daripada gagal terang-terangan.
  *     API berada di origin lain (promapi.*), jadi seluruh permintaan lintas
  *     origin dilewatkan langsung ke jaringan.
- *  2. Naikkan CACHE_VERSION setiap rilis yang mengubah aset shell — cache lama
+ *  2. Naikkan CACHE_VERSION setiap rilis yang mengubah aset shell: cache lama
  *     disapu di event `activate`.
  *  3. Hanya GET yang di-cache.
  *
@@ -53,7 +53,7 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-/** Aset build Vite ber-hash (/assets/*) — aman di-cache selamanya. */
+/** Aset build Vite ber-hash (/assets/*): aman di-cache selamanya. */
 function isBuildAsset(url) {
   return url.pathname.startsWith('/assets/');
 }
@@ -70,13 +70,13 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(request.url);
 
-  // Lintas origin (API, Google Fonts) — biarkan jaringan menangani.
+  // Lintas origin (API, Google Fonts): biarkan jaringan menangani.
   if (url.origin !== self.location.origin) return;
 
   // Sabuk pengaman bila suatu saat API dipasang di origin yang sama.
   if (url.pathname.startsWith('/api/')) return;
 
-  // Navigasi (SPA) — jaringan lebih dulu, jatuh ke shell saat offline.
+  // Navigasi (SPA): jaringan lebih dulu, jatuh ke shell saat offline.
   if (request.mode === 'navigate') {
     event.respondWith(
       fetch(request)
@@ -103,7 +103,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Aset build ber-hash — cache dulu (isinya tidak pernah berubah).
+  // Aset build ber-hash: cache dulu (isinya tidak pernah berubah).
   if (isBuildAsset(url)) {
     event.respondWith(
       caches.match(request).then(
@@ -121,7 +121,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Aset statis lain — sajikan cache, perbarui di latar (stale-while-revalidate).
+  // Aset statis lain: sajikan cache, perbarui di latar (stale-while-revalidate).
   if (isStaticAsset(url)) {
     event.respondWith(
       caches.match(request).then((cached) => {

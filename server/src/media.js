@@ -1,10 +1,10 @@
 /**
- * media.js — penyimpanan gambar katalog media promosi.
+ * media.js - penyimpanan gambar katalog media promosi.
  *
  * Katalog dari deck sudah memuat foto contoh (public/media/*.webp, disajikan
  * Vercel). Modul ini menambahkan jalur GANTI: staf dapat mengunggah foto baru
  * dari dashboard, dan foto itu disimpan di volume Docker (`MEDIA_DIR`), bukan
- * di repo — repo di-bind-mount read-only di produksi.
+ * di repo - repo di-bind-mount read-only di produksi.
  *
  * Konsekuensi yang disengaja: seed TIDAK menimpa `image_path` lagi (lihat
  * seed-media-types.mjs), supaya foto hasil unggahan staf tidak dikembalikan
@@ -21,7 +21,7 @@ import { mkdir, writeFile, unlink } from 'node:fs/promises';
 import { join, basename } from 'node:path';
 import { createReadStream } from 'node:fs';
 
-/** Direktori penyimpanan — volume Docker di produksi. */
+/** Direktori penyimpanan - volume Docker di produksi. */
 export const MEDIA_DIR = process.env.MEDIA_DIR || '/data/media';
 
 /** Batas ukuran gambar katalog (foto contoh, bukan materi cetak). */

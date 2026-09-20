@@ -1,9 +1,9 @@
 /**
- * App shell — kerangka tetap seluruh layar tenant.
+ * App shell - kerangka tetap seluruh layar tenant.
  *
  * Menyusun: top app bar (sticky) + area konten yang menggulir sendiri +
  * bottom tab bar (mobile). Hanya area konten yang menggulir, sehingga bar
- * tidak pernah bergeser — perilaku yang membedakan aplikasi dari dokumen.
+ * tidak pernah bergeser - perilaku yang membedakan aplikasi dari dokumen.
  */
 import type { ReactNode } from 'react';
 import BottomTabBar from './BottomTabBar';

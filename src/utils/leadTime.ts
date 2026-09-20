@@ -1,5 +1,5 @@
 /**
- * Lead time materi — kapan materi harus diterima sebelum tanggal pasang.
+ * Lead time materi - kapan materi harus diterima sebelum tanggal pasang.
  *
  * Sumber aturan adalah teks `rules` katalog (verbatim deck 2026), yang TIDAK
  * seragam:
@@ -8,14 +8,14 @@
  *   - tanpa kalimat lead time (sosmed, LED Banner) → tanpa batas
  *
  * Karena itu aturan diturunkan dengan mem-parse teks, bukan diasumsikan
- * "outdoor = 2, indoor = 3" — `boom-gate` adalah outdoor yang memakai hari
+ * "outdoor = 2, indoor = 3" - `boom-gate` adalah outdoor yang memakai hari
  * kerja. Parse juga menjaga aturan tetap sinkron bila admin mengedit `rules`.
  *
  * CATATAN PENTING: hari kerja di sini hanya mengecualikan Sabtu/Minggu; libur
  * nasional TIDAK diperhitungkan (proyek tanpa dependensi kalender). Saat libur
  * panjang, batas ini lebih longgar daripada kenyataan.
  *
- * Duplikat cermin: server/src/lib/leadTime.js — jaga keduanya sinkron.
+ * Duplikat cermin: server/src/lib/leadTime.js - jaga keduanya sinkron.
  */
 
 export interface LeadTime {
@@ -36,7 +36,7 @@ export function parseLeadTime(rules: string): LeadTime | null {
   return { days, businessDays: Boolean(match[2]) };
 }
 
-/** Tanggal sebagai YYYY-MM-DD (waktu lokal) — dipakai untuk "hari ini" dan
+/** Tanggal sebagai YYYY-MM-DD (waktu lokal) - dipakai untuk "hari ini" dan
  *  untuk menormalkan `created_at` pengajuan. */
 export function toIsoDate(date: Date = new Date()): string {
   return [
@@ -89,7 +89,7 @@ export function describeLeadTime(lead: LeadTime): string {
   return `${lead.days} hari ${lead.businessDays ? 'kerja ' : ''}sebelum pemasangan`.replace('  ', ' ');
 }
 
-/** Alamat email kanal materi — sumbernya teks `rules` katalog (deck 2026). */
+/** Alamat email kanal materi - sumbernya teks `rules` katalog (deck 2026). */
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 
 /**

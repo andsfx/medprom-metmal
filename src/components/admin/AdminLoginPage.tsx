@@ -1,5 +1,5 @@
 /**
- * Halaman login staf — pola AdminLoginPage app lama
+ * Halaman login staf - pola AdminLoginPage app lama
  * (email+password, show/hide password, error state, redirect /admin).
  */
 import { useState, type FormEvent } from 'react';
@@ -111,7 +111,7 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        {/* Petunjuk kredensial tahap pengembangan — matikan dengan
+        {/* Petunjuk kredensial tahap pengembangan - matikan dengan
             VITE_PROMO_SHOW_DEV_LOGIN='0' sebelum dipakai publik. */}
         {isDevLoginHintEnabled() && (
           <div className="ui-admin-card mt-4 border border-amber-300/70 p-4 dark:border-amber-600/40">

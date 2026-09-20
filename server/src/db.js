@@ -1,5 +1,5 @@
 /**
- * PostgreSQL connection pool (pg) — pola schedule-event-v2/server/src/db.js.
+ * PostgreSQL connection pool (pg) - pola schedule-event-v2/server/src/db.js.
  *
  * Graceful degradation: bila DATABASE_URL tidak ada / DB tidak terjangkau,
  * server TETAP BOOT (warning saat start), dan setiap permintaan yang butuh DB
@@ -10,14 +10,14 @@ import pg from 'pg';
 
 const { Pool } = pg;
 
-// Kolom DATE (OID 1082) dikirim sebagai string 'YYYY-MM-DD' — JSON.stringify
+// Kolom DATE (OID 1082) dikirim sebagai string 'YYYY-MM-DD' - JSON.stringify
 // tidak boleh mengubahnya jadi UTC-midnight ISO (pola app lama).
 pg.types.setTypeParser(1082, (val) => val);
 
 const DATABASE_URL = process.env.DATABASE_URL || '';
 const POOL_MAX = Number(process.env.DB_POOL_MAX || 10);
 
-/** Error bertanda DB tak tersedia — middleware mengubahnya jadi 503. */
+/** Error bertanda DB tak tersedia - middleware mengubahnya jadi 503. */
 export class DbUnavailableError extends Error {
   constructor(message) {
     super(message);
@@ -46,7 +46,7 @@ function createPool() {
     max: POOL_MAX,
   });
 
-  // pg me-emit error untuk idle client yang mati — jangan crash server.
+  // pg me-emit error untuk idle client yang mati - jangan crash server.
   pool.on('error', (err) => {
     console.error('[db] idle client error:', err.message);
   });

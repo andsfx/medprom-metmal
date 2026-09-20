@@ -1,16 +1,16 @@
 /**
- * Widget Cloudflare Turnstile — captcha untuk aksi publik.
+ * Widget Cloudflare Turnstile - captcha untuk aksi publik.
  *
  * Turnstile dirender eksplisit lewat API `window.turnstile` supaya token bisa
  * dibaca React (mode implisit hanya menyuntik input tersembunyi ke form).
  *
  * Token Turnstile **sekali pakai** dan kedaluwarsa dalam 5 menit. Karena itu
  * widget menerima `resetKey`: setiap kali nilainya berubah, widget lama dibuang
- * dan widget baru dipasang sehingga token berikutnya segar — tanpa ini
+ * dan widget baru dipasang sehingga token berikutnya segar - tanpa ini
  * pencarian kedua selalu ditolak Siteverify dengan `timeout-or-duplicate`.
  *
  * Sitekey publik dibaca dari `VITE_TURNSTILE_SITE_KEY` (aman di-bundle).
- * Kosong = captcha dimatikan — server juga melewati verifikasi bila
+ * Kosong = captcha dimatikan - server juga melewati verifikasi bila
  * `TURNSTILE_SECRET_KEY` kosong, jadi kedua sisi bisa diaktifkan bersamaan.
  */
 import { useEffect, useRef, useState } from 'react';

@@ -1,5 +1,5 @@
 /**
- * Alur status pengajuan — cermin server/src/lib/statusFlow.js.
+ * Alur status pengajuan - cermin server/src/lib/statusFlow.js.
  *
  * Delapan status PRD beserta transisi yang diizinkan. Duplikasi ini disengaja
  * (proyek tanpa paket bersama); kesamaannya dikunci

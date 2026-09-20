@@ -1,5 +1,5 @@
 /**
- * verify-tenant-upload.mjs — jalur tenant penuh via browser produksi:
+ * verify-tenant-upload.mjs: jalur tenant penuh via browser produksi:
  * landing → form pengajuan (pilih media, tenant, PIC, data materi PRD) →
  * unggah berkas nyata → nomor pengajuan + dashboard staf + riwayat tenant.
  *
@@ -15,9 +15,9 @@ const API = process.env.VERIFY_API || 'https://promapi.metmalcommunityspace.web.
 const EMAIL = process.env.VERIFY_EMAIL || 'tr@metmal.co.id';
 const PASSWORD = process.env.VERIFY_PASSWORD || '';
 const results = [];
-const check = (n, ok, d = '') => { results.push(ok); console.log(`${ok ? '✓' : '✗'} ${n}${d ? ` — ${d}` : ''}`); };
+const check = (n, ok, d = '') => { results.push(ok); console.log(`${ok ? '✓' : '✗'} ${n}${d ? `: ${d}` : ''}`); };
 
-// PNG 1x1 valid — diterima server (magic bytes cocok, < 50MB).
+// PNG 1x1 valid: diterima server (magic bytes cocok, < 50MB).
 const png = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==', 'base64');
 const tmp = mkdtempSync(join(tmpdir(), 'medprom-verify-'));
 const filePath = join(tmp, 'materi-verify.png');
@@ -89,7 +89,7 @@ try {
     check('halaman status menampilkan riwayat status', statusBody.includes('Riwayat Status'));
   }
 
-  // 9. Dashboard staf melihat pengajuan (via API admin) — status awal PRD.
+  // 9. Dashboard staf melihat pengajuan (via API admin): status awal PRD.
   const ctx = await browser.newContext();
   const login = await ctx.request.post(`${API}/api/v1/auth/login`, {
     data: { email: EMAIL, password: PASSWORD },

@@ -1,5 +1,5 @@
 /**
- * useAuth — REST + cookie HttpOnly (pola schedule-event-v2/src/hooks/useAuth.ts).
+ * useAuth - REST + cookie HttpOnly (pola schedule-event-v2/src/hooks/useAuth.ts).
  * Session check via GET /auth/me saat mount; login email+password; logout.
  */
 import { useState, useEffect, useCallback, useMemo } from 'react';
@@ -72,7 +72,7 @@ export function useAuth() {
     try {
       await apiPost('/auth/logout');
     } catch {
-      // ignore — state di-reset apa adanya.
+      // ignore - state di-reset apa adanya.
     } finally {
       setUser(null);
     }

@@ -6,7 +6,7 @@
  *
  *   node scripts/preview-server.mjs [port]
  *
- * Hanya alat verifikasi lokal — tidak dipakai di produksi.
+ * Hanya alat verifikasi lokal: tidak dipakai di produksi.
  */
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
@@ -35,7 +35,7 @@ const MIME = {
 createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
 
-  // Proksi API — menghindari CORS dengan menyatukan origin.
+  // Proksi API: menghindari CORS dengan menyatukan origin.
   // Meneruskan body, cookie, dan Set-Cookie agar alur login ikut teruji.
   if (url.pathname.startsWith('/api/')) {
     try {

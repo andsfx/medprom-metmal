@@ -1,15 +1,15 @@
 /**
- * seed-media-types.mjs — seed katalog media promosi dari deck
+ * seed-media-types.mjs: seed katalog media promosi dari deck
  * "MEDIA PROMOSI METROPOLITAN MALL BEKASI 2026".
  *
  *   node server/scripts/seed-media-types.mjs
  *
  * Deck memuat 13 slide media; platform memecah satu slide social media
  * ("Instagram, Fanpage, dan Tiktok") menjadi dua entri: sosmed-feed dan
- * sosmed-story — total 14 slug.
+ * sosmed-story: total 14 slug.
  *
  * Idempotent. Baris yang sudah ada disinkronkan pada SELURUH kolom yang
- * dikelola seed (harga, lokasi, ketentuan, format, urutan, status aktif) —
+ * dikelola seed (harga, lokasi, ketentuan, format, urutan, status aktif):
  * seed adalah sumber kebenaran katalog yang berasal dari deck.
  *
  * PENGECUALIAN: `image_path` TIDAK ditimpa, karena foto bisa diganti staf dari

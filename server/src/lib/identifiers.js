@@ -1,8 +1,8 @@
 /**
  * Pembuat nomor pengajuan dan token status (FR-016, FR-018).
  *
- *   nomor  : MP-YYMMDD-XXXXXX  (mis. MP-260916-7Q4K2B) — mudah dibacakan tenant
- *   token  : 32 karakter base64url dari 24 byte acak — tidak dapat ditebak
+ *   nomor  : MP-YYMMDD-XXXXXX  (mis. MP-260916-7Q4K2B, mudah dibacakan tenant)
+ *   token  : 32 karakter base64url dari 24 byte acak (tidak dapat ditebak)
  *
  * Keduanya acak (bukan berurutan) agar tidak membocorkan volume pengajuan;
  * keunikan ditegakkan unique index di DB, pemanggil mengulang bila bentrok.

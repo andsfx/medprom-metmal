@@ -4,6 +4,15 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Dirapikan
+- **Sapuan em-dash dan banner dekoratif di kode aktif.** Seluruh `—`/`–` di
+  komentar `src/`, `server/`, `scripts/`, `public/`, `index.html`, dan CSS
+  diganti koma, titik dua, atau tanda hubung ASCII; banner komentar
+  `───`/`═══` murni dekoratif disederhanakan tanpa menghapus info rute/FR.
+  String yang sampai ke UI, pesan error API, teks yang diassert test, dan dua
+  marker `server/schema.sql` yang dibaca `schema-migration.test.js` tidak
+  diubah. Perilaku runtime sama; `tsc`, 397 test, dan build tetap hijau.
+
 
 ### Ditambahkan
 - **Harga numerik katalog dapat disunting staf.** Perhitungan PPN pengajuan

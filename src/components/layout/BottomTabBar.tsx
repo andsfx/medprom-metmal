@@ -1,8 +1,8 @@
 /**
- * Bottom tab bar — navigasi utama sisi tenant, hanya di mobile.
+ * Bottom tab bar - navigasi utama sisi tenant, hanya di mobile.
  *
  * Di layar lebar tab bar bawah terasa asing, jadi disembunyikan. Aturan
- * penyembunyian ada di `base.css` (`@media (min-width: 640px)`) — bukan
+ * penyembunyian ada di `base.css` (`@media (min-width: 640px)`) - bukan
  * utilitas `sm:hidden` di sini, karena `display: grid` pada `.app-tabbar`
  * mengalahkan utilitas Tailwind tersebut.
  *

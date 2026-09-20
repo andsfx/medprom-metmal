@@ -1,5 +1,5 @@
 /**
- * Wizard pengajuan media promosi CETAK — 3 langkah:
+ * Wizard pengajuan media promosi CETAK - 3 langkah:
  *   1. Data Pemohon (tenant ATAU non-tenant)
  *   2. Pilih Media & Periode (beberapa media sekaligus)
  *   3. Ringkasan & Kirim
@@ -135,7 +135,7 @@ export default function PromoCetakWizard() {
         applicantType, nonTenantName, picName, picPhone, submissionDate, notes, items,
         tenantName: tenant?.name ?? '', tenantId: tenant?.id ?? '', unitNumber: tenant?.lot ?? '',
       }));
-    } catch { /* storage diblokir — draf opsional */ }
+    } catch { /* storage diblokir - draf opsional */ }
   }, [mediaTypes, applicantType, nonTenantName, picName, picPhone, submissionDate, notes, items, tenant]);
 
   const dipilih = items.length;

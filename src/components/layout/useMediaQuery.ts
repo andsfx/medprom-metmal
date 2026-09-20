@@ -3,7 +3,7 @@
  *
  * Dipakai `AppShell` untuk memilih navigasi mana yang dirender: tab bar bawah
  * (mobile) atau navigasi app bar (desktop). Keduanya tidak boleh hadir
- * bersamaan di DOM — dua landmark `nav` bernama sama membingungkan pembaca
+ * bersamaan di DOM - dua landmark `nav` bernama sama membingungkan pembaca
  * layar, dan di test jsdom (yang tidak menerapkan CSS) query peran menjadi
  * ambigu. Menyembunyikan lewat CSS saja tidak cukup karena alasan itu.
  *

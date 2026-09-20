@@ -1,14 +1,14 @@
 /**
- * Buat / reset akun staf — jalankan manual:
+ * Buat / reset akun staf: jalankan manual:
  *   ADMIN_PASSWORD='...' node server/scripts/create-admin.mjs <email> '' [display_name] [--reset]
  *
- * Password boleh lewat argv (arg ke-2) ATAU env `ADMIN_PASSWORD` — produksi
+ * Password boleh lewat argv (arg ke-2) ATAU env `ADMIN_PASSWORD`: produksi
  * pakai env (argv bocor ke shell history + ps).
  *
  *   1. baca env (DATABASE_URL wajib)
  *   2. bcrypt hash password (min 8 karakter)
  *   3. INSERT users (role admin default; env ADMIN_ROLE untuk superadmin/
- *      tenant_relation) — atau, dengan --reset, UPDATE password_hash user lama.
+ *      tenant_relation): atau, dengan --reset, UPDATE password_hash user lama.
  */
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
@@ -58,7 +58,7 @@ try {
       [hash, email],
     );
     if (!rows[0]) {
-      console.error(`✗ user ${email} tidak ditemukan — buat dulu tanpa --reset.`);
+      console.error(`✗ user ${email} tidak ditemukan: buat dulu tanpa --reset.`);
       process.exitCode = 1;
     } else {
       console.log(`✓ password direset utk ${rows[0].email} (role: ${rows[0].role}).`);

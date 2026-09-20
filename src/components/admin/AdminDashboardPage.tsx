@@ -1,5 +1,5 @@
 /**
- * Dashboard admin — 3 tab: Pengajuan (list/filter/review/hapus/export),
+ * Dashboard admin - 3 tab: Pengajuan (list/filter/review/hapus/export),
  * Katalog Media (CRUD), Pengguna (superadmin).
  * tenant_relation = read-only (tanpa aksi tulis).
  */
@@ -37,14 +37,14 @@ const STATUS_OPTIONS = ['', ...STATUS_ORDER];
 const ROLE_OPTIONS = ['admin', 'tenant_relation', 'superadmin'];
 
 /**
- * Status yang mewajibkan Catatan Review — **cermin** aturan server di
+ * Status yang mewajibkan Catatan Review - **cermin** aturan server di
  * `server/src/routes/admin.js` (POST /admin/submissions/:id/status):
  * `perlu_revisi` → "Komentar wajib diisi ketika meminta revisi",
  * `ditolak` → "Alasan wajib diisi ketika menolak materi".
  *
  * Klien menegakkannya lebih awal supaya admin tidak baru tahu setelah submit
  * (dulu tombol tetap aktif, lalu server membalas 400). Server tetap otoritatif
- * — pesan galat server di bawah tidak dihapus.
+ * - pesan galat server di bawah tidak dihapus.
  */
 const STATUS_WAJIB_CATATAN: readonly string[] = ['perlu_revisi', 'ditolak'];
 
@@ -150,7 +150,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       setSummary(s.counts);
       setSummaryTotal(s.total);
     } catch {
-      // Ringkasan bersifat informatif — kegagalan tidak menghalangi daftar.
+      // Ringkasan bersifat informatif - kegagalan tidak menghalangi daftar.
       setSummary({});
       setSummaryTotal(0);
     }
@@ -160,7 +160,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     try {
       setReminders(await fetchAdminReminders());
     } catch {
-      // Pengingat bersifat informatif — kegagalan tidak menghalangi daftar.
+      // Pengingat bersifat informatif - kegagalan tidak menghalangi daftar.
       setReminders(null);
     }
   }, []);
@@ -183,7 +183,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
   /**
    * Apakah materi masuk lebih lambat dari lead time medianya?
-   * Diukur dari tanggal pengajuan dibuat (`created_at`), bukan hari ini —
+   * Diukur dari tanggal pengajuan dibuat (`created_at`), bukan hari ini -
    * jadi pengajuan lama yang sudah telat tetap ditandai, bukan hilang.
    */
   function leadTimeRisk(row: AdminSubmissionRow): string {
@@ -321,7 +321,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       </div>
       <p className="mb-4 text-xs ui-text-muted">Total {summaryTotal} pengajuan tercatat.</p>
 
-      {/* Pengingat periode berakhir — query turunan (bukan cron/email).
+      {/* Pengingat periode berakhir - query turunan (bukan cron/email).
        * Hanya media ber-pajak yang sudah dipasang; muncul bila ada yang
        * mendekati/melewati akhir periode. */}
       {reminders && reminders.items.length > 0 && (
@@ -687,7 +687,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         href={f.source_type === 'link' ? f.link_url : f.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        /* `min-h-11` (44px) — axe `target-size` (WCAG 2.2 AA 2.5.8)
+                        /* `min-h-11` (44px) - axe `target-size` (WCAG 2.2 AA 2.5.8)
                          * menandai tautan ini 44.5×16px dengan ruang klik aman
                          * 20px ke tetangga terdekat; ini tautan kontrol berdiri
                          * sendiri di dalam baris daftar, bukan tautan inline di
@@ -768,7 +768,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 Buka tautan materi
               </a>
               {(() => {
-                // Pakai status TERSIMPAN (bukan newStatus yang belum disimpan) —
+                // Pakai status TERSIMPAN (bukan newStatus yang belum disimpan) -
                 // view TR read-only pun takkan salah menyebut "Disetujui" untuk
                 // baris yang masih Menunggu.
                 const wa = submissionWaLink({
@@ -809,7 +809,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                     Ubah status
                   </legend>
-                  {/* Hanya transisi yang sah dari status saat ini (PRD §8) —
+                  {/* Hanya transisi yang sah dari status saat ini (PRD §8) -
                       server tetap memvalidasi ulang. */}
                   <div className="flex flex-wrap gap-2">
                     {allowedStatuses.map((s) => (
@@ -832,7 +832,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         {STATUS_LABELS[s] ?? s}
                         {/* `text-slate-600` (bukan ui-text-muted): di atas
                          * `bg-brand-primary-50` (label terpilih), muted hanya
-                         * 4.31:1 — gagal AA untuk teks 12px. slate-600 = 6.86:1. */}
+                         * 4.31:1 - gagal AA untuk teks 12px. slate-600 = 6.86:1. */}
                         {s === detail.status && <span className="ml-1 text-xs font-normal text-slate-600 dark:text-slate-300">(sekarang)</span>}
                       </label>
                     ))}
@@ -865,7 +865,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   </p>
                 )}
 
-                {/* Catat pemasangan — hanya bila materi boleh dipasang (FR-040). */}
+                {/* Catat pemasangan - hanya bila materi boleh dipasang (FR-040). */}
                 {isInstallableStatus(detail.status) && (
                   <fieldset className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
                     <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -1045,7 +1045,7 @@ interface CatalogFormState {
   id: string;
   slug: string;
   category: string;
-  /** Kanal katalog — dipisahkan deck lewat blok Contact Person. */
+  /** Kanal katalog - dipisahkan deck lewat blok Contact Person. */
   media_channel: 'cetak' | 'digital';
   name: string;
   size_spec: string;
@@ -1055,7 +1055,7 @@ interface CatalogFormState {
   location_note: string;
   rules: string;
   image_path: string;
-  /** Harga numerik (Rp) — dipakai perhitungan PPN; 0 = gratis. */
+  /** Harga numerik (Rp) - dipakai perhitungan PPN; 0 = gratis. */
   price_amount: number;
   price_unit: string;
   ppn_included: boolean;
@@ -1141,7 +1141,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
     }
   }
 
-  /** Hapus foto katalog — kartu kembali tanpa gambar. */
+  /** Hapus foto katalog - kartu kembali tanpa gambar. */
   async function handleHapusGambar() {
     if (!form?.id) return;
     setUnggahGambar(true);
@@ -1321,7 +1321,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {textInput('Harga', 'price_note', 'Rp. 70.000,-/hari')}
               {textInput('Lokasi', 'location_note', 'Sisi Pintu Tol Bekasi Barat')}
 
-              {/* Harga numerik — dipakai menghitung PPN pengajuan cetak dan
+              {/* Harga numerik - dipakai menghitung PPN pengajuan cetak dan
                * pengingat periode berakhir. Seed hanya mengisinya sekali, jadi
                * staf harus bisa mengoreksi tanpa menyentuh DB. */}
               <div>
@@ -1351,7 +1351,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                 Harga sudah termasuk PPN
               </label>
 
-              {/* Foto katalog — hanya untuk media yang sudah tersimpan, karena
+              {/* Foto katalog - hanya untuk media yang sudah tersimpan, karena
                * unggahan butuh id. Media baru: simpan dulu, lalu ganti foto. */}
               <div>
                 <span className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Foto Katalog</span>
@@ -1734,7 +1734,7 @@ export default function AdminDashboardPage() {
   /**
    * Panah kiri/kanan/Home/End pada tablist (pola ARIA "tabs with automatic
    * activation"). Sebelum ini `role="tablist"` dipasang tanpa dukungan panah,
-   * sehingga pengguna keyboard tidak bisa berpindah tab sama sekali — tombol
+   * sehingga pengguna keyboard tidak bisa berpindah tab sama sekali - tombol
    * panah tidak melakukan apa pun (terverifikasi di peramban).
    */
   function onTabListKeyDown(e: KeyboardEvent<HTMLDivElement>) {

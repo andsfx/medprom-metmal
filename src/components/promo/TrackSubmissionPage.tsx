@@ -1,10 +1,10 @@
 /**
- * Halaman pelacakan pengajuan lewat nomor `MP-YYMMDD-XXXXXX` — publik.
+ * Halaman pelacakan pengajuan lewat nomor `MP-YYMMDD-XXXXXX` - publik.
  *
  * Jalur kedua selain tautan ber-token: nomor pengajuan dibacakan ke PIC di
  * layar sukses (dan tampil di Riwayat), jadi tenant yang kehilangan tautan
  * tetap bisa memantau prosesnya tanpa akun. Untuk mencegah nomor dipanen
- * otomatis, pengiriman dijaga captcha Cloudflare Turnstile — token wajib
+ * otomatis, pengiriman dijaga captcha Cloudflare Turnstile - token wajib
  * selesai sebelum tombol Lacak bisa ditekan, dan diverifikasi ulang di server.
  *
  * Isi detailnya sama persis dengan halaman status ber-token
@@ -25,7 +25,7 @@ export default function TrackSubmissionPage() {
   const [data, setData] = useState<StatusPageData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  // Nomor yang terakhir berhasil dilacak — dipakai saat memuat ulang setelah
+  // Nomor yang terakhir berhasil dilacak - dipakai saat memuat ulang setelah
   // revisi, agar isian yang sedang diketik tidak mengubah target.
   const [searched, setSearched] = useState('');
   // Token Turnstile sekali pakai: setiap pengiriman menaikkan kunci ini agar
@@ -46,7 +46,7 @@ export default function TrackSubmissionPage() {
     }
     setLoading(true);
     setError('');
-    // Token sekali pakai — buang setelah dipakai (berhasil maupun gagal) supaya
+    // Token sekali pakai - buang setelah dipakai (berhasil maupun gagal) supaya
     // percobaan berikutnya memakai token baru, bukan token yang sudah terpakai.
     setCaptchaKey((k) => k + 1);
     try {
@@ -55,7 +55,7 @@ export default function TrackSubmissionPage() {
       setSearched(q);
     } catch (err) {
       // Pesan server sudah informatif (format salah / tidak ditemukan / captcha
-      // gagal) — teruskan apa adanya, jangan ganti dengan teks generik.
+      // gagal) - teruskan apa adanya, jangan ganti dengan teks generik.
       setData(null);
       setError(err instanceof Error ? err.message : 'Gagal melacak pengajuan. Coba lagi.');
     } finally {
@@ -84,7 +84,7 @@ export default function TrackSubmissionPage() {
 
   // Setelah hasil tiba, gulirkan detail ke layar dan pindahkan fokus ke
   // judulnya. Tanpa ini, di layar pendek detail muncul DI BAWAH lipatan dan
-  // pengguna hanya melihat formulir yang sama — tidak ada tanda apa pun bahwa
+  // pengguna hanya melihat formulir yang sama - tidak ada tanda apa pun bahwa
   // pencariannya berhasil (terukur: area gulir tetap di scrollTop 0).
   // Fokus hanya diambil saat pengajuan yang ditampilkan BERGANTI, supaya muat
   // ulang setelah kirim revisi tidak merampas fokus dari form revisi.

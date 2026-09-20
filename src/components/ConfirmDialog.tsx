@@ -22,7 +22,7 @@ interface Props extends ConfirmOptions {
 }
 
 /**
- * Dialog konfirmasi generik — pengganti window.confirm().
+ * Dialog konfirmasi generik - pengganti window.confirm().
  * Aksen merah, kartu subjek, tombol Batal/Hapus, state submitting.
  * (Pola schedule-event-v2/src/components/ConfirmDialog.tsx.)
  */

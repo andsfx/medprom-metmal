@@ -1,5 +1,5 @@
 /**
- * Client API admin — submissions, media-types CRUD, users, export.
+ * Client API admin - submissions, media-types CRUD, users, export.
  * Semua butuh sesi login (cookie sb-access-token via credentials: include).
  */
 import { apiGet, apiGetRaw, apiPost, apiUrl, ApiError } from '../lib/rest';
@@ -62,7 +62,7 @@ export interface InstallationInput {
 }
 
 /**
- * Pengingat periode berakhir — query turunan (bukan cron), hanya media
+ * Pengingat periode berakhir - query turunan (bukan cron), hanya media
  * ber-pajak yang sudah dipasang dan periodenya berakhir dalam `days` hari.
  */
 export async function fetchAdminReminders(days = 14): Promise<RemindersData> {

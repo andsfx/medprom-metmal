@@ -1,5 +1,5 @@
 /**
- * Halaman status pengajuan via token — publik, tanpa login (FR-019..FR-022).
+ * Halaman status pengajuan via token - publik, tanpa login (FR-019..FR-022).
  *
  * Token adalah kredensial tautan tenant: halaman ini hanya menampilkan
  * pengajuan yang tokennya cocok. Seluruh isi detail dirender komponen bersama

@@ -1,9 +1,9 @@
 /**
- * Routes auth — POST /api/v1/auth/*
+ * Routes auth - POST /api/v1/auth/*
  *
- *   POST /auth/login   — login email+password (bcrypt compare users.password_hash)
- *   POST /auth/logout  — hapus cookie
- *   GET  /auth/me      — sesi aktif ({ success, user } | { success, user: null })
+ *   POST /auth/login   - login email+password (bcrypt compare users.password_hash)
+ *   POST /auth/logout  - hapus cookie
+ *   GET  /auth/me      - sesi aktif ({ success, user } | { success, user: null })
  *
  * Respons mengikuti bentuk useAuth (FE membaca data.user / data.error):
  *   login → { success: true, user: {...} }
@@ -26,7 +26,7 @@ import { enforceRateLimit } from '../lib/rateLimit.js';
 
 const router = Router();
 
-// ─── POST /auth/login ────────────────────────────────────────────
+// POST /auth/login.
 router.post('/login', async (req, res, next) => {
   if (!process.env.JWT_SECRET) {
     return res.status(503).json({ success: false, error: 'Autentikasi belum dikonfigurasi (JWT_SECRET)' });
@@ -71,7 +71,7 @@ router.post('/login', async (req, res, next) => {
   }
 });
 
-// ─── POST /auth/logout ───────────────────────────────────────────
+// POST /auth/logout.
 router.post('/logout', async (req, res) => {
   const session = await authenticate(req, res).catch(() => null);
   if (session) logActivity(session.user, 'logout', 'user', session.user.id, null, req);
@@ -79,7 +79,7 @@ router.post('/logout', async (req, res) => {
   res.json({ success: true });
 });
 
-// ─── GET /auth/me ────────────────────────────────────────────────
+// GET /auth/me.
 router.get('/me', async (req, res, next) => {
   try {
     if (!process.env.JWT_SECRET) {

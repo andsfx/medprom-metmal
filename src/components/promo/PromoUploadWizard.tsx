@@ -1,8 +1,8 @@
 /**
- * Wizard pengajuan media promosi — 3 langkah:
+ * Wizard pengajuan media promosi - 3 langkah:
  *   1. Pilih media (spesifikasi + rules)
  *   2. Data tenant (pemilih dari API tenant) + PIC + data materi PRD
- *   3. Kirim materi — dua kanal resmi: kirim tautan penyimpanan tenant
+ *   3. Kirim materi - dua kanal resmi: kirim tautan penyimpanan tenant
  *      (Google Drive/Dropbox/WeTransfer; kanonis) atau unggah berkas ke Drive
  *      mall. Kanal unggah dapat dimatikan operator lewat
  *      isUploadModeEnabled() (VITE_PROMO_UPLOAD_MODE='0').
@@ -56,7 +56,7 @@ const STEPS: Array<{ label: string }> = [
 ];
 
 /**
- * Urutan field formulir menurut urutan DOM — dipakai saat memindahkan fokus ke
+ * Urutan field formulir menurut urutan DOM - dipakai saat memindahkan fokus ke
  * field tidak valid pertama. Urutannya sengaja tidak mengikuti urutan
  * pemeriksaan di `goStep3()`, agar pengguna diarahkan ke field paling atas yang
  * bermasalah (sesuai urutan yang mereka lihat), bukan ke pemeriksaan yang
@@ -87,7 +87,7 @@ function fokusKeField(key: string): void {
   const el = document.getElementById(id);
   if (!el) return;
   el.focus({ preventScroll: true });
-  // `scrollIntoView` tidak ada di jsdom (unit test) — panggil opsional agar
+  // `scrollIntoView` tidak ada di jsdom (unit test) - panggil opsional agar
   // jalur fokus tetap teruji tanpa memaksa lingkungan test menyediakannya.
   el.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
 }
@@ -95,7 +95,7 @@ function fokusKeField(key: string): void {
 /** Kunci sessionStorage draf pengajuan (link-only). */
 const DRAFT_KEY = 'metmal_promo_draft';
 
-/** Tautan materi harus http(s) — cerminan LINK_RE di server. */
+/** Tautan materi harus http(s) - cerminan LINK_RE di server. */
 function isValidLink(url: string): boolean {
   return /^https?:\/\/[^\s]+$/i.test(url.trim());
 }
@@ -118,7 +118,7 @@ export default function PromoUploadWizard() {
   const [step, setStep] = useState<Step>(1);
   const stepHeadingRef = useRef<HTMLHeadingElement>(null);
   const lewatiResetPertama = useRef(true);
-  /** Dinaikkan setiap validasi klien gagal — memicu pemindahan fokus ke field
+  /** Dinaikkan setiap validasi klien gagal - memicu pemindahan fokus ke field
    *  tidak valid pertama (lihat efek di bawah). Sengaja BUKAN state turunan
    *  dari `fieldErrors`: mengandalkan perubahan `fieldErrors` akan merebut
    *  fokus setiap kali pengguna memperbaiki satu field, karena tiap ketikan
@@ -216,7 +216,7 @@ export default function PromoUploadWizard() {
 
   // ─── Draf link-only (sessionStorage) ───
   // Reload tak boleh memaksa tenant mengulang dari nol: hanya field teks yang
-  // dipulihkan (bukan File — objek itu tak bisa diserialisasi).
+  // dipulihkan (bukan File - objek itu tak bisa diserialisasi).
   function clearDraft() {
     try { sessionStorage.removeItem(DRAFT_KEY); } catch { /* storage diblokir */ }
   }
@@ -230,7 +230,7 @@ export default function PromoUploadWizard() {
         materialType, mediaTarget, airStartDate, airEndDate,
         installationDate, notes, linkUrl,
       }));
-    } catch { /* storage penuh / diblokir — draf opsional, jangan gagalkan submit */ }
+    } catch { /* storage penuh / diblokir - draf opsional, jangan gagalkan submit */ }
   }
 
   // Pulihkan draf saat katalog siap (sekali, setelah mediaTypes termuat).
@@ -372,7 +372,7 @@ export default function PromoUploadWizard() {
       fokusKeField('link_url');
       return;
     }
-    // Persetujuan ketentuan wajib (PRD §9.3) — ditegakkan juga di server.
+    // Persetujuan ketentuan wajib (PRD §9.3) - ditegakkan juga di server.
     if (!termsAccepted) {
       setSubmitError('Centang persetujuan ketentuan sebelum mengirim.');
       fokusKeField('terms_accepted');
@@ -419,7 +419,7 @@ export default function PromoUploadWizard() {
       clearDraft();
     } catch (err) {
       setSubmitState('error');
-      // Validasi server datang sebagai errors[] tanpa nama field — petakan agar
+      // Validasi server datang sebagai errors[] tanpa nama field - petakan agar
       // tenant melihat masalahnya di kolom yang tepat, bukan satu alert generik.
       const mapped = mapSubmitErrors(errorsFromApiError(err));
       if (Object.keys(mapped.fields).length > 0) {
@@ -439,7 +439,7 @@ export default function PromoUploadWizard() {
       }
       setSubmitError(mapped.general.length > 0 ? mapped.general.join('; ') : '');
       if (mapped.general.length === 0 && Object.keys(mapped.fields).length === 0) {
-        // Tak ada yang bisa dipetakan (mis. error jaringan) — tampilkan pesannya.
+        // Tak ada yang bisa dipetakan (mis. error jaringan) - tampilkan pesannya.
         setSubmitError(err instanceof Error ? err.message : 'Gagal mengirim pengajuan. Coba lagi.');
       }
     }
@@ -498,7 +498,7 @@ export default function PromoUploadWizard() {
       hideTabBar
     >
       <div className="mx-auto max-w-2xl px-4 py-5">
-        {/* Progres langkah — indikator tipis khas aplikasi berlangkah */}
+        {/* Progres langkah - indikator tipis khas aplikasi berlangkah */}
         <nav className="mb-6" aria-label="Langkah pengajuan">
           <div className="flex items-baseline justify-between">
             <p className="text-sm font-semibold text-slate-900 dark:text-white">
@@ -568,7 +568,7 @@ export default function PromoUploadWizard() {
                         aria-describedby={fieldErrors.media ? 'err-media' : undefined}
                         className="mt-1 h-4 w-4 accent-[var(--brand-tosca)]"
                       />
-                      {/* Foto contoh — dekoratif: nama media sudah ada di sebelahnya,
+                      {/* Foto contoh - dekoratif: nama media sudah ada di sebelahnya,
                        * jadi sengaja alt="" agar pembaca layar tidak mengulang. */}
                       {m.image_path && (
                         <img
@@ -591,7 +591,7 @@ export default function PromoUploadWizard() {
                            * kartu pada viewport 320px. */}
                           <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
                           {/* `text-slate-600` (bukan slate-500): di atas latar
-                           * `bg-slate-100`, slate-500 hanya 4.34:1 — gagal AA
+                           * `bg-slate-100`, slate-500 hanya 4.34:1 - gagal AA
                            * untuk teks 12px. slate-600 = 6.92:1. */}
                           <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-400">
                             {CATEGORY_LABELS[m.category] ?? m.category}
@@ -949,7 +949,7 @@ export default function PromoUploadWizard() {
                   )}
                 </dl>
 
-                {/* Pemilih sumber materi — dua kanal resmi (tautan kanonis, unggah berkas).
+                {/* Pemilih sumber materi - dua kanal resmi (tautan kanonis, unggah berkas).
                     Kanal unggah disembunyikan bila operator menonaktifkannya
                     (VITE_PROMO_UPLOAD_MODE='0', instance tanpa kredensial Drive). */}
                 {isUploadModeEnabled() ? (
@@ -989,7 +989,7 @@ export default function PromoUploadWizard() {
                   </p>
                 )}
 
-                {/* Tautan materi — untuk file besar / folder Drive */}
+                {/* Tautan materi - untuk file besar / folder Drive */}
                 {sourceMode === 'link' && (
                   <div className="mt-4">
                     <label htmlFor="link-input" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
@@ -1087,7 +1087,7 @@ export default function PromoUploadWizard() {
                 </div>
                 )}
 
-                {/* Kanal email — deck mengarahkan materi social media ke email
+                {/* Kanal email - deck mengarahkan materi social media ke email
                     marketing; tautan pengajuan tetap dipakai untuk verifikasi. */}
                 {materialEmail && (
                   <div className="ui-control mt-4 rounded-md p-4">
@@ -1114,7 +1114,7 @@ export default function PromoUploadWizard() {
                   </div>
                 )}
 
-                {/* Persetujuan ketentuan — wajib sebelum kirim (PRD §9.3). */}
+                {/* Persetujuan ketentuan - wajib sebelum kirim (PRD §9.3). */}
                 <label className="mt-5 flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-200">
                   <input
                     id="terms-accepted"

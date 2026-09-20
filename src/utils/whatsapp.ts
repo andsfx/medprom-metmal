@@ -1,8 +1,8 @@
 /**
- * Util WhatsApp — normalisasi nomor PIC ke format `wa.me`.
+ * Util WhatsApp - normalisasi nomor PIC ke format `wa.me`.
  *
  * Kenapa perlu: validator server (`PHONE_RE`) dan wizard sama-sama menerima
- * spasi, tanda hubung, dan awalan `0` — placeholder wizard pun mengajarkan
+ * spasi, tanda hubung, dan awalan `0` - placeholder wizard pun mengajarkan
  * "08xx xxxx xxxx". `wa.me` hanya menerima digit dengan kode negara, jadi
  * `wa.me/0812-3456-7890` gagal untuk setiap pengajuan yang mengikuti format
  * yang diterima form. Normalizer ini menjembatani keduanya.
@@ -16,13 +16,13 @@ export function toWaNumber(raw: string | null | undefined): string | null {
   if (digits.startsWith('62')) return digits;
   if (digits.startsWith('0')) return `62${digits.slice(1)}`;
   if (digits.startsWith('8')) return `62${digits}`;
-  // Kode negara lain (mis. 65 Singapura) — teruskan apa adanya.
+  // Kode negara lain (mis. 65 Singapura) - teruskan apa adanya.
   return digits;
 }
 
 /**
  * Bangun tautan `wa.me` dengan pesan siap kirim.
- * Mengembalikan `null` bila nomor tidak ada / terlalu pendek — pemanggil
+ * Mengembalikan `null` bila nomor tidak ada / terlalu pendek - pemanggil
  * menyembunyikan atau menonaktifkan tombol, bukan merender tautan rusak.
  */
 export function waLink(raw: string | null | undefined, text = ''): string | null {
@@ -40,7 +40,7 @@ export function submissionWaLink(input: {
   status: string;
   review_notes?: string;
 }): string | null {
-  // Label dari satu sumber (src/constants/promo) — jangan duplikasi daftar
+  // Label dari satu sumber (src/constants/promo) - jangan duplikasi daftar
   // status di sini: saat status bertambah, peta lokal akan diam-diam basi dan
   // pesan WA menampilkan kunci mentah (mis. "menunggu_review").
   const lines = [
