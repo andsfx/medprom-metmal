@@ -119,7 +119,9 @@ async function loadSubmissionDetail(submission) {
     ),
     db.query(
       `SELECT id, submission_id, media_location, start_date, end_date, notes,
-              proof_url, installed_by, installed_by_id, created_at, updated_at
+              proof_url, proof_kind, proof_file_id, proof_file_url, proof_file_name,
+              proof_mime, proof_size_bytes, proof_uploaded_by, proof_uploaded_at,
+              installed_by, installed_by_id, created_at, updated_at
        FROM promo_installations WHERE submission_id = $1 LIMIT 1`,
       [submission.id],
     ),
