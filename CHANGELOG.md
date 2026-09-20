@@ -6,6 +6,23 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 ## [Unreleased]
 
 ### Ditambahkan
+- **Endpoint batch pengajuan media cetak (multi-media dalam satu kirim).**
+  `POST /api/v1/promo/submit-batch` menerima satu pemohon (tenant **atau**
+  non-tenant) beserta 1–10 media cetak sekaligus, lalu menulis **satu batch +
+  N pengajuan** (fan-out): tiap pengajuan tetap single-media dengan alur
+  status, pemasangan, revisi, dan pengingat yang sama seperti sebelumnya.
+  Harga & PPN dihitung **di server** dari `price_amount`/`ppn_included` katalog
+  dan disnapshot ke baris (`subtotal`, `ppn_amount`, `total_amount`,
+  `duration_days`); klien tidak dipercaya. Karena form cetak tidak meminta
+  berkas materi, pengajuan disimpan `source_type='none'` — materi menyusul
+  lewat alur revisi (tautan/berkas opsional tetap diterima per media).
+  Minimal sewa 7 hari dan lead time media divalidasi ulang di server sebelum
+  apa pun ditulis. Kuota anti-spam 5/24 jam dihitung **per batch**, bukan per
+  baris, sehingga satu kirim berisi banyak media tidak menghabiskan kuota.
+  Ditambah `GET /api/v1/promo/batches/status/:token` dan
+  `GET /api/v1/promo/batches/track?number=` (captcha Turnstile, action
+  `track-batch`) yang mengembalikan seluruh item batch tanpa membocorkan
+  fingerprint/IP. Dikunci `__tests__/api/promo-batch.test.js`.
 - **Modul harga & PPN cetak (cermin FE↔BE).** `src/utils/pricing.ts` ↔
   `server/src/lib/pricing.js` memuat satu sumber kebenaran perhitungan:
   `PPN_RATE = 0.11` (**tarif efektif** — permintaan pemilik "PPN 11%";

@@ -29,6 +29,14 @@ export function generateSubmissionNumber(date = new Date()) {
   return `MP-${yy}${mm}${dd}-${randomCode(6)}`;
 }
 
+/** Nomor batch pengajuan cetak: MPB-YYMMDD-XXXXXX (varian nomor pengajuan). */
+export function generateBatchNumber(date = new Date()) {
+  const yy = String(date.getFullYear()).slice(-2);
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `MPB-${yy}${mm}${dd}-${randomCode(6)}`;
+}
+
 /** Token status: 32 karakter base64url (aman untuk URL). */
 export function generateStatusToken() {
   return randomBytes(24).toString('base64url');

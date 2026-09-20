@@ -20,9 +20,10 @@ import { db } from '../db.js';
 import { enforceRateLimit, clientIp } from '../lib/rateLimit.js';
 import { checkInstallationDate, toIsoDate } from '../lib/leadTime.js';
 import { getDriveFile, MAX_UPLOAD_BYTES } from '../drive.js';
-import { generateSubmissionNumber, generateStatusToken } from '../lib/identifiers.js';
+import { generateSubmissionNumber, generateStatusToken, generateBatchNumber } from '../lib/identifiers.js';
 import { INITIAL_STATUS } from '../lib/statusFlow.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
+import { PPN_RATE, hitungHarga, cekDurasiMinimal } from '../lib/pricing.js';
 
 const router = Router();
 
@@ -76,7 +77,12 @@ const SUBMISSION_PUBLIC_COLUMNS = `
   material_title, material_description, campaign_name, material_type, media_target,
   air_start_date, air_end_date, installation_date, notes,
   status, review_notes, status_changed_at, created_at, updated_at,
-  source_type, file_url, file_name, link_url`;
+  source_type, file_url, file_name, link_url,
+  applicant_type, submission_date, batch_id,
+  price_amount::float8 AS price_amount, price_unit, ppn_included,
+  ppn_rate::float8 AS ppn_rate, quantity, duration_days,
+  subtotal::float8 AS subtotal, ppn_amount::float8 AS ppn_amount,
+  total_amount::float8 AS total_amount`;
 
 /** Nomor pengajuan yang dilacak tenant — normalisasi ke bentuk kanonis. */
 const SUBMISSION_NUMBER_RE = /^MP-\d{6}-[0-9A-Z]{6}$/;
@@ -590,6 +596,351 @@ router.post('/submissions/:id/revision', async (req, res, next) => {
       status: INITIAL_STATUS,
       status_token: submission.status_token,
     });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ══════════ BATCH CETAK (multi-media dalam satu kirim) ══════════
+//
+// Satu kirim form cetak = satu baris `promo_submission_batches` + N baris
+// `promo_submissions` (fan-out). Tiap baris tetap SINGLE-MEDIA seperti alur
+// lama, sehingga alur status, pemasangan, revisi, dan pengingat tidak perlu
+// diubah. `source_type` = 'none' karena form cetak tidak meminta berkas materi
+// (materi menyusul lewat alur revisi); baris versi materi hanya ditulis bila
+// tenant benar-benar melampirkan tautan/berkas.
+
+/** Batas jumlah media dalam satu batch (keputusan sementara; lihat dokumen). */
+const MAX_BATCH_ITEMS = 10;
+
+/** Format nomor batch — dipakai endpoint pelacakan. */
+const BATCH_NUMBER_RE = /^MPB-\d{6}-[0-9A-Z]{6}$/;
+
+/** Ambil media aktif berkanal cetak untuk slug-slug terpilih (satu query). */
+async function loadCetakMedia(slugs) {
+  if (slugs.length === 0) return new Map();
+  const { rows } = await db.query(
+    `SELECT slug, name, rules, price_amount::float8 AS price_amount, price_unit, ppn_included
+       FROM promo_media_types
+      WHERE slug = ANY($1::text[]) AND is_active = true AND media_channel = 'cetak'`,
+    [slugs],
+  );
+  return new Map(rows.map((r) => [r.slug, r]));
+}
+
+// ─── POST /promo/submit-batch — publik (media cetak) ────────────
+router.post('/submit-batch', async (req, res, next) => {
+  // Bucket SAMA dengan /submit: satu perangkat tidak bisa memutar dua endpoint
+  // untuk menggandakan kuota.
+  if (!enforceRateLimit(req, res, 'promo-submit', 10, 60 * 60 * 1000)) return;
+
+  const body = req.body || {};
+  const errors = [];
+
+  const applicantType = sanitize(body.applicant_type || '', 20);
+  const tenantId = sanitize(body.tenant_id || '', 100);
+  const tenantName = sanitize(body.tenant_name || '', 100);
+  const unitNumber = sanitize(body.unit_number || '', 50);
+  const picName = sanitize(body.pic_name || '', 100);
+  const picPhone = sanitize(body.pic_phone || '', 20);
+  const submissionDate = sanitize(body.submission_date || '', 10);
+  const notes = sanitize(body.notes || '', 1000);
+  const fingerprint = sanitize(body.device_fingerprint || '', 100);
+  const items = Array.isArray(body.items) ? body.items : [];
+
+  if (!['tenant', 'non_tenant'].includes(applicantType)) {
+    errors.push('Jenis pemohon wajib dipilih: tenant atau non-tenant');
+  }
+  if (!tenantName) errors.push(applicantType === 'non_tenant' ? 'Nama non tenant wajib diisi' : 'Nama tenant wajib diisi');
+  if (!picName) errors.push('Nama pemohon wajib diisi');
+  if (!picPhone) errors.push('Nomor telepon wajib diisi');
+  else if (!PHONE_RE.test(picPhone)) errors.push('Format nomor telepon tidak valid');
+  if (submissionDate && !DATE_RE.test(submissionDate)) errors.push('Tanggal pengajuan harus format YYYY-MM-DD');
+  if (!fingerprint) errors.push('Fingerprint perangkat wajib diisi');
+  if (items.length === 0) errors.push('Pilih minimal satu media promosi');
+  if (items.length > MAX_BATCH_ITEMS) errors.push(`Maksimal ${MAX_BATCH_ITEMS} media dalam satu pengajuan`);
+
+  const normalized = items.map((raw) => ({
+    media_type_slug: sanitize(raw?.media_type_slug || '', 60),
+    media_target: sanitize(raw?.media_target || '', 200),
+    installation_date: sanitize(raw?.installation_date || '', 10),
+    air_start_date: sanitize(raw?.air_start_date || '', 10),
+    air_end_date: sanitize(raw?.air_end_date || '', 10),
+    quantity: Math.max(1, Math.trunc(Number(raw?.quantity) || 1)),
+    link_url: sanitize(raw?.link_url || '', 500),
+    drive_file_id: sanitize(raw?.drive_file_id || '', 128),
+    file_name: sanitize(raw?.file_name || '', 200),
+    mime_type: sanitize(raw?.mime_type || '', 100),
+  }));
+
+  for (const [i, it] of normalized.entries()) {
+    const label = `Media ke-${i + 1}`;
+    if (!it.media_type_slug) errors.push(`${label}: jenis media wajib diisi`);
+    if (!it.media_target) errors.push(`${label}: lokasi pemasangan wajib diisi`);
+    for (const [key, val] of [['installation_date', it.installation_date], ['air_start_date', it.air_start_date], ['air_end_date', it.air_end_date]]) {
+      if (val && !DATE_RE.test(val)) errors.push(`${label}: ${key} harus format YYYY-MM-DD`);
+    }
+    if (it.air_start_date && it.air_end_date && it.air_end_date < it.air_start_date) {
+      errors.push(`${label}: periode pemasangan berakhir sebelum tanggal mulai`);
+    }
+    const dur = cekDurasiMinimal(it.air_start_date, it.air_end_date);
+    if (!dur.ok) errors.push(`${label}: ${dur.message}`);
+  }
+
+  if (errors.length > 0) return res.status(400).json({ success: false, errors });
+
+  try {
+    const slugs = [...new Set(normalized.map((it) => it.media_type_slug))];
+    const mediaBySlug = await loadCetakMedia(slugs);
+
+    for (const [i, it] of normalized.entries()) {
+      const media = mediaBySlug.get(it.media_type_slug);
+      if (!media) {
+        return res.status(400).json({
+          success: false,
+          error: `Media ke-${i + 1}: jenis media promosi cetak tidak dikenal atau tidak aktif.`,
+        });
+      }
+      // Lead time dihitung ulang dari teks `rules` di DB (bukan klaim klien).
+      const leadCheck = checkInstallationDate(it.installation_date, media.rules || '', toIsoDate());
+      if (!leadCheck.ok) {
+        return res.status(400).json({ success: false, errors: [`Media ke-${i + 1}: ${leadCheck.message}`] });
+      }
+    }
+
+    // Anti-spam per perangkat: maks 5 BATCH / 24 jam (bukan 5 baris — fan-out
+    // tidak boleh menghabiskan kuota dalam sekali kirim).
+    const { rows: fpRows } = await db.query(
+      `SELECT COUNT(DISTINCT COALESCE(batch_id::text, id::text))::int AS n
+         FROM promo_submissions
+        WHERE device_fingerprint = $1 AND created_at > now() - interval '24 hours'`,
+      [fingerprint],
+    );
+    if ((fpRows[0]?.n || 0) >= 5) {
+      return res.status(429).json({ success: false, error: 'Terlalu banyak pengajuan dari perangkat ini. Coba lagi besok.' });
+    }
+
+    // Hitung harga + durasi per item (server, bukan klien).
+    const dihitung = normalized.map((it) => {
+      const media = mediaBySlug.get(it.media_type_slug);
+      const dur = cekDurasiMinimal(it.air_start_date, it.air_end_date);
+      const harga = hitungHarga({
+        priceAmount: media.price_amount,
+        ppnIncluded: media.ppn_included,
+        quantity: it.quantity,
+        durationDays: dur.durationDays,
+        rate: PPN_RATE,
+      });
+      return { ...it, media, durationDays: dur.durationDays, harga };
+    });
+
+    // Batch dibuat lebih dulu agar batch_id diketahui item; dibatalkan
+    // (kompensasi) bila penulisan item gagal.
+    const batchNumber = generateBatchNumber();
+    const batchToken = generateStatusToken();
+    const { rows: batchRows } = await db.query(
+      `INSERT INTO promo_submission_batches
+        (batch_number, batch_token, applicant_type, applicant_name, tenant_id,
+         unit_number, pic_name, pic_phone, submission_date, notes,
+         device_fingerprint, ip_address, user_agent)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+       RETURNING id, batch_number, batch_token, created_at`,
+      [
+        batchNumber, batchToken, applicantType, tenantName, tenantId,
+        unitNumber, picName, picPhone, submissionDate, notes,
+        fingerprint, clientIp(req), sanitize(req.headers['user-agent'] || '', 500),
+      ],
+    );
+    const batch = batchRows[0];
+
+    // Nomor + token per item (acak; unique index menegakkan keunikan).
+    const itemRows = dihitung.map((it) => ({
+      ...it,
+      submissionNumber: generateSubmissionNumber(),
+      statusToken: generateStatusToken(),
+    }));
+
+    // Satu INSERT multi-VALUES: atomik per statement tanpa transaksi eksplisit
+    // (`db` tidak menyediakan connect()). Bila gagal → hapus batch (kompensasi).
+    //
+    // `status_changed_at` diletakkan paling akhir sebagai ekspresi literal
+    // `now()` (tanpa parameter), sehingga daftar nilai tetap 1:1 dengan kolom
+    // ber-parameter dan tidak ada placeholder yang perlu dibuang.
+    const kolom = [
+      'submission_number', 'status_token', 'media_type_slug', 'tenant_id',
+      'tenant_name', 'unit_number', 'pic_name', 'pic_phone', 'media_target',
+      'air_start_date', 'air_end_date', 'installation_date', 'terms_accepted',
+      'notes', 'source_type', 'link_url', 'status',
+      'device_fingerprint', 'ip_address', 'user_agent', 'applicant_type',
+      'submission_date', 'batch_id', 'price_amount', 'price_unit', 'ppn_included',
+      'ppn_rate', 'quantity', 'duration_days', 'subtotal', 'ppn_amount', 'total_amount',
+    ];
+    const values = [];
+    const tuples = [];
+    itemRows.forEach((it) => {
+      const row = [
+        it.submissionNumber, it.statusToken, it.media_type_slug, tenantId,
+        tenantName, unitNumber, picName, picPhone, it.media_target,
+        it.air_start_date, it.air_end_date, it.installation_date, true,
+        notes, 'none', it.link_url, INITIAL_STATUS,
+        fingerprint, clientIp(req), sanitize(req.headers['user-agent'] || '', 500),
+        applicantType, submissionDate, batch.id, it.media.price_amount,
+        it.media.price_unit, it.media.ppn_included, PPN_RATE, it.quantity,
+        it.durationDays, it.harga.subtotal, it.harga.ppnAmount, it.harga.totalAmount,
+      ];
+      const placeholders = row.map((v) => {
+        values.push(v);
+        return `$${values.length}`;
+      });
+      placeholders.push('now()');
+      tuples.push(`(${placeholders.join(',')})`);
+    });
+
+    let inserted;
+    try {
+      const { rows } = await db.query(
+        `INSERT INTO promo_submissions (${kolom.join(', ')}, status_changed_at)
+         VALUES ${tuples.join(', ')}
+         RETURNING id, submission_number, status_token, media_type_slug, status, created_at`,
+        values,
+      );
+      inserted = rows;
+    } catch (insErr) {
+      await db.query('DELETE FROM promo_submission_batches WHERE id = $1', [batch.id]).catch(() => {});
+      throw insErr;
+    }
+
+    // Riwayat pembuka per item + versi materi hanya bila ada lampiran.
+    for (const [i, row] of inserted.entries()) {
+      const it = itemRows[i];
+      await insertHistory(db, {
+        submissionId: row.id,
+        fromStatus: '',
+        toStatus: INITIAL_STATUS,
+        comment: `Pengajuan cetak dikirim ${applicantType === 'non_tenant' ? 'non-tenant' : 'tenant'}`,
+        actorType: 'tenant',
+        actorName: picName,
+      });
+      if (it.link_url || it.drive_file_id) {
+        const materialResult = await resolveMaterial({
+          linkUrl: it.link_url, driveFileId: it.drive_file_id,
+          fileName: it.file_name, mimeType: it.mime_type,
+        });
+        if (!materialResult.ok) {
+          return res.status(materialResult.status).json({
+            success: false,
+            ...(materialResult.errors ? { errors: materialResult.errors } : { error: materialResult.error }),
+          });
+        }
+        const material = materialResult.material;
+        await db.query(
+          `UPDATE promo_submissions
+              SET source_type = $1, file_url = $2, file_name = $3, mime_type = $4,
+                  link_url = $5, file_size_bytes = $6, drive_file_id = $7, updated_at = now()
+            WHERE id = $8`,
+          [material.sourceType, material.fileUrl, material.fileName, material.mimeType,
+            material.linkUrl, material.size, material.driveFileId, row.id],
+        );
+        await insertFileVersion(db, row.id, material, { version: 1, uploadedBy: 'tenant', notes: '' });
+      }
+    }
+
+    return res.status(201).json({
+      success: true,
+      batch_id: batch.id,
+      batch_number: batch.batch_number,
+      batch_token: batch.batch_token,
+      applicant_type: applicantType,
+      created_at: batch.created_at,
+      items: inserted.map((row, i) => ({
+        id: row.id,
+        submission_number: row.submission_number,
+        status_token: row.status_token,
+        media_type_slug: row.media_type_slug,
+        status: row.status,
+        subtotal: itemRows[i].harga.subtotal,
+        ppn_amount: itemRows[i].harga.ppnAmount,
+        total_amount: itemRows[i].harga.totalAmount,
+      })),
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/** Muat satu batch + seluruh submission-nya (bentuk publik). */
+async function loadBatchDetail(batch, submissions) {
+  const detail = await Promise.all(
+    submissions.map((s) => loadSubmissionDetail(s)),
+  );
+  return { batch, items: detail };
+}
+
+// ─── GET /promo/batches/status/:token — publik ──────────────────
+router.get('/batches/status/:token', async (req, res, next) => {
+  if (!enforceRateLimit(req, res, 'status-lookup', 60, 15 * 60 * 1000)) return;
+
+  const token = sanitize(req.params?.token || '', 100);
+  if (!token) return res.status(400).json({ success: false, error: 'Token batch wajib diisi.' });
+
+  try {
+    const { rows } = await db.query(
+      `SELECT id, batch_number, batch_token, applicant_type, applicant_name,
+              unit_number, submission_date, notes, created_at
+         FROM promo_submission_batches WHERE batch_token = $1 LIMIT 1`,
+      [token],
+    );
+    const batch = rows[0] || null;
+    if (!batch) return res.status(404).json({ success: false, error: NOT_FOUND_MESSAGE });
+
+    const { rows: subs } = await db.query(
+      `SELECT ${SUBMISSION_PUBLIC_COLUMNS}
+         FROM promo_submissions WHERE batch_id = $1 ORDER BY created_at ASC`,
+      [batch.id],
+    );
+    return res.json({ success: true, data: await loadBatchDetail(batch, subs) });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─── GET /promo/batches/track?number= — publik (captcha) ────────
+router.get('/batches/track', async (req, res, next) => {
+  if (!enforceRateLimit(req, res, 'status-lookup', 60, 15 * 60 * 1000)) return;
+
+  const number = normalizeSubmissionNumber(req.query?.number);
+  if (!number) return res.status(400).json({ success: false, error: 'Nomor pengajuan wajib diisi.' });
+  if (!BATCH_NUMBER_RE.test(number)) {
+    return res.status(400).json({
+      success: false,
+      error: 'Format nomor batch tidak valid. Contoh: MPB-260920-A7K2QX.',
+    });
+  }
+
+  try {
+    const captcha = await verifyTurnstile(req.query?.captcha, {
+      remoteip: clientIp(req),
+      action: 'track-batch',
+    });
+    if (!captcha.ok) {
+      return res.status(captcha.status || 400).json({ success: false, error: captcha.error });
+    }
+
+    const { rows } = await db.query(
+      `SELECT id, batch_number, batch_token, applicant_type, applicant_name,
+              unit_number, submission_date, notes, created_at
+         FROM promo_submission_batches WHERE batch_number = $1 LIMIT 1`,
+      [number],
+    );
+    const batch = rows[0] || null;
+    if (!batch) return res.status(404).json({ success: false, error: NOT_FOUND_MESSAGE });
+
+    const { rows: subs } = await db.query(
+      `SELECT ${SUBMISSION_PUBLIC_COLUMNS}
+         FROM promo_submissions WHERE batch_id = $1 ORDER BY created_at ASC`,
+      [batch.id],
+    );
+    return res.json({ success: true, data: await loadBatchDetail(batch, subs) });
   } catch (err) {
     return next(err);
   }
