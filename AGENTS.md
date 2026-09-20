@@ -40,6 +40,13 @@ Deck memuat 13 slide media; platform memecah slide social media menjadi
 `sosmed-feed` + `sosmed-story` = **14 slug**, 13 aktif (`vertical-banner`
 nonaktif — deck: "belum bisa digunakan, masih digunakan Mall").
 
+Katalog juga punya kolom **`media_channel`** (`cetak`/`digital`) yang
+memisahkan jalur Tenant Relations (media promosi cetak) dari Marcom (media
+digital) — pemisahan ini dinyatakan deck lewat blok **Contact Person**, bukan
+lewat kategori (kategori tetap `outdoor`/`indoor`/`social`, CHECK-nya tidak
+disentuh). Kanal cetak = `spanduk`, `big-banner`, `umbul-umbul`; ketiganya
+bertarif harian tunggal (`price_amount`) dan mewajibkan minimal sewa 7 hari.
+
 ## Architecture & Data Flow
 
 ```mermaid
@@ -84,6 +91,21 @@ fail-closed. Lihat pitfall #15.
 `perlu_revisi`; kepemilikan ditegakkan lewat fingerprint; versi lama **tidak
 dihapus**, status kembali `menunggu_review`.
 
+**Alur media cetak** (`/ajukan-cetak` → `PromoCetakWizard` →
+`POST /promo/submit-batch`) menerima **satu pemohon (tenant atau non-tenant)**
+beserta **1–10 media cetak sekaligus**. Server menulis **satu batch
+(`promo_submission_batches`) + N pengajuan** (fan-out): tiap pengajuan tetap
+single-media sehingga alur status, pemasangan, revisi, dan pengingat tidak
+berubah. Harga & PPN dihitung **di server** dari `price_amount`/`ppn_included`
+katalog dan disnapshot ke baris (`subtotal`/`ppn_amount`/`total_amount`); klien
+tidak dipercaya. Karena form cetak tidak meminta berkas, pengajuan disimpan
+`source_type='none'` (materi menyusul lewat revisi). Kanal cetak ditentukan
+kolom `media_channel='cetak'` (kategori deck tetap `outdoor`/`indoor`/`social`);
+minimal sewa **7 hari** dan lead time divalidasi ulang di server. Status batch
+dibaca lewat `GET /promo/batches/status/:token` dan `/batches/track?number=`
+(captcha `action='track-batch'`). Pengingat periode berakhir adalah **query
+turunan** `GET /admin/submissions/reminders?days=14` (bukan cron).
+
 **Batas kepercayaan** — untuk mode unggah, server **membuang semua klaim klien**:
 nama/MIME/ukuran diambil dari metadata Drive (`getDriveFile`), magic bytes
 diverifikasi **sebelum** byte apa pun ditulis ke Drive. Satu objek Drive = satu
@@ -98,16 +120,16 @@ Pengecualian yang disengaja: `/auth/me` → `{ success, user }` tanpa `data`
 
 | Path | Isi |
 |---|---|
-| `src/components/promo/` | Landing katalog, wizard, riwayat, **halaman status token**, **pelacakan nomor**, `SubmissionDetail` (dipakai kedua jalur), pemilih tenant |
+| `src/components/promo/` | Landing katalog, wizard materi digital, **`PromoCetakWizard`** (form media cetak), riwayat, **halaman status token**, **`BatchStatusPage`** (status batch cetak), **pelacakan nomor**, `SubmissionDetail` (dipakai ketiga jalur), pemilih tenant |
 | `src/components/admin/` | Login + dashboard staf (`AdminDashboardPage.tsx` = 3 tab) |
 | `src/components/ui/` | Komponen bersama: `Sheet`, **widget captcha Turnstile** |
-| `src/utils/` | Klien API (`promoApi`, `adminApi`), `leadTime`, **`statusFlow`**, `whatsapp`, `fingerprint` |
+| `src/utils/` | Klien API (`promoApi`, `adminApi`), `leadTime`, **`statusFlow`**, **`pricing`** (harga + PPN cetak), `whatsapp`, `fingerprint` |
 | `src/lib/rest.ts` | Klien REST — satu-satunya tempat `VITE_API_URL` dibaca |
 | `src/hooks/` | `useAuth` (sesi), `usePermission` (kosmetik saja) |
 | `src/constants/promo.ts` | Label 8 status, batas 50MB, `isUploadModeEnabled()` |
 | `server/src/routes/` | `promo` (publik), `admin` (staf), `auth` |
 | `server/src/` | `index.js` (entry), `drive.js`, `auth.js`, `db.js`, `lib/` |
-| `server/src/lib/` | `leadTime`, **`statusFlow`** (alur status), **`identifiers`** (nomor + token), **`turnstile`** (captcha), `rateLimit` |
+| `server/src/lib/` | `leadTime`, **`statusFlow`** (alur status), **`pricing`** (harga + PPN cetak), **`identifiers`** (nomor + token), **`turnstile`** (captcha), `rateLimit` |
 | `server/scripts/` | `seed-media-types.mjs` (katalog deck), `create-admin.mjs` |
 | `scripts/` | `db-migrate.mjs`, `verify-*.mjs` (Playwright) |
 | `__tests__/api/` | Test route server |
@@ -176,13 +198,18 @@ node scripts/verify-admin-flow.mjs     # status staf → terlihat tenant
 |---|---|---|
 | Lead time + email kanal | `src/utils/leadTime.ts` | `server/src/lib/leadTime.js` |
 | Alur status + transisi | `src/utils/statusFlow.ts` | `server/src/lib/statusFlow.js` |
+| Harga + PPN + pengingat | `src/utils/pricing.ts` | `server/src/lib/pricing.js` |
 | Batas 50MB | `src/constants/promo.ts` | `server/src/drive.js` |
 | MIME diterima | `acceptedMimes()` + `MIME_LABELS` | `ALLOWED_MIME` |
-| Regex telepon/tautan | inline di wizard | `PHONE_RE`, `LINK_RE` |
+| Regex telepon/tautan | inline di wizard (keduanya) | `PHONE_RE`, `LINK_RE` |
 
-Pasangan lead time dikunci `__tests__/api/lead-time.test.js` dan pasangan alur
-status dikunci `__tests__/api/status-flow.test.js` (keduanya mengimpor kedua
-modul, assert kesamaan output) — menyimpang = test gagal. Urutan migrasi status
+Pasangan lead time dikunci `__tests__/api/lead-time.test.js`, pasangan alur
+status dikunci `__tests__/api/status-flow.test.js`, dan pasangan harga/PPN
+dikunci `__tests__/api/cetak-pricing.test.js` (ketiganya mengimpor kedua modul,
+assert kesamaan output) — menyimpang = test gagal. **`PHONE_RE` diduplikasi di
+dua wizard** (`PromoUploadWizard` dan `PromoCetakWizard`) sebagai cermin manual
+dari `server/src/routes/promo.js` — bukan satu modul bersama, jadi mengubah
+salah satu menuntut menyamakan yang lain. Urutan migrasi status
 di `server/schema.sql` dikunci `__tests__/api/schema-migration.test.js`.
 
 **Aturan lead time diturunkan dengan mem-parse teks `rules`, bukan `category`.**
@@ -199,9 +226,9 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
 
 | File | Kenapa penting |
 |---|---|
-| `src/main.tsx`, `src/App.tsx` | Entry React + tabel rute (`/`, `/ajukan`, `/riwayat`, `/lacak`, `/status/:token`, `/login`, `/admin`) |
+| `src/main.tsx`, `src/App.tsx` | Entry React + tabel rute (`/`, `/ajukan`, `/ajukan-cetak`, `/batch/:token`, `/riwayat`, `/lacak`, `/status/:token`, `/login`, `/admin`) |
 | `src/lib/rest.ts` | Klien REST; `API_V1_BASE` = `VITE_API_URL` + `/api/v1`; `ApiError` |
-| `src/utils/promoApi.ts` | `errorsFromApiError`/`mapSubmitErrors` memetakan `errors[]` server ke field form; `fetchStatusByToken`, `fetchStatusByNumber` (nomor + token captcha), `submitRevision` |
+| `src/utils/promoApi.ts` | `errorsFromApiError`/`mapSubmitErrors` memetakan `errors[]` server ke field form; `fetchStatusByToken`, `fetchStatusByNumber` (nomor + token captcha), `submitRevision`, `submitBatch`/`fetchBatchByToken` (alur cetak) |
 | `src/utils/statusFlow.ts` | Cermin alur status + transisi; dipakai dashboard untuk menyaring status yang sah |
 | `server/src/index.js` | Middleware (CORS whitelist → json 2mb → cookie), mount router, `/healthz`, 404 + error JSON |
 | `server/src/routes/promo.js` | Endpoint publik; validasi, lead time, nomor/token, halaman status, revisi |
@@ -212,7 +239,10 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
 | `server/src/lib/identifiers.js` | Nomor pengajuan `MP-YYMMDD-XXXXXX` + token status acak |
 | `server/src/lib/turnstile.js` | Verifikasi captcha Cloudflare Turnstile (Siteverify); `turnstileConfigured()` |
 | `server/src/lib/leadTime.js` | Cermin aturan lead time |
-| `server/schema.sql` | Sumber migrasi (7 tabel + index); remap status lama → 8 nilai PRD |
+| `server/src/lib/pricing.js`, `src/utils/pricing.ts` | Cermin harga + PPN (11% efektif) + minimal sewa 7 hari + `REMINDER_DAYS`; dikunci `__tests__/api/cetak-pricing.test.js` |
+| `src/components/promo/PromoCetakWizard.tsx` | Form pengajuan media cetak (tenant/non-tenant, multi-media satu kirim, tanpa unggah materi) |
+| `src/components/promo/BatchStatusPage.tsx` | Halaman status batch cetak (`/batch/:token`) |
+| `server/schema.sql` | Sumber migrasi (8 tabel + index, termasuk `promo_submission_batches`); remap status lama → 8 nilai PRD; perluasan CHECK `source_type` (`upload`/`link`/**`none`**) dengan urutan lepas→remap→pasang |
 | `server/scripts/seed-media-types.mjs` | Katalog deck — `ON CONFLICT` menyinkron SELURUH kolom yang dikelola seed (termasuk `price_note`, `location_note`, `image_path`) |
 | `vitest.config.ts` | Konfigurasi test (terpisah dari `vite.config.ts`) |
 | `vercel.json` | Rewrite SPA `/(.*)` → `/index.html` |
@@ -250,7 +280,7 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
   setup file `src/test/setup.ts` (`import '@testing-library/jest-dom'`).
   Konfigurasi di `vitest.config.ts`; include `src/**/*.test.ts(x)` dan
   `__tests__/**/*.test.{js,ts}`.
-- **32 file / 274 test, semuanya hijau.** Tidak ada test yang di-skip.
+- **40 berkas / 385 test, semuanya hijau.** Tidak ada test yang di-skip.
 - **Gaya**: `describe`/`it` (bukan `test`), deskripsi **Indonesia** dengan pola
   `<kondisi> → <harapan>`. Nama file mengikuti modul yang diuji.
 - **Lokasi**: test komponen co-located (`__tests__/` di samping komponen), test
@@ -304,7 +334,9 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
    muncul di produksi. Jangan pula mengandalkan nama constraint lama
    (`promo_submissions_status_check`); nama itu bergantung versi skema — cari
    lewat `pg_get_constraintdef`. Dikunci
-   `__tests__/api/schema-migration.test.js`.
+   `__tests__/api/schema-migration.test.js`. **Aturan yang sama berlaku untuk
+   perluasan CHECK `source_type`** (menambah `'none'` untuk pengajuan cetak):
+   lepas CHECK lama → remap → pasang CHECK baru, juga dikunci test yang sama.
 7. **`clientIp()` memakai `x-real-ip` tanpa verifikasi proxy** (tidak ada
    `app.set('trust proxy')`). Mitigasi: `deploy/vps/Caddyfile` (berversi) wajib
    memuat `header_up X-Real-IP {remote_host}` sehingga edge menimpa header
@@ -405,6 +437,16 @@ kode unggah tetap ikut ter-bundle (mode = state React). Jangan klaim tree-shakin
     kiriman. Karena itu `promapi` produksi **tidak** rentan spoofing meski
     Caddyfile aktifnya polos; jangan "memperbaiki" dengan `{remote_host}`
     (lihat #19) karena itu justru merusak rate limit.
+21. **Mock FE yang "terlalu lengkap" menyembunyikan regresi seam.** Saat alur
+    cetak ditambahkan, `GET /promo/media-types` **tidak** memilih
+    `media_channel`/`price_amount`/`ppn_included`, sehingga form cetak
+    menampilkan 0 media dan PPN selalu 0 — tetapi seluruh test hijau karena
+    `PromoCetakWizard.test.tsx` mem-mock `fetchMediaTypes` dengan fixture yang
+    **sudah memuat** kolom tersebut. Pelajaran: untuk kontrak antara handler
+    server dan bentuk respons yang dibaca FE, tulis **test seam nyata** yang
+    memanggil handler sungguhan lewat `router.stack` dan meng-assert kolomnya
+    ada di `SELECT`/respons (lihat `__tests__/api/catalog-invariants.test.js`).
+    Jangan andalkan mock untuk memvalidasi bentuk respons.
 
 ## Commit & Rilis
 
@@ -454,6 +496,11 @@ isi `CORS_ORIGIN` → restart api.
 
 - Backup DB: cron `30 3 * * *` WIB, `pg_dump` gzip, retensi 14 file.
 - Log: `docker compose logs -f api`.
+- **Setelah rilis yang memuat alur media cetak: jalankan `npm run db:migrate`
+  lalu `npm run db:seed`.** Skema menambah kolom/tabel baru; `db:seed` mengisi
+  `price_amount`/`media_channel` katalog. `media_channel` sudah ditutup backfill
+  slug di `schema.sql`, tetapi **`price_amount` hanya terisi oleh seed** —
+  tanpa seed, perhitungan PPN pengajuan cetak menghasilkan 0.
 - Sweep Drive yatim: `node scripts/drive-sweep.mjs [--apply]` (dari host yang
   punya `GOOGLE_*` + `DATABASE_URL`).
 - `scripts/drive-auth.mjs` dan `scripts/drive-sweep.mjs` **git-ignore** — tidak

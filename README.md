@@ -18,6 +18,16 @@ entri (feed dan story), sehingga totalnya 14 jenis media; 13 aktif, dan
   material, harga, serta ketentuan pemasangan tiap media.
 - Form pengajuan tiga tahap: pilih media, isi data tenant/PIC/materi, kirim
   materi.
+- **Form media promosi cetak** (`/ajukan-cetak`) untuk spanduk, big banner, dan
+  umbul-umbul: tanggal pengajuan, nama pemohon, nama tenant **atau nama
+  non-tenant**, telepon, periode pemasangan, tanggal pemasangan, dan lokasi
+  pemasangan. Pemohon **tenant maupun non-tenant** dapat mengajukan, dan
+  **beberapa media dapat dipilih sekaligus** dalam satu kirim. Form ini tidak
+  meminta berkas materi (materi menyusul lewat alur revisi). Harga dihitung
+  server dengan **PPN 11%** di atas tarif deck, dan minimal sewa 7 hari
+  ditegakkan. Setiap kirim menghasilkan satu **nomor batch**
+  (`MPB-YYMMDD-XXXXXX`) yang halaman statusnya menampilkan seluruh media
+  sekaligus (`/batch/:token`).
 - Nama tenant dipilih dari API tenant. Bila API tidak tersedia, form beralih ke
   isian nama manual.
 - Dua cara mengirim materi:
@@ -51,9 +61,14 @@ entri (feed dan story), sehingga totalnya 14 jenis media; 13 aktif, dan
 - Penetapan status mengikuti alur 8 tahap PRD: Menunggu Review, Perlu Revisi,
   Disetujui, Ditolak, Siap Dipasang, Sudah Dipasang, Selesai. Komentar wajib saat
   meminta revisi, alasan wajib saat menolak.
-- Pencatatan pemasangan (media/lokasi, tanggal, catatan, tautan bukti) — hanya
-  untuk materi yang sudah disetujui.
-- Pengelolaan katalog media: harga, ukuran, ketentuan, dan status aktif.
+- Pencatatan pemasangan (media/lokasi, tanggal, catatan, bukti tayang) — hanya
+  untuk materi yang sudah disetujui. Bukti tayang dapat berupa **tautan** atau
+  **unggahan berkas** (JPEG/PNG/PDF/MP4, maks 50MB) ke Google Drive mall.
+- **Pengingat periode berakhir**: materi ber-pajak yang sudah dipasang dan
+  periodenya mendekat/lewat ditampilkan di dashboard (query turunan, tanpa
+  email/cron), dengan tombol "Ingatkan via WhatsApp".
+- Pengelolaan katalog media: harga, ukuran, ketentuan, kanal
+  (Cetak/Digital), dan status aktif.
 - Ekspor CSV siap dibuka di Excel.
 - Pengelolaan akun staf.
 
@@ -146,14 +161,19 @@ acak 32 karakter. Ada dua jalan tenant melihat status tanpa akun:
 Keduanya menampilkan halaman yang sama — status terkini, catatan tim, riwayat
 status, riwayat versi materi, informasi pemasangan, dan form revisi.
 
+Pengajuan **media cetak** dikirim sebagai satu batch berisi beberapa media,
+sehingga tenant menerima satu **nomor batch** (`MPB-YYMMDD-XXXXXX`) di samping
+nomor pengajuan tiap media. Halaman `/batch/:token` (dan padanan pelacakan
+nomornya) menampilkan seluruh media dalam batch itu.
+
 ## Struktur
 
 ```
 src/                      Frontend React (Vite + Tailwind v4)
-  components/promo/       Katalog, form pengajuan, riwayat, halaman status token, pelacakan nomor, pemilih tenant
+  components/promo/       Katalog, form pengajuan (materi digital + media cetak), riwayat, halaman status token, status batch, pelacakan nomor, pemilih tenant
   components/admin/       Login dan dashboard staf
   components/ui/          Komponen bersama (widget captcha Turnstile, sheet)
-  utils/                  promoApi, adminApi, fingerprint, leadTime, statusFlow, whatsapp
+  utils/                  promoApi, adminApi, fingerprint, leadTime, statusFlow, pricing, whatsapp
   lib/rest.ts             Klien REST
 server/
   schema.sql              Skema database
@@ -161,6 +181,7 @@ server/
   src/drive.js            Upload, verifikasi, delete, metadata — Google Drive REST v3
   src/lib/leadTime.js     Lead time (cermin src/utils/leadTime.ts)
   src/lib/statusFlow.js   Alur status 8 tahap (cermin src/utils/statusFlow.ts)
+  src/lib/pricing.js      Harga + PPN + minimal sewa (cermin src/utils/pricing.ts)
   src/lib/identifiers.js  Nomor pengajuan + token status
   src/lib/turnstile.js    Verifikasi captcha Cloudflare (Siteverify)
   src/auth.js             JWT, bcrypt, kontrol role
@@ -173,10 +194,11 @@ docs/                     Rencana + log eksekusi (PLAN_YYYY-MM-DD_HH-mm.md)
 
 `src/utils/leadTime.ts` dan `server/src/lib/leadTime.js` adalah **cermin yang
 disengaja** (proyek ini belum punya paket bersama), begitu pula
-`src/utils/statusFlow.ts` ↔ `server/src/lib/statusFlow.js`. Keduanya dikunci oleh
+`src/utils/statusFlow.ts` ↔ `server/src/lib/statusFlow.js` dan
+`src/utils/pricing.ts` ↔ `server/src/lib/pricing.js`. Ketiganya dikunci oleh
 test kontrak (`__tests__/api/lead-time.test.js`,
-`__tests__/api/status-flow.test.js`), sehingga perubahannya harus selalu
-berpasangan.
+`__tests__/api/status-flow.test.js`, `__tests__/api/cetak-pricing.test.js`),
+sehingga perubahannya harus selalu berpasangan.
 
 ## Menjalankan di lokal
 
@@ -239,6 +261,12 @@ Deck hanya menetapkan format file untuk media digital (LED Banner, Digital
 Poster: JPEG; Videotron/Integrasia/Media Sosial: JPEG/MP4) dan menyebut
 substrat fisik untuk media cetak (Flexi, sticker vinyl) — bukan format file.
 Format cetak di atas adalah kebijakan operasional platform, bukan klaim deck.
+
+> **Catatan istilah.** Pengelompokan format "Cetak" di tabel ini lebih luas
+> daripada **kanal `cetak`** pada kolom `media_channel` (hanya **spanduk, big
+> banner, umbul-umbul**) yang menjadi jalur form `/ajukan-cetak`. Media seperti
+> boom gate, sticker, dan vertical banner tetap berkanal `digital` — ia
+> diajukan lewat form materi digital dan tetap menerima JPEG/PNG/PDF.
 
 Batas unggahan 50MB. Untuk materi yang lebih besar, gunakan kanal kirim tautan.
 Materi media sosial juga dapat dikirim via email ke `marketing@malmetropolitan.com`
