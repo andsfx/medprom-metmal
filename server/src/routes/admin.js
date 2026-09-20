@@ -16,16 +16,23 @@
  */
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import { Readable } from 'node:stream';
 
 import { db } from '../db.js';
 import { requireRole, logActivity, READ_ROLES, STAFF_ROLES } from '../auth.js';
 import { deleteDriveFileOrThrow } from '../drive.js';
 import { readMultipartFile } from '../drive.js';
 import {
+  driveReady, ALLOWED_MIME, MAX_UPLOAD_BYTES, checkMagicBytes,
+  uploadToDrive, safeFileName, extOf,
+} from '../drive.js';
+import {
   ALLOWED_IMAGE_MIME, MAX_IMAGE_BYTES, checkImageMagic, mediaFileName,
   simpanGambar, hapusGambar, namaBerkasUnggahan, urlGambar,
 } from '../media.js';
 import { SUBMISSION_STATUSES, canTransition, isInstallableStatus } from '../lib/statusFlow.js';
+import { REMINDER_DAYS } from '../lib/pricing.js';
+import { enforceRateLimit } from '../lib/rateLimit.js';
 
 const router = Router();
 
@@ -196,7 +203,9 @@ router.get('/submissions/:id', requireRole(READ_ROLES), async (req, res, next) =
       ),
       db.query(
         `SELECT id, submission_id, media_location, start_date, end_date, notes,
-                proof_url, installed_by, installed_by_id, created_at, updated_at
+                proof_url, proof_kind, proof_file_id, proof_file_url, proof_file_name,
+                proof_mime, proof_size_bytes, proof_uploaded_by, proof_uploaded_at,
+                installed_by, installed_by_id, created_at, updated_at
          FROM promo_installations WHERE submission_id = $1 LIMIT 1`,
         [id],
       ),
@@ -288,9 +297,13 @@ router.post('/submissions/:id/installation', requireRole(STAFF_ROLES), async (re
     const endDate = sanitize(d.end_date || '', 10);
     const notes = sanitize(d.notes || '', 1000);
     const proofUrl = sanitize(d.proof_url || '', 500);
+    const proofKind = sanitize(d.proof_kind || 'link', 20);
 
     if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
     if (!mediaLocation) return res.status(400).json({ success: false, error: 'Media atau lokasi pemasangan wajib diisi' });
+    if (!['link', 'upload'].includes(proofKind)) {
+      return res.status(400).json({ success: false, error: 'Jenis bukti pemasangan harus link atau upload' });
+    }
     if (startDate && !DATE_RE.test(startDate)) {
       return res.status(400).json({ success: false, error: 'Tanggal mulai harus format YYYY-MM-DD' });
     }
@@ -325,16 +338,18 @@ router.post('/submissions/:id/installation', requireRole(STAFF_ROLES), async (re
       await db.query(
         `UPDATE promo_installations
          SET media_location = $1, start_date = $2, end_date = $3, notes = $4,
-             proof_url = $5, installed_by = $6, installed_by_id = $7, updated_at = now()
-         WHERE submission_id = $8`,
-        [mediaLocation, startDate, endDate, notes, proofUrl, req.auth.user.display_name, req.auth.user.id, id],
+             proof_url = $5, proof_kind = $6, installed_by = $7, installed_by_id = $8,
+             updated_at = now()
+         WHERE submission_id = $9`,
+        [mediaLocation, startDate, endDate, notes, proofUrl, proofKind, req.auth.user.display_name, req.auth.user.id, id],
       );
     } else {
       await db.query(
         `INSERT INTO promo_installations
-          (submission_id, media_location, start_date, end_date, notes, proof_url, installed_by, installed_by_id)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-        [id, mediaLocation, startDate, endDate, notes, proofUrl, req.auth.user.display_name, req.auth.user.id],
+          (submission_id, media_location, start_date, end_date, notes, proof_url,
+           proof_kind, installed_by, installed_by_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+        [id, mediaLocation, startDate, endDate, notes, proofUrl, proofKind, req.auth.user.display_name, req.auth.user.id],
       );
     }
 
@@ -357,6 +372,138 @@ router.post('/submissions/:id/installation', requireRole(STAFF_ROLES), async (re
 
     logActivity(req.auth.user, 'record_installation', 'promo_submission', id, { mediaLocation }, req);
     return res.json({ success: true, status: 'sudah_dipasang' });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─── POST /admin/submissions/:id/installation/proof — unggah bukti ──
+// Kanal kedua bukti tayang (selain tautan). Berkas disimpan ke Google Drive
+// yang sama dengan materi, memakai helper drive.js yang sudah ada — BUKAN
+// MEDIA_DIR (batasnya 4MB dan penyajiannya publik + cache selamanya).
+// Fail-closed: tanpa kredensial Drive → 503 (pola middleware drive.js).
+router.post('/submissions/:id/installation/proof', requireRole(STAFF_ROLES), async (req, res, next) => {
+  try {
+    const id = String(req.params?.id || '').trim();
+    if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
+
+    if (!driveReady) {
+      return res.status(503).json({ success: false, error: 'Layanan unggah bukti sedang tidak tersedia.' });
+    }
+    // Bucket terpisah dari kanal unggah publik (drive-upload, 5/15 mnt).
+    if (!enforceRateLimit(req, res, 'admin-proof', 20, 15 * 60 * 1000)) return;
+
+    const { rows } = await db.query(
+      'SELECT id, status FROM promo_submissions WHERE id = $1 LIMIT 1',
+      [id],
+    );
+    const existing = rows[0] || null;
+    if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
+    if (!isInstallableStatus(existing.status) && existing.status !== 'sudah_dipasang') {
+      return res.status(400).json({
+        success: false,
+        error: 'Bukti tayang hanya dapat diunggah untuk materi Disetujui, Siap Dipasang, atau Sudah Dipasang.',
+      });
+    }
+
+    const file = await readMultipartFile(req);
+    if (file.error) return res.status(400).json({ success: false, error: file.error });
+
+    const mime = String(file.contentType || '').split(';')[0].trim().toLowerCase();
+    if (!ALLOWED_MIME.has(mime)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Format bukti harus JPEG, PNG, PDF, atau MP4.',
+      });
+    }
+    if (file.length > MAX_UPLOAD_BYTES) {
+      return res.status(400).json({ success: false, error: 'Berkas bukti melebihi 50MB' });
+    }
+    const magic = checkMagicBytes(file.head, mime);
+    if (!magic.ok) return res.status(400).json({ success: false, error: magic.error });
+
+    const uploaded = await uploadToDrive({
+      stream: Readable.from(file.chunks),
+      length: file.length,
+      name: safeFileName(`bukti-${file.originalName || 'pemasangan'}`, extOf(mime)),
+      mimeType: mime,
+    });
+
+    const { rows: installRows } = await db.query(
+      'SELECT id FROM promo_installations WHERE submission_id = $1 LIMIT 1',
+      [id],
+    );
+    if (installRows[0]) {
+      await db.query(
+        `UPDATE promo_installations
+            SET proof_kind = 'upload', proof_file_id = $1, proof_file_url = $2,
+                proof_file_name = $3, proof_mime = $4, proof_size_bytes = $5,
+                proof_uploaded_by = $6, proof_uploaded_at = now(), updated_at = now()
+          WHERE submission_id = $7`,
+        [uploaded.id, uploaded.webViewLink, sanitize(file.originalName || '', 200), mime,
+          file.length, req.auth.user.display_name, id],
+      );
+    } else {
+      // Belum ada baris pemasangan — buat baris ringkas dengan lokasi dari
+      // pengajuan agar bukti tidak menggantung tanpa induk.
+      await db.query(
+        `INSERT INTO promo_installations
+          (submission_id, media_location, proof_kind, proof_file_id, proof_file_url,
+           proof_file_name, proof_mime, proof_size_bytes, proof_uploaded_by,
+           proof_uploaded_at, installed_by, installed_by_id)
+         VALUES ($1, $2, 'upload', $3, $4, $5, $6, $7, $8, now(), $9, $10)`,
+        [id, sanitize(req.body?.media_location || '', 200) || 'Belum ditentukan',
+          uploaded.id, uploaded.webViewLink, sanitize(file.originalName || '', 200), mime,
+          file.length, req.auth.user.display_name, req.auth.user.display_name, req.auth.user.id],
+      );
+    }
+
+    logActivity(req.auth.user, 'upload_installation_proof', 'promo_submission', id,
+      { mime, bytes: file.length, drive_file_id: uploaded.id }, req);
+    return res.json({ success: true, proof_file_id: uploaded.id, proof_file_url: uploaded.webViewLink });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// ─── GET /admin/submissions/reminders — periode berakhir (turunan) ──
+// Notifikasi dashboard TURUNAN DATA (bukan cron/worker): menghitung materi
+// yang sudah dipasang dan periodenya berakhir dalam N hari. Hanya media
+// ber-pajak yang disertakan (`ppn_amount > 0` atau harga belum termasuk PPN).
+// `end_date` bertipe TEXT, jadi WAJIB dijaga regex sebelum di-cast — satu nilai
+// cacat akan menggagalkan seluruh query.
+router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, next) => {
+  try {
+    const days = Math.min(365, Math.max(1, parseInt(String(req.query?.days || REMINDER_DAYS), 10) || REMINDER_DAYS));
+    const { rows } = await db.query(
+      `SELECT s.id, s.submission_number, s.tenant_name, s.applicant_type,
+              s.media_type_slug, s.status, s.air_end_date,
+              COALESCE(NULLIF(i.end_date, ''), NULLIF(s.air_end_date, '')) AS end_date,
+              (CASE WHEN COALESCE(NULLIF(i.end_date, ''), NULLIF(s.air_end_date, ''))
+                         ~ '^\\d{4}-\\d{2}-\\d{2}$'
+                    THEN COALESCE(NULLIF(i.end_date, ''), s.air_end_date)::date
+               END - CURRENT_DATE) AS days_left,
+              s.ppn_amount::float8 AS ppn_amount,
+              s.total_amount::float8 AS total_amount
+         FROM promo_submissions s
+         LEFT JOIN promo_installations i ON i.submission_id = s.id
+        WHERE s.status = 'sudah_dipasang'
+          AND (s.ppn_amount > 0 OR s.ppn_included = false)
+          AND (CASE WHEN COALESCE(NULLIF(i.end_date, ''), NULLIF(s.air_end_date, ''))
+                         ~ '^\\d{4}-\\d{2}-\\d{2}$'
+                    THEN COALESCE(NULLIF(i.end_date, ''), s.air_end_date)::date
+               END - CURRENT_DATE) <= $1
+        ORDER BY days_left NULLS LAST
+        LIMIT 200`,
+      [days],
+    );
+
+    const overdue = rows.filter((r) => r.days_left !== null && r.days_left < 0).length;
+    const dueSoon = rows.filter((r) => r.days_left !== null && r.days_left >= 0).length;
+    return res.json({
+      success: true,
+      data: { days, overdue, due_soon: dueSoon, items: rows },
+    });
   } catch (err) {
     return next(err);
   }
@@ -658,8 +805,11 @@ router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
               s.unit_number, s.pic_name, s.pic_phone, s.media_type_slug,
               s.campaign_name, s.material_title, s.installation_date, s.status,
               s.review_notes, s.notes, s.source_type, s.file_name, s.file_url,
-              s.link_url, s.ip_address
+              s.link_url, s.ip_address,
+              s.applicant_type, s.submission_date, b.batch_number,
+              s.subtotal, s.ppn_amount, s.total_amount
        FROM promo_submissions s
+       LEFT JOIN promo_submission_batches b ON b.id = s.batch_id
        ORDER BY s.created_at DESC`,
     );
 
@@ -668,6 +818,8 @@ router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
       'Nama PIC', 'Telepon PIC', 'Jenis Media', 'Nama Campaign', 'Judul Materi',
       'Tanggal Pasang', 'Status', 'Catatan Review', 'Catatan Tenant', 'Sumber',
       'Nama File', 'URL File', 'URL Tautan', 'IP',
+      'Jenis Pemohon', 'Tanggal Pengajuan', 'Nomor Batch',
+      'Subtotal', 'PPN', 'Total',
     ];
     const lines = [header.join(',')];
     for (const r of rows) {
@@ -677,8 +829,11 @@ router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
         r.tenant_name, r.tenant_id, r.unit_number, r.pic_name, r.pic_phone,
         r.media_type_slug, r.campaign_name, r.material_title,
         r.installation_date, r.status, r.review_notes, r.notes,
-        r.source_type === 'link' ? 'Tautan' : 'Unggah',
+        r.source_type === 'link' ? 'Tautan' : r.source_type === 'none' ? 'Menyusul' : 'Unggah',
         r.file_name, r.file_url, r.link_url, r.ip_address,
+        r.applicant_type === 'non_tenant' ? 'Non-tenant' : 'Tenant',
+        r.submission_date, r.batch_number,
+        r.subtotal, r.ppn_amount, r.total_amount,
       ].map(csvEscape).join(','));
     }
 

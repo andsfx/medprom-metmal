@@ -137,4 +137,31 @@ describe('GET /admin/export — CSV', () => {
     expect(firstRow).toContain('081234567890');
     expect(firstRow).not.toContain(`'081234567890`);
   });
+
+  it('memuat kolom alur cetak: jenis pemohon, batch, dan pajak', async () => {
+    mockedQuery.mockResolvedValue({
+      rows: [{
+        ...ROW,
+        applicant_type: 'non_tenant',
+        submission_date: '2026-09-20',
+        batch_number: 'MPB-260920-ABC234',
+        subtotal: 490000, ppn_amount: 53900, total_amount: 543900,
+      }],
+    });
+    const res = await callExport();
+    const [header, firstRow] = String(res.body).replace(/^\uFEFF/, '').split('\r\n');
+    for (const kolom of ['Jenis Pemohon', 'Tanggal Pengajuan', 'Nomor Batch', 'Subtotal', 'PPN', 'Total']) {
+      expect(header).toContain(kolom);
+    }
+    expect(firstRow).toContain('Non-tenant');
+    expect(firstRow).toContain('MPB-260920-ABC234');
+    expect(firstRow).toContain('543900');
+  });
+
+  it('source_type "none" tampil sebagai "Menyusul", bukan "Unggah"', async () => {
+    mockedQuery.mockResolvedValue({ rows: [{ ...ROW, source_type: 'none' }] });
+    const res = await callExport();
+    const firstRow = String(res.body).replace(/^\uFEFF/, '').split('\r\n')[1];
+    expect(firstRow).toContain('Menyusul');
+  });
 });

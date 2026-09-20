@@ -6,6 +6,20 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 ## [Unreleased]
 
 ### Ditambahkan
+- **Pengingat periode berakhir & bukti tayang di dashboard staf.**
+  `GET /api/v1/admin/submissions/reminders?days=14` adalah notifikasi
+  **turunan data** (bukan cron/worker): ia menghitung materi yang sudah
+  dipasang dan periodenya berakhir dalam N hari, hanya untuk media ber-pajak.
+  Kolom tanggal berakhir disimpan sebagai teks, jadi nilainya dijaga pola
+  tanggal sebelum di-cast — satu nilai cacat tidak akan menggagalkan seluruh
+  query. Ditambah `POST /api/v1/admin/submissions/:id/installation/proof`
+  untuk **bukti tayang kanal unggahan** (berkas ke Google Drive yang sama
+  dengan materi; fail-closed `503` bila kredensial Drive belum diisi) di
+  samping kanal tautan yang sudah ada; `POST .../installation` kini menerima
+  `proof_kind` (`link`/`upload`, bawaan `link` sehingga pemanggil lama tetap
+  bekerja). Ekspor CSV menambah kolom **Jenis Pemohon**, **Tanggal
+  Pengajuan**, **Nomor Batch**, **Subtotal**, **PPN**, dan **Total**, serta
+  menampilkan sumber `none` sebagai "Menyusul".
 - **Endpoint batch pengajuan media cetak (multi-media dalam satu kirim).**
   `POST /api/v1/promo/submit-batch` menerima satu pemohon (tenant **atau**
   non-tenant) beserta 1–10 media cetak sekaligus, lalu menulis **satu batch +

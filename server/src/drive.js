@@ -40,6 +40,9 @@ const ALLOWED_MIME = new Set([
   'video/mp4',
 ]);
 
+/** MIME yang diterima kanal unggah (dipakai juga endpoint bukti tayang staf). */
+export { ALLOWED_MIME };
+
 /** Signature magic bytes per MIME (sinkron ALLOWED_MIME). */
 const MIME_MAGIC = {
   'image/jpeg': [[0xff, 0xd8, 0xff]],
@@ -80,8 +83,8 @@ async function getAccessToken() {
   return cachedAccess.token;
 }
 
-// ─── Helper nama file aman ──────────────────────────────────────
-function safeFileName(originalName, ext) {
+/** Helper nama file aman (dipakai kanal unggah materi & bukti tayang). */
+export function safeFileName(originalName, ext) {
   const base = String(originalName || '')
     .split(/[/\\]/)
     .pop()
@@ -92,7 +95,8 @@ function safeFileName(originalName, ext) {
   return `${stamp}${base ? `-${base}` : ''}.${ext}`;
 }
 
-function extOf(mime) {
+/** Ekstensi berkas dari MIME yang diizinkan. */
+export function extOf(mime) {
   return (
     { 'image/jpeg': 'jpg', 'image/png': 'png', 'application/pdf': 'pdf', 'video/mp4': 'mp4' }[mime] || 'bin'
   );
