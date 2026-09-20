@@ -1055,6 +1055,10 @@ interface CatalogFormState {
   location_note: string;
   rules: string;
   image_path: string;
+  /** Harga numerik (Rp) — dipakai perhitungan PPN; 0 = gratis. */
+  price_amount: number;
+  price_unit: string;
+  ppn_included: boolean;
   is_active: boolean;
   sort_order: number;
 }
@@ -1063,7 +1067,8 @@ const EMPTY_CATALOG_FORM: CatalogFormState = {
   id: '', slug: '', category: 'outdoor', media_channel: 'digital', name: '',
   size_spec: '', material_spec: '',
   accepted_formats: 'JPEG', price_note: '', location_note: '', rules: '',
-  image_path: '', is_active: true, sort_order: 0,
+  image_path: '', price_amount: 0, price_unit: '', ppn_included: false,
+  is_active: true, sort_order: 0,
 };
 
 function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConfirmDelete: (id: string, subject: string) => Promise<boolean> }) {
@@ -1105,6 +1110,8 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
         // `image_path` sengaja TIDAK dikirim: field ini dikelola endpoint foto
         // (unggah/hapus) dan tidak dapat disunting di form. Mengirimkannya di
         // sini akan menimpa foto yang baru diunggah dengan nilai state lama.
+        price_amount: form.price_amount, price_unit: form.price_unit,
+        ppn_included: form.ppn_included,
         is_active: form.is_active, sort_order: form.sort_order,
       };
       if (form.id) await updateMediaType(form.id, input);
@@ -1244,6 +1251,9 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                         accepted_formats: m.accepted_formats, price_note: m.price_note,
                         location_note: m.location_note, rules: m.rules,
                         media_channel: m.media_channel === 'cetak' ? 'cetak' : 'digital',
+                        price_amount: m.price_amount ?? 0,
+                        price_unit: m.price_unit ?? '',
+                        ppn_included: Boolean(m.ppn_included),
                         image_path: m.image_path || '',
                         is_active: m.is_active !== false, sort_order: m.sort_order,
                       });
@@ -1310,6 +1320,36 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {textInput('Materi', 'material_spec', 'Flexi 280gr')}
               {textInput('Harga', 'price_note', 'Rp. 70.000,-/hari')}
               {textInput('Lokasi', 'location_note', 'Sisi Pintu Tol Bekasi Barat')}
+
+              {/* Harga numerik — dipakai menghitung PPN pengajuan cetak dan
+               * pengingat periode berakhir. Seed hanya mengisinya sekali, jadi
+               * staf harus bisa mengoreksi tanpa menyentuh DB. */}
+              <div>
+                <label htmlFor="cf-price-amount" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                  Harga numerik (Rp)
+                </label>
+                <input
+                  id="cf-price-amount"
+                  type="number"
+                  min={0}
+                  step="0.01"
+                  value={form.price_amount}
+                  onChange={(e) => setForm((f) => (f ? { ...f, price_amount: Number(e.target.value) || 0 } : f))}
+                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                />
+                <p className="mt-1 text-xs ui-text-muted">0 = media gratis. Dipakai untuk menghitung PPN.</p>
+              </div>
+              {textInput('Satuan harga', 'price_unit', 'hari')}
+              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 sm:col-span-2 dark:text-slate-200">
+                <input
+                  type="checkbox"
+                  id="cf-ppn-included"
+                  checked={form.ppn_included}
+                  onChange={(e) => setForm((f) => (f ? { ...f, ppn_included: e.target.checked } : f))}
+                  className="h-4 w-4 accent-[var(--brand-tosca)]"
+                />
+                Harga sudah termasuk PPN
+              </label>
 
               {/* Foto katalog — hanya untuk media yang sudah tersimpan, karena
                * unggahan butuh id. Media baru: simpan dulu, lalu ganti foto. */}

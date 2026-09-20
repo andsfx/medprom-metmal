@@ -420,6 +420,39 @@ describe('AdminDashboardPage', () => {
     expect(mockedCreateMediaType).toHaveBeenCalledWith(expect.objectContaining({ media_channel: 'cetak' }));
   });
 
+  it('form katalog mengirim harga numerik, satuan, dan penanda PPN', async () => {
+    mockedFetchMediaTypes.mockResolvedValue([]);
+    mockedCreateMediaType.mockResolvedValue('mt-baru');
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+
+    fireEvent.click(screen.getByRole('tab', { name: /Katalog Media/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Tambah Media/i }));
+
+    fireEvent.change(screen.getByLabelText(/Slug/i), { target: { value: 'spanduk' } });
+    fireEvent.change(screen.getByLabelText(/^Nama$/i), { target: { value: 'Spanduk' } });
+    fireEvent.change(screen.getByLabelText(/Harga numerik/i), { target: { value: '70000' } });
+    fireEvent.change(screen.getByLabelText(/Satuan harga/i), { target: { value: 'hari' } });
+    fireEvent.click(screen.getByLabelText(/Harga sudah termasuk PPN/i));
+    fireEvent.click(screen.getByRole('button', { name: /Simpan/i }));
+
+    await waitFor(() => expect(mockedCreateMediaType).toHaveBeenCalledTimes(1));
+    expect(mockedCreateMediaType).toHaveBeenCalledWith(expect.objectContaining({
+      price_amount: 70000, price_unit: 'hari', ppn_included: true,
+    }));
+  });
+
+  it('harga numerik bawaan 0 (media gratis) dan PPN tidak dicentang', async () => {
+    mockedFetchMediaTypes.mockResolvedValue([]);
+    renderDashboard({ id: 'u1', email: 'admin@test', display_name: 'Admin Test', role: 'admin' });
+    await screen.findByText('Optik Melawai');
+    fireEvent.click(screen.getByRole('tab', { name: /Katalog Media/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /Tambah Media/i }));
+
+    expect(screen.getByLabelText(/Harga numerik/i)).toHaveValue(0);
+    expect(screen.getByLabelText(/Harga sudah termasuk PPN/i)).not.toBeChecked();
+  });
+
   it('pengguna kosong → panel keadaan kosong (superadmin)', async () => {
     renderDashboard({ id: 's1', email: 'super@test', display_name: 'Super', role: 'superadmin' });
     await screen.findByText('Optik Melawai');

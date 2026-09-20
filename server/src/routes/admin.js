@@ -69,6 +69,16 @@ const SLUG_RE = /^[a-z0-9-]+$/;
 const CATEGORIES = ['outdoor', 'indoor', 'social'];
 /** Kanal katalog — cermin CHECK `promo_media_types_channel_chk` di schema. */
 const MEDIA_CHANNELS = ['cetak', 'digital'];
+
+/**
+ * Harga numerik dari input staf: angka >= 0, dibulatkan 2 desimal seperti
+ * NUMERIC(14,2). Nilai tak masuk akal (NaN/negatif) → 0 (media gratis).
+ */
+function parseHarga(val) {
+  const n = Number.parseFloat(String(val));
+  if (!Number.isFinite(n) || n < 0) return 0;
+  return Math.round((n + Number.EPSILON) * 100) / 100;
+}
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // ══════════ SUBMISSIONS ══════════
@@ -593,8 +603,8 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
       `INSERT INTO promo_media_types
         (slug, category, name, size_spec, material_spec, accepted_formats,
          price_note, location_note, rules, image_path, is_active, sort_order,
-         media_channel)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
+         media_channel, price_amount, price_unit, ppn_included)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
        RETURNING id`,
       [
         slug,
@@ -610,6 +620,9 @@ router.post('/media-types', requireRole(STAFF_ROLES), async (req, res, next) => 
         d.is_active === false ? false : true,
         parseInt(String(d.sort_order ?? '0'), 10) || 0,
         mediaChannel,
+        parseHarga(d.price_amount),
+        sanitize(d.price_unit || '', 60),
+        d.ppn_included === true,
       ],
     );
     const id = rows[0]?.id || '';
@@ -687,8 +700,14 @@ router.post('/media-types/:id', requireRole(STAFF_ROLES), async (req, res, next)
       fields.media_channel = mediaChannel;
     }
 
+    // Harga numerik + PPN: hanya bila dikirim. `price_amount` 0 SAH (media
+    // gratis), jadi jangan disamakan dengan "kosong" — pola kunci-hadir.
+    if (d.price_amount !== undefined) fields.price_amount = parseHarga(d.price_amount);
+    if (d.price_unit !== undefined) fields.price_unit = sanitize(d.price_unit, 60);
+    if (d.ppn_included !== undefined) fields.ppn_included = d.ppn_included === true;
+
     for (const [key, value] of Object.entries(fields)) {
-      // `slug`/`category` hanya bila tidak kosong; kolom teks boleh kosong.
+      // `slug`/`category` hanya bila tidak kosong; kolom lain boleh kosong/0.
       if (value === '' && (key === 'slug' || key === 'category')) continue;
       values.push(value);
       sets.push(`${key} = $${values.length}`);

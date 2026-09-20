@@ -132,6 +132,12 @@ export interface MediaTypeInput {
   location_note?: string;
   rules?: string;
   image_path?: string;
+  /** Harga numerik (Rp) untuk perhitungan PPN; 0 = media gratis. */
+  price_amount?: number;
+  /** Satuan harga numerik (mis. 'hari', 'hari/16 tiang'). */
+  price_unit?: string;
+  /** true bila harga katalog SUDAH termasuk PPN. */
+  ppn_included?: boolean;
   is_active?: boolean;
   sort_order?: number;
 }

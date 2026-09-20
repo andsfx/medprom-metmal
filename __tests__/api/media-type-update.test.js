@@ -214,3 +214,111 @@ describe('POST /admin/media-types — kanal katalog', () => {
     expect(updateCall()).toBeUndefined();
   });
 });
+
+describe('POST /admin/media-types — harga numerik & PPN', () => {
+  async function callCreate(body) {
+    const handler = getHandler('/media-types', 'post');
+    const req = {
+      method: 'POST', body, params: {}, headers: {}, socket: {},
+      auth: { user: { id: 'u1', display_name: 'Admin' } },
+    };
+    const res = createMockResponse();
+    await handler(req, res, (err) => { if (err) { res.statusCode = 500; res.body = { error: err.message }; } });
+    return res;
+  }
+
+  function mockCreate() {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT id FROM promo_media_types WHERE slug')) return Promise.resolve({ rows: [] });
+      if (text.includes('INSERT INTO promo_media_types')) return Promise.resolve({ rows: [{ id: 'mt-new' }] });
+      return Promise.resolve({ rows: [] });
+    });
+  }
+
+  it('create menyimpan price_amount, price_unit, dan ppn_included', async () => {
+    mockCreate();
+    const res = await callCreate({
+      slug: 'spanduk', name: 'Spanduk', category: 'outdoor',
+      price_amount: '70000', price_unit: 'hari', ppn_included: true,
+    });
+    expect(res.statusCode).toBe(200);
+    const insert = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_media_types'));
+    expect(String(insert[0])).toContain('price_amount');
+    expect(String(insert[0])).toContain('ppn_included');
+    expect(insert[1]).toContain(70000);
+    expect(insert[1]).toContain('hari');
+    expect(insert[1]).toContain(true);
+  });
+
+  it('create tanpa harga → 0 / false (media gratis), bukan NaN', async () => {
+    mockCreate();
+    await callCreate({ slug: 'x', name: 'X', category: 'indoor' });
+    const insert = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_media_types'));
+    expect(insert[1]).toContain(0);
+    expect(insert[1]).toContain(false);
+    expect(insert[1].some((v) => typeof v === 'number' && Number.isNaN(v))).toBe(false);
+  });
+
+  it('create harga tidak sah (teks/negatif) → 0, bukan galat', async () => {
+    for (const nilai of ['abc', '-500', '', null]) {
+      mockedQuery.mockClear();
+      mockCreate();
+      const res = await callCreate({ slug: 'x', name: 'X', category: 'indoor', price_amount: nilai });
+      expect(res.statusCode, `price_amount=${nilai}`).toBe(200);
+      const insert = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_media_types'));
+      expect(insert[1]).toContain(0);
+    }
+  });
+
+  it('create membulatkan harga ke 2 desimal', async () => {
+    mockCreate();
+    await callCreate({ slug: 'x', name: 'X', category: 'indoor', price_amount: '12345.6789' });
+    const insert = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_media_types'));
+    expect(insert[1]).toContain(12345.68);
+  });
+
+  it('update menulis harga hanya bila dikirim', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT id, slug FROM promo_media_types')) {
+        return Promise.resolve({ rows: [{ id: 'mt-1', slug: 'spanduk' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    const res = await callUpdate({ price_amount: 288000, price_unit: 'hari/16 tiang', ppn_included: false });
+    expect(res.statusCode).toBe(200);
+    const sql = String(updateCall()[0]);
+    expect(sql).toContain('price_amount = ');
+    expect(sql).toContain('price_unit = ');
+    expect(sql).toContain('ppn_included = ');
+  });
+
+  it('update price_amount 0 sah — media gratis, bukan "tidak dikirim"', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      if (String(sql).includes('SELECT id, slug FROM promo_media_types')) {
+        return Promise.resolve({ rows: [{ id: 'mt-1', slug: 'spanduk' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    const res = await callUpdate({ price_amount: 0 });
+    expect(res.statusCode).toBe(200);
+    const call = updateCall();
+    expect(String(call[0])).toContain('price_amount = $1');
+    expect(call[1][0]).toBe(0);
+  });
+
+  it('update tanpa field harga tidak menyentuh kolomnya', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      if (String(sql).includes('SELECT id, slug FROM promo_media_types')) {
+        return Promise.resolve({ rows: [{ id: 'mt-1', slug: 'spanduk' }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+    await callUpdate({ rules: 'Aturan baru.' });
+    const sql = String(updateCall()[0]);
+    expect(sql).not.toContain('price_amount');
+    expect(sql).not.toContain('price_unit');
+    expect(sql).not.toContain('ppn_included');
+  });
+});

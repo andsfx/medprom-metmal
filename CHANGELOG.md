@@ -6,6 +6,17 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 ## [Unreleased]
 
 ### Ditambahkan
+- **Harga numerik katalog dapat disunting staf.** Perhitungan PPN pengajuan
+  cetak dan pengingat periode berakhir bergantung pada `price_amount`/
+  `price_unit`/`ppn_included`, tetapi sebelumnya kolom itu hanya diisi seed
+  sekali sehingga koreksi tarif menuntut akses DB langsung. Kini
+  `POST /admin/media-types` menerima ketiganya (`price_amount` angka ≥ 0
+  dibulatkan 2 desimal, nilai tak sah → 0 = media gratis; `price_unit` ≤ 60
+  karakter; `ppn_included` boolean) dan `POST /admin/media-types/:id`
+  menerimanya **hanya bila hadir di body** (kunci absen tidak disentuh, sehingga
+  `price_amount: 0` sah sebagai "gratis" dan bukan "tidak dikirim"). Panel
+  katalog menambah input **Harga numerik (Rp)**, **Satuan harga**, dan centang
+  **Harga sudah termasuk PPN**. Pemanggil lama tanpa field ini tetap bekerja.
 - **Form pengajuan "spanduk banner / giant banner / umbul-umbul" (sisi tenant).**
   Rute baru `/ajukan-cetak` menyediakan form ringkas dengan field persis
   permintaan pemilik: **tanggal pengajuan**, **nama pemohon**, **nama
