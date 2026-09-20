@@ -655,9 +655,11 @@ diubah sampai ada keputusan pemilik produk.
    Karena tidak ada `tailwind.config`/`content`, pemindai menyapu seluruh repo,
    termasuk dokumen. Akibatnya setiap kelas Tailwind yang **dikutip** di dokumen
    (termasuk yang sedang dinyatakan tidak dipakai, mis. `py` `-20`,
-   `max-w` `-7xl`, `bg` `-[#007a78]`) ikut ter-generate ke CSS produksi. Bukti:
-   bundle naik 53,01 → 54,07 kB (gzip 10,44 → 10,62 kB) setelah dokumen audit
-   ditambahkan. Perilaku ini **pra-ada**: bundle sebelum audit pun sudah memuat
+   `max-w` `-7xl`, `bg` `-[#007a78]`) ikut ter-generate ke CSS produksi. Bukti
+   (terukur saat build pra-audit): bundle naik 53,01 → 54,07 kB (gzip 10,44 →
+   10,62 kB) setelah dokumen audit ditambahkan; reproduksi angka ini perlu
+   menjalankan build pada revisi sebelum dokumen audit masuk. Perilaku ini
+   **pra-ada**: bundle sebelum audit pun sudah memuat
    kelas yang dikutip di `DESIGN.md`. Keputusan: tambahkan
    `@source not "../docs/**"` pada CSS Tailwind, atau biarkan. Dampaknya kecil
    (~1 kB), jadi tidak mendesak.
