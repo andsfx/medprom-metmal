@@ -84,6 +84,15 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   kode baru dilayani** (kode + skema harus naik bersamaan — pitfall #10).
 
 ### Diperbaiki
+- **Pengingat pajak tidak lagi memuat pengajuan gratis.** Syarat pengingat
+  periode berakhir memakai `(ppn_amount > 0 OR ppn_included = false)`.
+  Karena `promo_submissions.ppn_included` ber-`DEFAULT false`, klausa `OR` itu
+  **selalu benar** — sehingga pengingat menampilkan **setiap** pengajuan
+  berstatus Sudah Dipasang, termasuk media digital/gratis yang tidak dikenai
+  pajak. Kini syaratnya `ppn_amount > 0` saja: satu-satunya tanda sah "kena
+  pajak" adalah PPN yang benar-benar terhitung, bukan kolom yang ber-default
+  `false` (deck pun tidak seragam soal PPN). Dikunci
+  `__tests__/api/admin-cetak.test.js`.
 - **Katalog publik tidak mengirim kanal/harga, sehingga form cetak tampil
   kosong.** `GET /api/v1/promo/media-types` tidak menyertakan `media_channel`,
   `price_amount`, `price_unit`, dan `ppn_included` pada `SELECT` — padahal

@@ -490,7 +490,13 @@ router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, n
          FROM promo_submissions s
          LEFT JOIN promo_installations i ON i.submission_id = s.id
         WHERE s.status = 'sudah_dipasang'
-          AND (s.ppn_amount > 0 OR s.ppn_included = false)
+          -- HANYA pengajuan yang benar-benar ber-PPN. Jangan menurunkan
+          -- "kena pajak" dari kolom ppn_included: kolom itu ber-DEFAULT
+          -- false, sehingga klausa OR ppn_included = false selalu benar dan
+          -- menarik SETIAP baris warisan (media digital/gratis) ke pengingat.
+          -- Deck pun tidak seragam soal PPN, jadi satu-satunya tanda sah
+          -- adalah PPN yang terhitung positif.
+          AND s.ppn_amount > 0
           AND (CASE WHEN COALESCE(NULLIF(i.end_date, ''), NULLIF(s.air_end_date, ''))
                          ~ '^\\d{4}-\\d{2}-\\d{2}$'
                     THEN COALESCE(NULLIF(i.end_date, ''), s.air_end_date)::date

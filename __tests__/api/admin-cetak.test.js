@@ -107,7 +107,32 @@ describe('GET /admin/submissions/reminders', () => {
     await call('/submissions/reminders', 'get');
     const sql = String(mockedQuery.mock.calls[0][0]);
     expect(sql).toContain("s.status = 'sudah_dipasang'");
-    expect(sql).toMatch(/ppn_amount > 0 OR s\.ppn_included = false/);
+    // Kena pajak = PPN benar-benar terhitung positif.
+    expect(sql).toMatch(/AND s\.ppn_amount > 0/);
+  });
+
+  it('TIDAK memakai ppn_included sebagai penanda kena pajak', async () => {
+    // Regresi: `ppn_included` ber-DEFAULT false, jadi klausa
+    // `OR s.ppn_included = false` selalu benar dan menarik SETIAP baris
+    // warisan (media digital/gratis) ke pengingat — bertentangan dengan
+    // permintaan pemilik (hanya media yang dikenakan pajak).
+    await call('/submissions/reminders', 'get');
+    const sql = String(mockedQuery.mock.calls[0][0]);
+    // Buang komentar SQL dulu: yang dikunci adalah PREDIKAT-nya, bukan
+    // penyebutan kolom di komentar penjelasan.
+    const tanpaKomentar = sql.split('\n').map((l) => l.replace(/--.*$/, '')).join('\n');
+    expect(tanpaKomentar).not.toMatch(/ppn_included/);
+  });
+
+  it('pengajuan tanpa PPN (ppn_amount = 0) tidak diteruskan sebagai pengingat', async () => {
+    // DB mengembalikan hanya baris ber-PPN (sesuai predikat); pastikan
+    // handler tidak menambah baris sendiri.
+    mockedQuery.mockResolvedValue({
+      rows: [{ id: 's1', submission_number: 'MP-1', days_left: 3, end_date: '2026-09-23', ppn_amount: 53900 }],
+    });
+    const res = await call('/submissions/reminders', 'get');
+    expect(res.body.data.items).toHaveLength(1);
+    expect(res.body.data.items.every((r) => r.ppn_amount > 0)).toBe(true);
   });
 
   it('menjaga end_date teks dengan regex sebelum cast ::date', async () => {
