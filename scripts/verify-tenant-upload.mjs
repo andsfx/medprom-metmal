@@ -57,7 +57,7 @@ try {
   await page.fill('textarea#material-description', 'Uji alur tenant produksi.');
   await page.selectOption('select#material-type', 'Promosi');
   await page.fill('input#media-target', 'Sisi Pintu Tol Bekasi Barat');
-  await page.click('button:has-text("Lanjut — Kirim Materi")');
+  await page.click('button:has-text("Lanjut ke Kirim Materi")');
   await page.waitForSelector('text=Kirim Pengajuan', { timeout: 15000 });
 
   // 5. Pilih kanal unggah berkas (bawaan wizard adalah kirim tautan).

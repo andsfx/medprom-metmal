@@ -38,7 +38,7 @@ try {
   await page.waitForSelector('input#pic-name', { timeout: 15000 });
   await page.fill('input#pic-name', 'Andi Verify');
   await page.fill('input#pic-phone', '081234567890');
-  await page.click('button:has-text("Lanjut — Kirim Materi")');
+  await page.click('button:has-text("Lanjut ke Kirim Materi")');
   const tenantError = await page.locator('text=Pilih tenant dari daftar').isVisible();
   check('form menolak tenant kosong', tenantError);
 
