@@ -4,6 +4,14 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Diperbaiki
+- **Selector basi di skrip verifikasi wizard digital.** `verify-e2e.mjs` dan
+  `verify-tenant-upload.mjs` mengklik tombol `"Lanjut — Kirim Materi"` yang
+  sudah tidak ada sejak label tombol diubah menjadi `"Lanjut ke Kirim Materi"`
+  (`PromoUploadWizard.tsx`). Keduanya kini memakai label aktual sehingga
+  langkah "Kirim Materi" kembali dapat dilalui. Sekaligus menghabiskan sisa
+  em-dash terencana di `scripts/`.
+
 ### Dirapikan
 - **Sapuan em-dash dan banner dekoratif di kode aktif.** Seluruh `—`/`–` di
   komentar `src/`, `server/`, `scripts/`, `public/`, `index.html`, dan CSS
@@ -15,6 +23,14 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 
 ### Ditambahkan
+- **Verifikasi alur pengajuan cetak (`scripts/verify-cetak.mjs`).** Skrip
+  Playwright baru menyisir jalur cetak di produksi: landing → `/ajukan-cetak`
+  → langkah data pemohon mode non-tenant → pilih dua media + periode minimal
+  7 hari + lokasi/tanggal pemasangan per media → ringkasan (label estimasi dan
+  baris PPN 11%) → centang ketentuan → kirim → nomor batch `MPB-YYMMDD-XXXXXX`
+  → halaman `/batch/:token` memuat dua media. `verify-admin-flow.mjs` diperluas
+  untuk memeriksa baris batch `MPB-` di daftar pengajuan dan respons
+  `GET /admin/submissions/reminders?days=14`.
 - **Harga numerik katalog dapat disunting staf.** Perhitungan PPN pengajuan
   cetak dan pengingat periode berakhir bergantung pada `price_amount`/
   `price_unit`/`ppn_included`, tetapi sebelumnya kolom itu hanya diisi seed

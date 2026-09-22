@@ -8,6 +8,9 @@
  * Catatan: status mengikuti alur PRD §8: dari Menunggu Review hanya
  * Perlu Revisi / Disetujui / Ditolak yang sah (lompatan ke Sudah Dipasang
  * ditolak server). Jadi alur uji di sini adalah **setujui** materi.
+ *
+ * Prasyarat: jalankan `node scripts/verify-cetak.mjs` lebih dulu agar ada
+ * baris batch cetak (nomor MPB-...) di daftar pengajuan yang diperiksa.
  */
 import { chromium } from 'playwright';
 
@@ -43,6 +46,9 @@ try {
   const dashBody = await page.textContent('body');
   check('ringkasan status tampil di dashboard', dashBody.includes('Menunggu Review'));
 
+  // Daftar pengajuan memuat baris batch cetak (nomor MPB-...) bila ada.
+  check('daftar pengajuan memuat baris batch cetak', /MPB-\d{6}-[0-9A-Z]{6}/.test(dashBody));
+
   // Buka detail baris pertama → setujui materi + catatan.
   await page.click('button:has-text("Detail")');
   await page.waitForSelector('text=Ubah status', { timeout: 10000 });
@@ -70,6 +76,19 @@ try {
     check('halaman status menampilkan Disetujui', statusBody.includes('Disetujui'));
     check('halaman status menampilkan catatan review', statusBody.includes('Verifikasi produksi'));
   }
+
+  // Pengingat periode berakhir (dashboard staf) - hanya media ber-PPN.
+  const loginRes = await fetch(`${API}/api/v1/auth/login`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ email: EMAIL, password: PASSWORD }),
+  });
+  const cookie = (loginRes.headers.get('set-cookie') || '').split(';')[0];
+  const reminders = await fetch(`${API}/api/v1/admin/submissions/reminders?days=14`, {
+    headers: cookie ? { cookie } : {},
+  }).then((r) => r.json());
+  check('endpoint reminders balas success', reminders.success === true);
+  check('respons reminders memuat daftar periode', typeof reminders.data?.due_soon === 'number' && Array.isArray(reminders.data?.items));
 } catch (err) {
   check('alur admin', false, err.message);
 } finally {
