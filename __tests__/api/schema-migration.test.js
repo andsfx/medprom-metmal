@@ -134,3 +134,62 @@ describe('schema.sql — urutan migrasi source_type', () => {
     }
   });
 });
+
+/**
+ * Kelas bug yang sama (pitfall #6) pada tabel VERSI MATERI.
+ *
+ * Pengajuan cetak menulis `promo_submissions.source_type = 'none'` tanpa baris
+ * `promo_submission_files` (materi menyusul lewat revisi). Backfill versi materi
+ * memakai `WHERE NOT EXISTS` yang selalu benar untuk pengajuan cetak, sehingga
+ * ia menyalin `'none'` ke `promo_submission_files.source_type` dan `db:migrate`
+ * gagal pada CHECK tabel files yang hanya mengizinkan ('upload','link') - gagal
+ * BERULANG tiap migrate, dan hanya di DB yang sudah berisi pengajuan cetak.
+ *
+ * Perbaikan yang benar: KECUALIKAN `'none'` dari backfill (pengajuan tanpa
+ * materi memang tidak punya versi materi), BUKAN melonggarkan CHECK tabel files.
+ * Test ini mengunci keduanya agar tidak ada yang "memperbaiki" dengan
+ * melonggarkan CHECK.
+ */
+describe('schema.sql — backfill versi materi melewati pengajuan tanpa materi', () => {
+  /** Potongan blok backfill: dari INSERT sampai `);` penutupnya. */
+  function blokBackfill() {
+    const start = sql.indexOf('INSERT INTO promo_submission_files');
+    expect(start).toBeGreaterThan(-1);
+    const end = sql.indexOf(');', start);
+    expect(end).toBeGreaterThan(start);
+    return sql.slice(start, end + 2);
+  }
+
+  /** Potongan definisi tabel promo_submission_files (sampai penutup tabelnya). */
+  function blokTabelFiles() {
+    const start = sql.indexOf('CREATE TABLE IF NOT EXISTS promo_submission_files');
+    expect(start).toBeGreaterThan(-1);
+    const end = sql.indexOf(');', start);
+    expect(end).toBeGreaterThan(start);
+    return sql.slice(start, end + 2);
+  }
+
+  it('backfill memuat pengecualian source_type = none', () => {
+    const backfill = blokBackfill();
+    // idempotensi tetap dipertahankan
+    expect(backfill).toContain('NOT EXISTS');
+    // pengecualian 'none' (boleh `<>` atau `!=`)
+    expect(backfill).toMatch(/source_type\s*(<>|!=)\s*'none'/);
+  });
+
+  it('backfill tidak menyalin nilai source_type dari pengajuan cetak', () => {
+    // Tanpa pengecualian, SELECT menyalin s.source_type apa adanya termasuk
+    // 'none' - pelanggaran CHECK tabel files.
+    const backfill = blokBackfill();
+    expect(backfill).toMatch(/s\.source_type/);
+    expect(backfill).toMatch(/source_type\s*(<>|!=)\s*'none'/);
+  });
+
+  it('CHECK promo_submission_files tetap hanya upload dan link', () => {
+    const tabel = blokTabelFiles();
+    expect(tabel).toContain("('upload','link')");
+    // 'none' tidak boleh masuk ke CHECK tabel files: baris versi materi untuk
+    // pengajuan tanpa materi memang tidak bermakna.
+    expect(tabel).not.toContain("'none'");
+  });
+});

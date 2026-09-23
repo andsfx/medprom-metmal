@@ -369,6 +369,18 @@ CREATE TABLE IF NOT EXISTS promo_submission_files (
 -- (materinya masih bisa dibuka dari header, tapi riwayat versinya hilang).
 -- `WHERE NOT EXISTS` membuat langkah ini idempotent dan tidak menimpa versi
 -- yang sudah ada.
+--
+-- URUTAN/NILAI PENTING (pitfall #6): baris `source_type = 'none'` WAJIB
+-- dikecualikan. Pengajuan cetak (`POST /promo/submit-batch`) memang tidak
+-- meminta berkas materi dan tidak menulis baris versi apa pun, jadi `'none'`
+-- TIDAK PERNAH punya versi materi. Tanpa pengecualian ini, `WHERE NOT EXISTS`
+-- selalu benar untuk pengajuan cetak (tidak punya baris file) sehingga backfill
+-- menyalin `'none'` ke promo_submission_files.source_type dan `db:migrate`
+-- gagal pada CHECK tabel files yang hanya mengizinkan ('upload','link') -
+-- kegagalan berulang setiap migrate, dan hanya muncul di DB yang sudah berisi
+-- pengajuan cetak (DB baru selalu hijau). Pengecualian ini dipilih daripada
+-- melonggarkan CHECK: `promo_submission_files` menyimpan VERSI MATERI, sehingga
+-- melonggarkan CHECK akan mengizinkan baris "versi materi" yang tidak bermakna.
 INSERT INTO promo_submission_files
   (submission_id, version, source_type, file_url, file_name, mime_type,
    file_size_bytes, link_url, drive_file_id, uploaded_by, notes, created_at)
@@ -377,7 +389,8 @@ SELECT s.id, 1, s.source_type, COALESCE(s.file_url, ''), COALESCE(s.file_name, '
        COALESCE(s.link_url, ''), COALESCE(s.drive_file_id, ''),
        'tenant', 'Versi awal (backfill migrasi)', s.created_at
   FROM promo_submissions s
- WHERE NOT EXISTS (
+ WHERE s.source_type <> 'none'
+   AND NOT EXISTS (
    SELECT 1 FROM promo_submission_files f WHERE f.submission_id = s.id
  );
 
