@@ -158,6 +158,14 @@ describe('GET /admin/export — CSV', () => {
     expect(firstRow).toContain('543900');
   });
 
+  it('header memakai istilah "Nama Tenant", bukan "Nama Gerai"', async () => {
+    mockedQuery.mockResolvedValue({ rows: [ROW] });
+    const res = await callExport();
+    const header = String(res.body).replace(/^\uFEFF/, '').split('\r\n')[0];
+    expect(header).toContain('Nama Tenant');
+    expect(header).not.toContain('Nama Gerai');
+  });
+
   it('source_type "none" tampil sebagai "Menyusul", bukan "Unggah"', async () => {
     mockedQuery.mockResolvedValue({ rows: [{ ...ROW, source_type: 'none' }] });
     const res = await callExport();

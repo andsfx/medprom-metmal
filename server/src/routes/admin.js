@@ -856,7 +856,7 @@ router.get('/export', requireRole(READ_ROLES), async (req, res, next) => {
     );
 
     const header = [
-      'Nomor Pengajuan', 'Tanggal', 'Nama Gerai', 'Tenant ID', 'Nomor Unit',
+      'Nomor Pengajuan', 'Tanggal', 'Nama Tenant', 'Tenant ID', 'Nomor Unit',
       'Nama PIC', 'Telepon PIC', 'Jenis Media', 'Nama Campaign', 'Judul Materi',
       'Tanggal Pasang', 'Status', 'Catatan Review', 'Catatan Tenant', 'Sumber',
       'Nama File', 'URL File', 'URL Tautan', 'IP',
