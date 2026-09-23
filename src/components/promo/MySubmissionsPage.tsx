@@ -1,10 +1,17 @@
 /**
  * Riwayat pengajuan per perangkat - publik (fingerprint = identitas soft).
+ *
+ * Baris yang berasal dari satu kirim form cetak membawa `batch_number` dan
+ * `batch_token` (hanya endpoint ini yang mengirimkannya; lihat komentar di
+ * `server/src/routes/promo.js`). Keduanya ditampilkan supaya tenant yang
+ * mengirim beberapa media dalam satu kali kirim bisa mengenali bahwa
+ * kartu-kartu itu satu kirim, dan tetap punya jalan kembali ke
+ * `/batch/<batch_token>` setelah meninggalkan layar sukses wizard.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  CheckCircle2, Clock, ExternalLink, Info, XCircle, Loader2, Wrench,
+  CheckCircle2, Clock, ExternalLink, Info, Layers, XCircle, Loader2, Wrench,
 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import { fetchMySubmissions } from '../../utils/promoApi';
@@ -48,6 +55,21 @@ export default function MySubmissionsPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+
+  /**
+   * Jumlah kartu per nomor batch, dihitung dari baris yang MEMANG dikirim
+   * server (urutan tidak diubah). Dipakai hanya untuk memberi tahu tenant
+   * berapa media yang terlihat dalam kiriman itu; nomor batch tetap yang
+   * menandai kartu-kartu sekiriman.
+   */
+  const jumlahPerBatch = useMemo(() => {
+    const hitung: Record<string, number> = {};
+    for (const r of rows) {
+      if (!r.batch_number) continue;
+      hitung[r.batch_number] = (hitung[r.batch_number] ?? 0) + 1;
+    }
+    return hitung;
+  }, [rows]);
 
   return (
     <AppShell title="Riwayat Pengajuan">
@@ -114,6 +136,31 @@ export default function MySubmissionsPage() {
                       </div>
                       <StatusBadge status={r.status} />
                     </div>
+                    {r.batch_number && (
+                      <div className="mt-2.5 rounded-md border border-brand-primary-200 bg-brand-primary-50 p-2.5 dark:border-brand-primary-800 dark:bg-brand-primary-950/40">
+                        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-brand-primary-800 dark:text-brand-primary-200">
+                          <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          <span>Nomor batch:</span>
+                          <span className="font-mono font-bold tracking-wide">{r.batch_number}</span>
+                        </p>
+                        <p className="mt-0.5 text-xs leading-relaxed text-brand-primary-800 dark:text-brand-primary-200">
+                          Pengajuan ini bagian dari satu kirim berisi beberapa media
+                          {jumlahPerBatch[r.batch_number]
+                            ? ` (${jumlahPerBatch[r.batch_number]} media dalam kiriman ini)`
+                            : ''}
+                          .
+                        </p>
+                        {r.batch_token && (
+                          <Link
+                            to={`/batch/${r.batch_token}`}
+                            className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                          >
+                            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                            Lihat status batch
+                          </Link>
+                        )}
+                      </div>
+                    )}
                     {r.review_notes && (
                       <p className="mt-3 rounded-md bg-slate-50 p-2.5 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
                         <span className="font-semibold">Catatan TR: </span>{r.review_notes}

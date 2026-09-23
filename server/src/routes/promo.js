@@ -84,6 +84,34 @@ const SUBMISSION_PUBLIC_COLUMNS = `
   subtotal::float8 AS subtotal, ppn_amount::float8 AS ppn_amount,
   total_amount::float8 AS total_amount`;
 
+/**
+ * Kolom publik yang dikualifikasi alias tabel.
+ *
+ * `SUBMISSION_PUBLIC_COLUMNS` sengaja dibiarkan TANPA alias karena dipakai
+ * jalur publik satu-tabel (`/submissions/status/:token`, `/submissions/track`,
+ * `/batches/status/:token`). Begitu `promo_submissions` di-join dengan
+ * `promo_submission_batches`, sebelas nama kolom ada di KEDUA tabel (`id`,
+ * `tenant_id`, `unit_number`, `pic_name`, `pic_phone`, `submission_date`,
+ * `notes`, `device_fingerprint`, `ip_address`, `user_agent`, `created_at`,
+ * `updated_at`, `applicant_type`), sehingga Postgres menolak query dengan
+ * 42702 "column reference is ambiguous". Kualifikasi dibangun di sini supaya
+ * konstanta bersama itu tidak ikut berubah dan jalur lain tetap utuh.
+ *
+ * Semua entri konstanta berbentuk `kolom` atau `ekspresi AS alias`; keduanya
+ * sah diberi prefiks alias (`s.price_amount::float8 AS price_amount`).
+ */
+function qualifyColumns(alias, columns) {
+  return columns
+    .split(',')
+    .map((c) => c.trim())
+    .filter(Boolean)
+    .map((c) => `${alias}.${c}`)
+    .join(', ');
+}
+
+/** Kolom publik untuk jalur ber-join (`s` = promo_submissions). */
+const SUBMISSION_PUBLIC_COLUMNS_S = qualifyColumns('s', SUBMISSION_PUBLIC_COLUMNS);
+
 /** Nomor pengajuan yang dilacak tenant - normalisasi ke bentuk kanonis. */
 const SUBMISSION_NUMBER_RE = /^MP-\d{6}-[0-9A-Z]{6}$/;
 
@@ -449,9 +477,23 @@ router.post('/submit', async (req, res, next) => {
 });
 
 // GET /promo/submissions/mine - riwayat per perangkat.
+//
 // Token status ikut dikirim karena akses endpoint ini sudah digerbangi
 // fingerprint perangkat: tanpa token, tenant yang kehilangan tautan status
 // tidak punya jalan ke form revisi meski pengajuannya ada di riwayat ini.
+//
+// `batch_number` + `batch_token` menyusul dengan alasan yang SAMA PERSIS, dan
+// berada di batas kepercayaan yang sama: satu batch ditulis oleh SATU
+// perangkat dalam satu kali kirim (`POST /promo/submit-batch` mengisi
+// `device_fingerprint` batch dari body yang sama dengan seluruh item fan-out),
+// jadi setiap baris yang cocok dengan `device_fingerprint = $1` di sini pasti
+// berasal dari batch yang dikirim perangkat itu sendiri. Tanpa keduanya,
+// tenant yang mengirim 5 media dalam satu batch hanya melihat 5 kartu terpisah
+// dan tidak punya jalan kembali ke `/batch/<batch_token>` setelah meninggalkan
+// layar sukses wizard. Keduanya SENGAJA hanya ada di endpoint ini: jalur publik
+// lain (`/submissions/status/:token`, `/submissions/track`,
+// `/batches/status/:token`) tetap memakai `SUBMISSION_PUBLIC_COLUMNS` apa
+// adanya dan tidak pernah memuat token batch.
 router.get('/submissions/mine', async (req, res, next) => {
   // Respons memuat status_token rahasia; batasi laju agar tidak bisa dipakai
   // menebak fingerprint perangkat lain (60 / 15 mnt / IP, sama dengan status).
@@ -462,11 +504,20 @@ router.get('/submissions/mine', async (req, res, next) => {
     return res.status(400).json({ success: false, error: 'Fingerprint perangkat wajib diisi.' });
   }
   try {
+    // Kolom batch diambil SATU PER SATU, tidak lewat `b.*`: tabel batch
+    // bertabrakan nama dengan `promo_submissions` pada 13 kolom (id, tenant_id,
+    // unit_number, pic_name, pic_phone, submission_date, notes,
+    // device_fingerprint, ip_address, user_agent, created_at, updated_at,
+    // applicant_type), sehingga `b.*` akan menimpa nilai pengajuan dengan nilai
+    // batch pada kunci JSON yang sama. Alias `s` wajib: tanpa itu `created_at`
+    // dan `id` di `SUBMISSION_PUBLIC_COLUMNS` menjadi ambigu begitu di-join.
     const { rows } = await db.query(
-      `SELECT ${SUBMISSION_PUBLIC_COLUMNS}, status_token
-       FROM promo_submissions
-       WHERE device_fingerprint = $1
-       ORDER BY created_at DESC
+      `SELECT ${SUBMISSION_PUBLIC_COLUMNS_S}, s.status_token,
+              b.batch_number, b.batch_token
+       FROM promo_submissions s
+       LEFT JOIN promo_submission_batches b ON b.id = s.batch_id
+       WHERE s.device_fingerprint = $1
+       ORDER BY s.created_at DESC
        LIMIT 50`,
       [fingerprint],
     );

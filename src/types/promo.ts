@@ -164,6 +164,17 @@ export interface MySubmissionRow {
   submission_date?: string;
   /** Batch pengajuan cetak (satu kirim berisi beberapa media). */
   batch_id?: string | null;
+  /**
+   * Nomor batch induk (`MPB-YYMMDD-XXXXXX`).
+   * Hanya terisi pada `/promo/submissions/mine`; kosong pada jalur publik lain.
+   */
+  batch_number?: string | null;
+  /**
+   * Token batch induk - dipakai menaut ke `/batch/<batch_token>`.
+   * Hanya terisi pada `/promo/submissions/mine`, di batas kepercayaan yang
+   * sama dengan `status_token` (akses digerbangi fingerprint perangkat).
+   */
+  batch_token?: string | null;
   price_amount?: number;
   price_unit?: string;
   ppn_included?: boolean;
