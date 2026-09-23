@@ -41,6 +41,13 @@ export default function BatchStatusPage() {
 
   const totalPpn = data?.items.reduce((s, it) => s + (it.submission.ppn_amount || 0), 0) ?? 0;
   const total = data?.items.reduce((s, it) => s + (it.submission.total_amount || 0), 0) ?? 0;
+  // Untuk media ber-`ppn_included`, `ppn_amount` adalah PORSI PPN DI DALAM
+  // subtotal (bukan pajak yang ditambahkan), sehingga label "Total PPN"
+  // menyesatkan. Label mengikuti data batch; nilai `undefined`/falsy
+  // diperlakukan sebagai "belum termasuk".
+  const adaTermasukPpn = data?.items.some((it) => Boolean(it.submission.ppn_included)) ?? false;
+  const adaBelumTermasukPpn = data?.items.some((it) => !it.submission.ppn_included) ?? false;
+  const labelPpn = adaTermasukPpn ? 'Termasuk PPN' : 'Total PPN';
 
   return (
     <AppShell title="Status Pengajuan Cetak" back backTo="/riwayat">
@@ -86,7 +93,7 @@ export default function BatchStatusPage() {
               {data.items.length > 0 && (
                 <dl className="mt-4 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3 text-xs dark:border-slate-700">
                   <div>
-                    <dt className="ui-text-muted">Total PPN</dt>
+                    <dt className="ui-text-muted">{labelPpn}</dt>
                     <dd className="font-semibold tabular-nums text-slate-800 dark:text-slate-100">{rupiah(totalPpn)}</dd>
                   </div>
                   <div>
@@ -94,6 +101,12 @@ export default function BatchStatusPage() {
                     <dd className="font-semibold tabular-nums text-slate-800 dark:text-slate-100">{rupiah(total)}</dd>
                   </div>
                 </dl>
+              )}
+              {data.items.length > 0 && adaTermasukPpn && adaBelumTermasukPpn && (
+                <p className="mt-2 text-xs ui-text-muted">
+                  Sebagian media harganya sudah termasuk PPN dan sebagian belum; angka PPN di atas adalah
+                  porsi PPN dari seluruh baris.
+                </p>
               )}
             </div>
 
