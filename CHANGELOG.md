@@ -5,6 +5,77 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Bukti tayang kanal unggahan tidak pernah terlihat tenant.** Staf sudah
+  dapat mengunggah bukti tayang ke Google Drive, tetapi halaman status tenant
+  hanya merender `proof_url`. Akibatnya berkas tersimpan ke Drive dan DB tanpa
+  satu pun tempat yang menampilkannya: tenant tidak melihat apa pun di
+  `/status/:token`, `/lacak`, maupun `/batch/:token`, dan blok "Informasi
+  pemasangan" di dashboard staf pun hanya merender `proof_url`. Ditambah helper
+  baru `src/utils/proof.ts` (`installationProofViews`, `formatProofSize`,
+  `proofMimeLabel`) sebagai **satu sumber kebenaran** pemetaan dua kanal bukti
+  tayang ke bentuk render, dipakai bersama oleh `SubmissionDetail` (tiga jalur
+  publik) dan Sheet detail staf. Kanal ditentukan dari **ada/tidaknya URL**,
+  bukan kolom `proof_kind`: baris warisan dapat ber-`proof_kind` `'link'`
+  bawaan sekaligus punya berkas tersimpan, dan URL kosong tidak boleh berubah
+  menjadi tautan mati. Baris kosong tidak dihasilkan. Dikunci
+  `src/utils/__tests__/proof.test.ts`,
+  `src/components/promo/__tests__/SubmissionDetailProof.test.tsx`, dan
+  `src/components/admin/__tests__/AdminDashboardDetailProof.test.tsx`.
+- **Total PPN form cetak dihitung dua kali untuk media ber-`ppn_included`.**
+  Ringkasan menjumlahkan `subtotal + ppnAmount`, padahal untuk media yang
+  harganya sudah termasuk PPN, PPN berada **di dalam** subtotal
+  (`totalAmount === subtotal`). Subtotal Rp 100.000 tampil sebagai Total
+  Rp 109.909,91. Total ringkasan kini selalu Sigma `totalAmount` (satu sumber
+  kebenaran), label per media mengikuti `ppn_included`, dan baris per media
+  berbentuk "Rp X (sudah termasuk PPN Rp Y)" atau "subtotal + PPN = total".
+  Label agregat tetap persis "PPN 11%" selama tidak ada media ber-`ppn_included`
+  dan menjadi "Termasuk PPN" bila ada. Keterangan "Perkiraan; harga final
+  sesuai penawaran Tenant Relations" dipertahankan. Dikunci
+  `src/components/promo/__tests__/PromoCetakWizardTotal.test.tsx`.
+- **Satu media tidak bisa dipasang di beberapa lokasi.** Baris form di-key oleh
+  `slug`, sehingga memilih media yang sama dua kali tidak mungkin, padahal
+  permintaan pemilik adalah satu form untuk beberapa media. Baris kini memakai
+  `id` unik, ditambah tombol **"Tambah lokasi lain"** per media, dan batas
+  `MAX_BATCH_ITEMS` (10) dihitung **per baris** alih-alih per media. Pemulihan
+  draf `sessionStorage` dibuat toleran terhadap draf lama tanpa `id`. Dikunci
+  `src/components/promo/__tests__/PromoCetakWizardLokasi.test.tsx`.
+- **`id` input per baris form cetak memakai UUID acak sehingga kontrak skrip
+  verifikasi rusak.** `scripts/verify-cetak.mjs` mengisi
+  `input#cetak-target-<slug>` dengan selector deterministik, sedangkan komponen
+  membangkitkan UUID acak per baris. `id` kini deterministik berbasis slug
+  untuk baris pertama dan bersufiks indeks untuk baris tambahan, sehingga
+  kontrak skrip kembali sah. Dikunci
+  `src/components/promo/__tests__/PromoCetakWizardIdKontrak.test.tsx`.
+- **Daftar media di langkah 2 form cetak belum dikelompokkan Outdoor/Indoor.**
+  Media kini ditampilkan berkelompok per kategori katalog
+  (`CATEGORY_LABELS`/`CATEGORY_ORDER`), sesuai workflow form media promosi
+  outdoor dan indoor.
+- **Baris "Deskripsi" di Sheet detail staf hilang saat kosong.** Baris itu
+  hanya dirender bila `material_description` berisi, sehingga staf mengira data
+  hilang. Ini nyata untuk pengajuan kanal cetak karena `PromoCetakWizard`
+  memang tidak punya field deskripsi dan `POST /promo/submit-batch` tidak
+  mengisi kolom itu. Baris kini selalu tampil dengan penanda "tidak diisi".
+- **Kolom "Harga" katalog (`price_note`) disunting lewat input satu baris.**
+  Kolom itu menyimpan tangga tarif **multi-baris** dari deck, sedangkan
+  spesifikasi HTML men-strip CR/LF dari nilai `<input type="text">`: staf yang
+  membuka Edit lalu menekan Simpan tanpa menyentuh kolom Harga akan
+  menggabungkan seluruh tangga tarif menjadi satu baris panjang. Diganti
+  `<textarea>`. Sekaligus kolom "Ketentuan" (`rules`) diberi helper text bahwa
+  isinya tampil ke tenant di katalog publik dan diparse untuk lead time.
+- **Sheet detail staf tidak pernah menampilkan jenis pemohon.** `POST /promo/submit-batch`
+  menyimpan `applicant_type` (`tenant`/`non_tenant`) dan `AdminSubmissionRow`
+  sudah membawanya, tetapi Sheet detail hanya punya satu baris berlabel
+  "Tenant" sehingga pemohon non-tenant tidak bisa dibedakan dan labelnya
+  menyesatkan. Sheet kini menampilkan baris **"Jenis Pemohon"** (memakai
+  `APPLICANT_TYPE_LABELS`), label baris nama menyesuaikan jenisnya ("Nama
+  Tenant" / "Nama Non Tenant", nilainya tetap `tenant_name`), penanda
+  "(MID ...)" dan "(manual, tidak tertaut MID)" hanya muncul untuk tenant,
+  ditambah baris **"Nomor Batch"** bila ada dan baris **"Perkiraan biaya"**
+  (subtotal, PPN, total, format rupiah) yang hanya dirender bila
+  `total_amount > 0` supaya pengajuan lama tanpa snapshot tidak menampilkan
+  baris nol. Angkanya diberi keterangan perkiraan karena pengajuan ini tidak
+  melakukan penagihan. Dikunci
+  `src/components/admin/__tests__/AdminDashboardApplicantType.test.tsx`.
 - **Selector basi di skrip verifikasi wizard digital.** `verify-e2e.mjs` dan
   `verify-tenant-upload.mjs` mengklik tombol `"Lanjut — Kirim Materi"` yang
   sudah tidak ada sejak label tombol diubah menjadi `"Lanjut ke Kirim Materi"`
