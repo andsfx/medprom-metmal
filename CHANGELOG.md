@@ -306,6 +306,54 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 
 ### Ditambahkan
+- **Riwayat tenant menampilkan batch pengajuan cetak.** Alur cetak multi-media
+  membuat SATU batch berisi N pengajuan, dan layar sukses
+  `PromoCetakWizard` menampilkan nomor batch serta tombol menuju
+  `/batch/<batch_token>` dengan pesan "Simpan nomor batch ini untuk memantau
+  status seluruh media kapan saja." Tetapi setelah tenant meninggalkan layar
+  sukses itu TIDAK ADA jalan kembali: `GET /promo/submissions/mine` memakai
+  `SUBMISSION_PUBLIC_COLUMNS` yang memuat `batch_id` tetapi TIDAK
+  `batch_number`/`batch_token`, sehingga `MySubmissionsPage` hanya menampilkan
+  kartu per media tanpa penanda bahwa kartu-kartu itu satu kiriman. Tenant
+  yang mengirim 5 media hanya melihat 5 kartu terpisah dan tidak bisa membuka
+  tampilan batch lagi. Handler `GET /promo/submissions/mine`
+  (`server/src/routes/promo.js`) kini memakai
+  `LEFT JOIN promo_submission_batches b ON b.id = s.batch_id` dan mengambil
+  HANYA `b.batch_number` dan `b.batch_token` (BUKAN `b.*`, karena 13 kolom
+  bertabrakan nama antara kedua tabel: `id`, `tenant_id`, `unit_number`,
+  `pic_name`, `pic_phone`, `notes`, `device_fingerprint`, `ip_address`,
+  `user_agent`, `created_at`, `updated_at`, `applicant_type`, dan
+  `submission_date`). Karena join membuat nama kolom ambigu (khususnya `id`
+  dan `created_at`), ditambahkan helper `qualifyColumns(alias, columns)` yang
+  membangun varian ber-alias
+  `SUBMISSION_PUBLIC_COLUMNS_S = qualifyColumns('s', SUBMISSION_PUBLIC_COLUMNS)`;
+  konstanta bersama `SUBMISSION_PUBLIC_COLUMNS` SENGAJA dibiarkan TANPA alias
+  dan tidak diubah karena masih dipakai jalur publik satu-tabel
+  (`/submissions/status/:token`, `/submissions/track`,
+  `/batches/status/:token`, `/batches/track`). **Batas kepercayaan:** karena
+  satu batch selalu ditulis oleh satu `device_fingerprint` (`POST
+  /promo/submit-batch` mengisi fingerprint batch dari body yang sama dengan
+  seluruh item fan-out) dan `/mine` hanya mengembalikan baris yang
+  `device_fingerprint = $1` cocok, `batch_token` di `/mine` berada di batas
+  kepercayaan yang SAMA PERSIS dengan `status_token` yang memang sudah sengaja
+  dikirim endpoint itu; setiap `batch_token` yang keluar pasti milik perangkat
+  pemanggil. Scope dijaga: `/submissions/track`,
+  `/submissions/status/:token`, dan `/batches/status/:token` TIDAK ikut
+  membawa token batch. `MySubmissionRow` (`src/types/promo.ts`) menambah
+  `batch_number?: string | null` dan `batch_token?: string | null` dengan
+  komentar bahwa keduanya hanya terisi pada `/promo/submissions/mine`. Di
+  `MySubmissionsPage.tsx`, baris ber-batch menampilkan nomor batch
+  (`font-mono`), keterangan "(N media dalam kiriman ini)", dan tautan "Lihat
+  status batch" menuju `/batch/<batch_token>` dengan `min-h-11`; tautan lama
+  "Lihat status & kirim revisi" (`/status/<status_token>`) dipertahankan, dan
+  baris non-batch tampil PERSIS seperti sebelumnya (blok batch tidak
+  dirender). Urutan data dari server tidak diubah. Dikunci
+  `__tests__/api/promo-mine-batch.test.js` (baru, 6 test, handler sungguhan
+  lewat `router.stack`) dan
+  `src/components/promo/__tests__/MySubmissionsPageBatch.test.tsx` (baru,
+  5 test); keduanya dibuktikan bermakna lewat uji sementara (render batch
+  dilepas, test FE gagal; kolom batch dilepas dari `SELECT`, test BE gagal;
+  lalu dipulihkan dan hijau).
 - **Verifikasi alur pengajuan cetak (`scripts/verify-cetak.mjs`).** Skrip
   Playwright baru menyisir jalur cetak di produksi: landing → `/ajukan-cetak`
   → langkah data pemohon mode non-tenant → pilih dua media + periode minimal
