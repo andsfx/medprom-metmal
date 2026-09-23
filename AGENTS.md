@@ -200,13 +200,17 @@ node scripts/verify-admin-flow.mjs     # status staf → terlihat tenant
 | Alur status + transisi | `src/utils/statusFlow.ts` | `server/src/lib/statusFlow.js` |
 | Harga + PPN + pengingat | `src/utils/pricing.ts` | `server/src/lib/pricing.js` |
 | Batas 50MB | `src/constants/promo.ts` | `server/src/drive.js` |
+| Batas jumlah media batch | `src/constants/promo.ts` (MAX_BATCH_ITEMS) | `server/src/routes/promo.js` (MAX_BATCH_ITEMS) |
 | MIME diterima | `acceptedMimes()` + `MIME_LABELS` | `ALLOWED_MIME` |
 | Regex telepon/tautan | inline di wizard (keduanya) | `PHONE_RE`, `LINK_RE` |
 
 Pasangan lead time dikunci `__tests__/api/lead-time.test.js`, pasangan alur
 status dikunci `__tests__/api/status-flow.test.js`, dan pasangan harga/PPN
 dikunci `__tests__/api/cetak-pricing.test.js` (ketiganya mengimpor kedua modul,
-assert kesamaan output) — menyimpang = test gagal. **`PHONE_RE` diduplikasi di
+assert kesamaan output), dan cermin batas media batch dikunci
+`__tests__/api/cetak-batch-limits.test.js` (berkas itu memakai dua cara: membaca
+sumber server untuk menangkap drift nilai konstanta, dan menguji handler
+sungguhan untuk menangkap penegakan yang salah) — menyimpang = test gagal. **`PHONE_RE` diduplikasi di
 dua wizard** (`PromoUploadWizard` dan `PromoCetakWizard`) sebagai cermin manual
 dari `server/src/routes/promo.js` — bukan satu modul bersama, jadi mengubah
 salah satu menuntut menyamakan yang lain. Urutan migrasi status
