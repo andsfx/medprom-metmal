@@ -1005,6 +1005,30 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
                       Catat pemasangan
                     </legend>
+                    {/* Peringatan materi belum diterima - HANYA informasi, bukan
+                     * penjaga. Pengajuan kanal cetak (`source_type` 'none')
+                     * memang tidak melampirkan materi saat diajukan; materinya
+                     * menyusul lewat revisi. Selama pemilik belum memilih arah
+                     * (tolak / izinkan dengan peringatan / jalur unggah staf),
+                     * keadaan itu cukup DITAMPILKAN di titik staf mengambil
+                     * keputusan: fieldset ini dan tombol "Catat Pemasangan"
+                     * tetap aktif tanpa konfirmasi tambahan. Warna memakai pola
+                     * peringatan `leadTimeRisk` (amber), bukan merah yang
+                     * dikhususkan untuk galat. */}
+                    {detail.source_type === 'none' && (
+                      <div
+                        className="mb-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/30"
+                        role="status"
+                      >
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
+                        <p className="text-xs text-amber-800 dark:text-amber-300">
+                          Materi belum pernah diterima untuk pengajuan ini. Pengajuan cetak memang tidak
+                          melampirkan materi saat diajukan, materinya menyusul lewat revisi. Menyimpan pemasangan
+                          akan menetapkan status materi menjadi Sudah Dipasang. Pastikan materinya sudah
+                          benar-benar diterima lebih dulu, misalnya lewat koordinasi dengan tenant.
+                        </p>
+                      </div>
+                    )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="sm:col-span-2">
                         <label htmlFor="install-location" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
