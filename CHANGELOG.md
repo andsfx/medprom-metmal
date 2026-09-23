@@ -384,6 +384,19 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   ditunda". **Pilihan seksi:** ditulis di `### Dirapikan`, bukan
   `### Diperbaiki` maupun `### Ditambahkan`, karena tidak ada perilaku yang
   diperbaiki dan tidak ada fitur baru.
+- **Temuan lanjutan pengingat dashboard tercatat dan menunggu keputusan
+  pemilik.** Audit notifikasi dashboard menyisakan temuan lanjutan (C2 sampai
+  C6: cakupan pengingat terlalu sempit, baris pengingat tidak bisa diklik ke
+  detail, tidak ada keadaan kosong/galat eksplisit, zona waktu `CURRENT_DATE`
+  default UTC bukan WIB, dan `days` tak sah diperlakukan sebagai default).
+  Temuan-temuan itu **BELUM diperbaiki** dan **sengaja tidak diperbaiki** di
+  putaran ini karena sebagian mengubah perilaku/produk, sehingga menunggu
+  keputusan pemilik. Putaran ini **tidak mengubah kode apa pun**; rincian
+  beserta bukti berkas:baris terverifikasi ada di
+  `docs/PLAN_2026-09-23_21-34.md`. **Pilihan seksi:** ditulis di
+  `### Dirapikan`, bukan `### Diperbaiki` maupun `### Ditambahkan`, karena
+  tidak ada perilaku yang diperbaiki dan tidak ada fitur baru (preseden
+  catatan non-fitur di seksi ini).
 
 
 ### Ditambahkan
