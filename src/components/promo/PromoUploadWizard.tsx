@@ -197,6 +197,17 @@ export default function PromoUploadWizard() {
   const mimes = useMemo(() => acceptedMimes(selectedMedia), [selectedMedia]);
   const formatsLabel = selectedMedia?.accepted_formats || '';
 
+  // Langkah 1 hanya menawarkan media NON-cetak: media berkanal 'cetak'
+  // (spanduk, big-banner, umbul-umbul) diajukan lewat form Media Promosi Cetak
+  // `/ajukan-cetak` karena materinya menyusul lewat revisi, bukan diunggah di
+  // sini. Sengaja memakai `!== 'cetak'`, BUKAN `=== 'digital'`: banyak baris
+  // katalog lama tidak mengisi `media_channel`, dan media tanpa penanda kanal
+  // harus tetap bisa dipilih seperti perilaku sebelumnya.
+  const mediaTypesNonCetak = useMemo(
+    () => mediaTypes.filter((m) => m.media_channel !== 'cetak'),
+    [mediaTypes],
+  );
+
   // Lead time media terpilih (diturunkan dari teks `rules` katalog).
   const leadInfo = useMemo(() => {
     const rules = selectedMedia?.rules || '';
@@ -549,7 +560,7 @@ export default function PromoUploadWizard() {
                 <p className="ui-body ui-text-muted mt-2">Pilih media tempat materi Anda akan dipasang.</p>
 
                 <div className="mt-5 space-y-2">
-                  {mediaTypes.map((m, i) => (
+                  {mediaTypesNonCetak.map((m, i) => (
                     <label
                       key={m.slug}
                       className={`flex cursor-pointer items-start gap-3 rounded-md border p-3.5 transition ${

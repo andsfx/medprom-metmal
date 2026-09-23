@@ -336,11 +336,27 @@ router.post('/submit', async (req, res, next) => {
   try {
     // Media type harus ada & aktif.
     const { rows: mtRows } = await db.query(
-      'SELECT slug, accepted_formats, rules FROM promo_media_types WHERE slug = $1 AND is_active = true LIMIT 1',
+      'SELECT slug, accepted_formats, rules, media_channel FROM promo_media_types WHERE slug = $1 AND is_active = true LIMIT 1',
       [mediaTypeSlug],
     );
     if (!mtRows[0]) {
       return res.status(400).json({ success: false, error: 'Jenis media promosi tidak dikenal atau tidak aktif.' });
+    }
+
+    // Cermin penegakan di `loadCetakMedia` (POST /promo/submit-batch): endpoint
+    // ini melayani kanal DIGITAL saja. Media berkanal 'cetak' (spanduk,
+    // big-banner, umbul-umbul) tidak meminta berkas materi di formnya, jadi
+    // tenant yang tersasar ke sini akan diminta mengunggah materi yang
+    // seharusnya menyusul lewat revisi.
+    //
+    // Fail-safe: tolak HANYA bila kanalnya PERSIS 'cetak'. Baris katalog
+    // warisan yang tidak mengisi `media_channel` (kosong/undefined) tetap
+    // diterima, sama seperti sebelum penegakan ini ada.
+    if (mtRows[0].media_channel === 'cetak') {
+      return res.status(400).json({
+        success: false,
+        error: 'Media ini diajukan lewat form Media Promosi Cetak (/ajukan-cetak) karena materinya menyusul lewat revisi. Silakan lanjutkan pengajuan Anda di sana.',
+      });
     }
 
     // Lead time: materi harus diterima N hari sebelum pasang (aturan per media
