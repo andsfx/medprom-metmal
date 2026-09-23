@@ -284,6 +284,25 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   String yang sampai ke UI, pesan error API, teks yang diassert test, dan dua
   marker `server/schema.sql` yang dibaca `schema-migration.test.js` tidak
   diubah. Perilaku runtime sama; `tsc`, 397 test, dan build tetap hijau.
+- **Catatan temuan yang BELUM diperbaiki: pemasangan dapat dicatat walau
+  materi belum pernah diterima.** Ini catatan keputusan terbuka, bukan
+  perubahan perilaku. Pengajuan media cetak (`POST /promo/submit-batch`)
+  sengaja tidak meminta berkas materi sehingga tersimpan `source_type='none'`,
+  tetapi staf masih dapat mencatat pemasangan
+  (`POST /admin/submissions/:id/installation`) dan menetapkan status
+  `sudah_dipasang` untuk pengajuan itu, karena satu-satunya penjaga di
+  `server/src/routes/admin.js` (baris sekitar 340) hanyalah
+  `isInstallableStatus(existing.status)` dan gerbang UI di
+  `AdminDashboardPage.tsx` (baris sekitar 1003 dan 1141) juga murni status.
+  Klasifikasinya kelalaian, bukan keputusan sadar, dan tidak ada test yang
+  mengunci perilaku ini. Dampaknya status `sudah_dipasang` dapat salah dan
+  ikut mengalir ke pengingat periode berakhir. Tiga opsi perbaikan beserta
+  konsekuensinya dicatat di `docs/PLAN_2026-09-23_19-45.md` bagian
+  "Keputusan menunggu pemilik". **Kode sengaja TIDAK diubah** di putaran ini.
+  **Pilihan seksi:** tidak ditulis di `### Diperbaiki` maupun `### Ditambahkan`
+  karena tidak ada yang diperbaiki dan tidak ada fitur baru; `### Dirapikan`
+  dipakai sebagai tempat catatan non fitur yang paling dekat, dan pilihan
+  tidak menulis apa pun juga sah.
 
 
 ### Ditambahkan
