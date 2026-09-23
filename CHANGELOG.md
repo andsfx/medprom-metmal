@@ -332,6 +332,18 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   karena tidak ada yang diperbaiki dan tidak ada fitur baru; `### Dirapikan`
   dipakai sebagai tempat catatan non fitur yang paling dekat, dan pilihan
   tidak menulis apa pun juga sah.
+- **Catatan temuan yang BELUM diperbaiki: dua skrip verifikasi produksi punya
+  asumsi basi akibat perubahan routing kanal.** `scripts/verify-e2e.mjs`
+  (baris 37 mengklik `a:has-text("Ajukan Materi")` yang kini match pertama
+  adalah kartu cetak menuju `/ajukan-cetak`) dan
+  `scripts/verify-tenant-upload.mjs` (baris 40 membuka `/ajukan?media=spanduk`
+  yang kini dialihkan ke `/ajukan-cetak`) akan MERAH karena keduanya
+  mengasumsikan semua kartu katalog menuju wizard digital. Asumsi itu justru
+  cacat yang sudah diperbaiki. Perbaikan minimal per baris beserta alasannya
+  dicatat di `docs/PLAN_2026-09-23_21-13.md` bagian "Menunggu persetujuan:
+  pembaruan dua skrip verifikasi" dan **MENUNGGU PERSETUJUAN**. **Kedua skrip
+  sengaja TIDAK diubah** di putaran ini; menyunting aset verifikasi demi
+  meloloskan pemeriksaan dilarang.
 
 
 ### Ditambahkan
