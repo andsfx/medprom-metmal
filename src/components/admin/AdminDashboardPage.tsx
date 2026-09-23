@@ -114,6 +114,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   const [summaryTotal, setSummaryTotal] = useState(0);
   // Pengingat periode berakhir (query turunan, bukan cron).
   const [reminders, setReminders] = useState<RemindersData | null>(null);
+  // Panel ringkas 5 item; tombol "Tampilkan N lainnya" membuka daftar penuh.
+  const [pengingatTerbuka, setPengingatTerbuka] = useState(false);
 
   const [detail, setDetail] = useState<AdminSubmissionRow | null>(null);
   const [detailData, setDetailData] = useState<StatusPageData | null>(null);
@@ -359,8 +361,11 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               {reminders.due_soon > 0 && <span>{reminders.due_soon} dalam {reminders.days} hari</span>}
             </p>
           </div>
-          <ul className="mt-2 space-y-1.5">
-            {reminders.items.slice(0, 5).map((r) => {
+          <ul
+            id="pengingat-daftar"
+            className={`mt-2 space-y-1.5 ${pengingatTerbuka ? 'max-h-80 overflow-y-auto' : ''}`}
+          >
+            {(pengingatTerbuka ? reminders.items : reminders.items.slice(0, 5)).map((r) => {
               const wa = submissionWaLink({
                 pic_phone: r.pic_phone, tenant_name: r.tenant_name,
                 media_type_slug: r.media_type_slug, status: r.status,
@@ -384,7 +389,17 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             })}
           </ul>
           {reminders.items.length > 5 && (
-            <p className="mt-2 text-xs ui-text-muted">+{reminders.items.length - 5} lainnya</p>
+            <button
+              type="button"
+              onClick={() => setPengingatTerbuka((v) => !v)}
+              aria-expanded={pengingatTerbuka}
+              aria-controls="pengingat-daftar"
+              className="ui-control mt-2 inline-flex min-h-11 items-center rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+            >
+              {pengingatTerbuka
+                ? 'Sembunyikan'
+                : `Tampilkan ${reminders.items.length - 5} lainnya`}
+            </button>
           )}
         </section>
       )}
