@@ -543,18 +543,25 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   )}
                 </td>
                 <td className="px-3 py-3">
-                  <a
-                    href={r.source_type === 'link' ? r.link_url : r.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex max-w-40 items-center gap-1.5 truncate text-xs font-medium text-brand-primary-700 hover:text-brand-primary-800 dark:text-brand-primary-300"
-                  >
-                    <FileIcon mime={r.mime_type} source={r.source_type} />
-                    <span className="truncate">
-                      {r.source_type === 'link' ? 'tautan materi' : (r.file_name || 'file')}
-                    </span>
-                    <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
-                  </a>
+                  {/* Pengajuan cetak tanpa materi (`source_type` 'none') tidak
+                   * punya berkas maupun tautan: jangan render tautan kosong,
+                   * cukup keterangan "menyusul" seperti di ekspor CSV. */}
+                  {r.source_type === 'none' ? (
+                    <span className="inline-flex items-center gap-1.5 text-xs ui-text-muted">menyusul</span>
+                  ) : (
+                    <a
+                      href={r.source_type === 'link' ? r.link_url : r.file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex max-w-40 items-center gap-1.5 truncate text-xs font-medium text-brand-primary-700 hover:text-brand-primary-800 dark:text-brand-primary-300"
+                    >
+                      <FileIcon mime={r.mime_type} source={r.source_type} />
+                      <span className="truncate">
+                        {r.source_type === 'link' ? 'tautan materi' : (r.file_name || 'file')}
+                      </span>
+                      <ExternalLink className="h-3 w-3 shrink-0" aria-hidden="true" />
+                    </a>
+                  )}
                 </td>
                 <td className="px-3 py-3"><StatusBadge status={r.status} /></td>
                 <td className="px-3 py-3">
@@ -689,24 +696,39 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   </dd>
                 </div>
               )}
+              {/* Materi: 'none' = pengajuan cetak yang formnya tidak meminta
+               * berkas (materi menyusul lewat revisi). Dulu kanal ini ikut
+               * dirender sebagai berkas, sehingga staf melihat tautan
+               * `href=""` yang memuat ulang halaman saat diklik. Kanal tanpa
+               * materi kini baris informasi biasa, bukan tautan. */}
               <div className="flex gap-2">
                 <dt className="w-32 shrink-0 font-semibold ui-text-muted">
-                  {detail.source_type === 'link' ? 'Tautan' : 'File'}
+                  {detail.source_type === 'link'
+                    ? 'Tautan'
+                    : detail.source_type === 'upload' ? 'File' : 'Materi'}
                 </dt>
                 <dd className="min-w-0">
-                  <a
-                    href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 break-all font-medium text-brand-primary-700 dark:text-brand-primary-300"
-                  >
-                    <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    {detail.source_type === 'link' ? detail.link_url : (detail.file_name || 'file')}
-                  </a>
-                  {detail.source_type === 'link' && (
-                    <p className="mt-1 text-xs ui-text-muted">
-                      Materi ada di penyimpanan tenant. Unduh sendiri, tidak tersimpan di server kami.
-                    </p>
+                  {detail.source_type === 'none' ? (
+                    <span className="text-slate-900 dark:text-white">
+                      Materi menyusul setelah pengajuan disetujui.
+                    </span>
+                  ) : (
+                    <>
+                      <a
+                        href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 break-all font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                        {detail.source_type === 'link' ? detail.link_url : (detail.file_name || 'file')}
+                      </a>
+                      {detail.source_type === 'link' && (
+                        <p className="mt-1 text-xs ui-text-muted">
+                          Materi ada di penyimpanan tenant. Unduh sendiri, tidak tersimpan di server kami.
+                        </p>
+                      )}
+                    </>
                   )}
                 </dd>
               </div>
@@ -842,17 +864,22 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
             {/* Aksi cepat: buka materi (verifikasi manual) + teruskan status via WA.
                 wa.me butuh digit + kode negara; normalizer menangani format
-                "08xx xxxx xxxx" yang diajarkan form. */}
+                "08xx xxxx xxxx" yang diajarkan form.
+                Tombol buka materi HANYA muncul bila materinya memang ada:
+                pengajuan cetak ber-`source_type` 'none' tidak punya berkas,
+                dan dulu tombolnya menaut ke `href=""` (memuat ulang halaman). */}
             <div className="mt-4 flex flex-wrap gap-2">
-              <a
-                href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
-              >
-                <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                Buka tautan materi
-              </a>
+              {detail.source_type !== 'none' && (
+                <a
+                  href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+                >
+                  <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                  Buka tautan materi
+                </a>
+              )}
               {(() => {
                 // Pakai status TERSIMPAN (bukan newStatus yang belum disimpan) -
                 // view TR read-only pun takkan salah menyebut "Disetujui" untuk
@@ -880,7 +907,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               <button
                 type="button"
                 onClick={() => { void navigator.clipboard?.writeText(
-                  `${detail.tenant_name} - ${detail.media_type_slug}\nTautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`,
+                  // Kanal 'none' tidak punya URL: menyalin "Tautan: " kosong
+                  // hanya menghasilkan baris menyesatkan di pesan staf.
+                  `${detail.tenant_name} - ${detail.media_type_slug}\n${
+                    detail.source_type === 'none'
+                      ? 'Materi: menyusul setelah pengajuan disetujui.'
+                      : `Tautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`
+                  }`,
                 ); }}
                 className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
               >
