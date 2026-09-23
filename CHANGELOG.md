@@ -5,6 +5,28 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Endpoint pengingat periode berakhir tidak pernah terjangkau sehingga kanal
+  pengingat mati total.** Di `server/src/routes/admin.js`,
+  `router.get('/submissions/:id', ...)` terdaftar lebih dulu daripada
+  `router.get('/submissions/reminders', ...)`. Karena Express 4 mencocokkan
+  rute berurutan, `reminders` ditangkap sebagai `:id` (params
+  `{ id: 'reminders' }`), lalu `WHERE s.id = 'reminders'` pada kolom UUID
+  memicu galat Postgres `22P02` menjadi HTTP 500. Di FE, `loadReminders`
+  menelan galat dan memanggil `setReminders(null)`, sehingga panel "Pengingat
+  periode berakhir" tidak pernah dirender. Karena integrasi email ditunda
+  (`docs/PLAN_2026-09-23_21-18.md`), panel itu satu-satunya kanal pengingat,
+  jadi kanal tersebut mati total. Blok handler pengingat kini dipindah utuh ke
+  ATAS rute `:id` (mengikuti preseden `GET /submissions/summary` yang juga
+  didaftarkan sebelum `:id`), dengan isi handler tidak diubah sedikit pun dan
+  path `:id` sengaja tidak diubah bentuknya agar test lama yang mengambil
+  handler lewat `adminRouter.stack.find((l) => l.route?.path ===
+  '/submissions/:id')` tetap menemukan layer. Dikunci test regresi baru
+  `__tests__/api/admin-route-order.test.js` yang memasang `adminRouter` ke
+  aplikasi Express sungguhan dan menembaknya lewat HTTP nyata (test lama tidak
+  menangkap bug ini karena memanggil handler langsung dari `adminRouter.stack`
+  sehingga pencocokan rute Express tidak pernah dieksekusi). Test dibuktikan
+  bermakna lewat uji dua arah: pada kode sebelum perbaikan 2 test merah (rute
+  tertutup `:id`), setelah perbaikan 3 test hijau.
 - **Label "(N media dalam kiriman ini)" di riwayat tenant menghitung angka
   dari baris yang termuat sehingga undercount.** Commit sebelumnya
   (`8c601d6`) menambahkan label itu di `MySubmissionsPage.tsx`, tetapi nilai N
