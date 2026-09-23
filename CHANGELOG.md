@@ -5,6 +5,28 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Panel "Pengingat periode berakhir" menyembunyikan item tepat pada kasus
+  yang paling butuh perhatian.** Panel itu hanya merender
+  `reminders.items.slice(0, 5)` lalu menampilkan teks mati `+N lainnya`,
+  sedangkan endpoint `GET /admin/submissions/reminders` mengembalikan hingga
+  200 item. Akibatnya staf yang punya lebih dari 5 media mendekati akhir
+  periode tidak punya cara melihat sisanya, sehingga informasi yang diminta
+  pemilik lewat notifikasi dashboard terpotong senyap. Panel kini dapat dibuka
+  lengkap: teks mati itu diganti `<button>` ber-`aria-expanded`,
+  `aria-controls="pengingat-daftar"`, dan `min-h-11` (target sentuh 44px)
+  dengan label dinamis "Tampilkan N lainnya" / "Sembunyikan", `<ul>` diberi
+  `id="pengingat-daftar"` plus kelas kondisional `max-h-80 overflow-y-auto`
+  saat terbuka supaya daftar panjang menggulir di dalam panel, dan sumber
+  baris menjadi daftar penuh saat terbuka (tetap 5 saat tertutup). Tata letak
+  dan isi tiap baris (label sisa hari, tautan "Ingatkan via WhatsApp", warna
+  lewat/akan berakhir) tidak diubah, dan bila item <= 5 tidak ada tombol
+  sehingga perilaku lama dipertahankan. Dikunci
+  `src/components/admin/__tests__/AdminDashboardPengingatLengkap.test.tsx`
+  (baru, 3 test: 7 item menghasilkan 5 baris awal plus tombol "Tampilkan 2
+  lainnya" ber-`aria-expanded=false`; setelah klik menjadi 7 baris plus tombol
+  "Sembunyikan" ber-`aria-expanded=true` dan wadah bergulir; 3 item tanpa
+  tombol). Test dibuktikan bermakna lewat uji sementara (perilaku lama
+  dipulihkan, 2 test gagal, lalu dipulihkan dan hijau).
 - **Kartu katalog media cetak mengarah ke wizard digital yang mewajibkan
   unggah materi.** `PromoLandingPage.tsx` merender kartu untuk SEMUA media
   aktif dan setiap kartu menaut ke `/ajukan` (wizard materi digital), padahal
