@@ -131,8 +131,17 @@ function MediaCard({ media }: { media: PromoMediaType }) {
       )}
 
       <div className="mt-5 flex-1" />
+      {/* Tujuan tautan mengikuti KANAL media, bukan kategori katalog.
+       * Kanal `cetak` (Tenant Relations) punya formnya sendiri di
+       * `/ajukan-cetak`: field persis permintaan pemilik, boleh beberapa media
+       * sekaligus, dan TIDAK meminta berkas materi (materi menyusul lewat
+       * revisi). Wizard digital `/ajukan` justru mewajibkan unggah/tautan
+       * materi, jadi mengarahkan kartu cetak ke sana meminta berkas yang belum
+       * ada dan menghilangkan seluruh alur cetak. */}
       <Link
-        to={`/ajukan?media=${encodeURIComponent(media.slug)}`}
+        to={media.media_channel === 'cetak'
+          ? `/ajukan-cetak?media=${encodeURIComponent(media.slug)}`
+          : `/ajukan?media=${encodeURIComponent(media.slug)}`}
         className="app-pressable ui-focus-ring inline-flex min-h-11 items-center gap-1.5 text-sm font-semibold text-brand-primary-700 transition-colors hover:text-brand-primary-800 dark:text-brand-primary-300 dark:hover:text-brand-primary-200"
       >
         Ajukan Materi

@@ -25,6 +25,11 @@ const MEDIA: PromoMediaType[] = [
     slug: 'spanduk', category: 'outdoor', name: 'Spanduk',
     size_spec: '0.9 M x 6.0 M', material_spec: 'Flexi 280gr',
     accepted_formats: 'JPEG,PNG,PDF', image_path: '/media/spanduk.webp', price_note: 'Rp. 70.000,-/hari',
+    // Kanal cetak, sama seperti seed (`server/scripts/seed-media-types.mjs`
+    // dan backfill `server/schema.sql:207-210`). Tanpa penanda ini kartu
+    // Spanduk tidak bisa dibedakan dari media digital, padahal justru
+    // perbedaan itulah yang menentukan tujuan tautannya.
+    media_channel: 'cetak',
     location_note: 'Sisi Pintu Tol Bekasi Barat',
     rules: [
       'Harga belum termasuk PPN.',
@@ -118,8 +123,13 @@ describe('PromoLandingPage', () => {
     renderLanding();
     await screen.findByText('Spanduk');
 
+    // PENGECUALIAN eksplisit: assertion ini dulu menuntut
+    // '/ajukan?media=spanduk' untuk Spanduk, padahal Spanduk berkanal `cetak`.
+    // Assertion lama karena itu MENGUNCI BUG (mengarahkan kartu cetak ke
+    // wizard digital yang mewajibkan unggah materi), bukan perilaku yang
+    // diinginkan. Hanya baris ini yang diubah; assertion lain tidak disentuh.
     const links = screen.getAllByRole('link', { name: /Ajukan Materi/i });
-    expect(links[0]).toHaveAttribute('href', '/ajukan?media=spanduk');
+    expect(links[0]).toHaveAttribute('href', '/ajukan-cetak?media=spanduk');
   });
 
   it('hero menautkan ke pelacakan nomor', async () => {
@@ -204,5 +214,107 @@ describe('PromoLandingPage', () => {
     const videotron = screen.getByText('Videotron').closest('article')!;
     expect(within(videotron).getByText('Rp. 600.000,-/hari').parentElement)
       .not.toHaveClass('justify-between');
+  });
+});
+
+/**
+ * Tujuan tautan kartu ditentukan oleh KANAL media (`media_channel`), bukan
+ * kategori katalog. Media cetak tampil di kategori Outdoor/Indoor bersama
+ * media digital, jadi tanpa pembedaan ini kartu cetak mendarat di wizard
+ * digital yang mewajibkan berkas materi.
+ */
+describe('PromoLandingPage - tujuan tautan kartu per kanal media', () => {
+  // Dua media cetak pada kategori BERBEDA (outdoor + indoor) plus satu media
+  // digital: memastikan pembedaan memakai kanal, bukan kategori.
+  const MEDIA_KANAL: PromoMediaType[] = [
+    {
+      slug: 'spanduk', category: 'outdoor', name: 'Spanduk',
+      size_spec: '0.9 M x 6.0 M', material_spec: 'Flexi 280gr',
+      accepted_formats: 'JPEG,PNG,PDF', image_path: '', price_note: '',
+      media_channel: 'cetak', location_note: '', rules: '', sort_order: 1,
+    },
+    {
+      slug: 'big-banner', category: 'indoor', name: 'Big Banner',
+      size_spec: '5 x 10 M', material_spec: 'Flexi 280gr',
+      accepted_formats: 'JPEG,PNG,PDF', image_path: '', price_note: '',
+      media_channel: 'cetak', location_note: '', rules: '', sort_order: 2,
+    },
+    {
+      slug: 'videotron', category: 'indoor', name: 'Videotron',
+      size_spec: '800 x 600 Pixel (Landscape)', material_spec: 'JPEG/MP4',
+      accepted_formats: 'JPEG,PNG,MP4', image_path: '', price_note: '',
+      media_channel: 'digital', location_note: '', rules: '', sort_order: 10,
+    },
+  ];
+
+  it('kartu media berkanal cetak menaut ke /ajukan-cetak dengan slug yang sama', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA_KANAL);
+    renderLanding();
+    await screen.findByText('Spanduk');
+
+    // Kategori tidak menentukan tujuan: dua kartu cetak di kategori berbeda
+    // sama-sama menuju form cetak.
+    const spanduk = screen.getByText('Spanduk').closest('article') as HTMLElement;
+    expect(within(spanduk).getByRole('link', { name: /Ajukan Materi/i }))
+      .toHaveAttribute('href', '/ajukan-cetak?media=spanduk');
+
+    const bigBanner = screen.getByText('Big Banner').closest('article') as HTMLElement;
+    expect(within(bigBanner).getByRole('link', { name: /Ajukan Materi/i }))
+      .toHaveAttribute('href', '/ajukan-cetak?media=big-banner');
+  });
+
+  it('kartu media digital tetap menaut ke /ajukan dengan slug yang sama', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA_KANAL);
+    renderLanding();
+    await screen.findByText('Videotron');
+
+    const videotron = screen.getByText('Videotron').closest('article') as HTMLElement;
+    expect(within(videotron).getByRole('link', { name: /Ajukan Materi/i }))
+      .toHaveAttribute('href', '/ajukan?media=videotron');
+  });
+
+  it('query param media diteruskan apa adanya, tanpa param tambahan', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA_KANAL);
+    renderLanding();
+    await screen.findByText('Spanduk');
+
+    // `PromoCetakWizard` membaca `searchParams.get('media')` lalu pra-memilih
+    // slug itu (`PromoCetakWizard.tsx:137` dan `:228-231`), jadi slug harus
+    // utuh dan sendirian.
+    const spanduk = screen.getByText('Spanduk').closest('article') as HTMLElement;
+    const href = within(spanduk).getByRole('link', { name: /Ajukan Materi/i })
+      .getAttribute('href') as string;
+    const query = new URLSearchParams(href.slice(href.indexOf('?') + 1));
+    expect([...query.keys()]).toEqual(['media']);
+    expect(query.get('media')).toBe('spanduk');
+    expect(href).toBe('/ajukan-cetak?media=spanduk');
+  });
+
+  it('label tautan tetap "Ajukan Materi" di kedua kanal', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA_KANAL);
+    renderLanding();
+    await screen.findByText('Spanduk');
+
+    // Label sengaja tidak diubah: teks ini dipakai bersama media digital dan
+    // sudah dikunci test lama, jadi cukup tujuan yang dibedakan.
+    const spanduk = screen.getByText('Spanduk').closest('article') as HTMLElement;
+    expect(within(spanduk).getByRole('link', { name: /Ajukan Materi/i })).toBeInTheDocument();
+
+    const videotron = screen.getByText('Videotron').closest('article') as HTMLElement;
+    expect(within(videotron).getByRole('link', { name: /Ajukan Materi/i })).toBeInTheDocument();
+  });
+
+  it('media tanpa media_channel diperlakukan sebagai digital', async () => {
+    mockedFetchMediaTypes.mockResolvedValue(MEDIA_KANAL.map((m) => (
+      m.slug === 'videotron' ? { ...m, media_channel: undefined } : m
+    )));
+    renderLanding();
+    await screen.findByText('Videotron');
+
+    // Kolom opsional di tipe; entri lama tanpa penanda tidak boleh jatuh ke
+    // form cetak.
+    const videotron = screen.getByText('Videotron').closest('article') as HTMLElement;
+    expect(within(videotron).getByRole('link', { name: /Ajukan Materi/i }))
+      .toHaveAttribute('href', '/ajukan?media=videotron');
   });
 });
