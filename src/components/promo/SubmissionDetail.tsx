@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { submitRevision, uploadFile, errorsFromApiError } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
+import { installationProofViews } from '../../utils/proof';
 import { STATUS_LABELS } from '../../constants/promo';
 import type { StatusPageData } from '../../types/promo';
 
@@ -222,6 +223,32 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
                 <dd className="text-slate-900 dark:text-white">{data.installation.notes}</dd>
               </div>
             )}
+            {/* Bukti tayang (FR-047): DUA kanal - tautan dan berkas unggahan
+             * staf. Sebelumnya hanya kolom tautan yang dirender, sehingga bukti
+             * hasil unggah tidak pernah terlihat tenant. Baris hanya muncul bila
+             * kanalnya benar-benar berisi. */}
+            {installationProofViews(data.installation).map((p) => (
+              <div key={p.kind} className="flex gap-2">
+                <dt className="w-28 shrink-0 font-semibold ui-text-muted">{p.label}</dt>
+                <dd className="min-w-0">
+                  <a
+                    href={p.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex min-h-11 items-center gap-1.5 break-all text-sm font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                  >
+                    <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                    {p.linkLabel}
+                  </a>
+                  {p.fileName && <p className="break-all text-xs ui-text-muted">{p.fileName}</p>}
+                  {(p.meta || p.uploaded) && (
+                    <p className="text-xs ui-text-muted">
+                      {[p.meta, p.uploaded].filter(Boolean).join(' · ')}
+                    </p>
+                  )}
+                </dd>
+              </div>
+            ))}
           </dl>
         </div>
       )}

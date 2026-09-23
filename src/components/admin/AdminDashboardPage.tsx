@@ -14,10 +14,13 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useConfirmDialog } from '../ConfirmDialog';
 import Sheet from '../ui/Sheet';
-import { STATUS_LABELS, STATUS_ORDER, CATEGORY_LABELS, CHANNEL_LABELS } from '../../constants/promo';
+import {
+  STATUS_LABELS, STATUS_ORDER, CATEGORY_LABELS, CHANNEL_LABELS, APPLICANT_TYPE_LABELS,
+} from '../../constants/promo';
 import { submissionWaLink } from '../../utils/whatsapp';
 import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
 import { STATUS_TRANSITIONS, isInstallableStatus } from '../../utils/statusFlow';
+import { installationProofViews } from '../../utils/proof';
 import {
   fetchAdminSubmissions, fetchAdminSummary, fetchAdminSubmissionDetail,
   updateSubmissionStatus, recordInstallation, deleteSubmission,
@@ -71,6 +74,16 @@ function StatusBadge({ status }: { status: string }) {
       {STATUS_LABELS[status] ?? status}
     </span>
   );
+}
+
+/**
+ * Format rupiah ringkas untuk snapshot harga pengajuan cetak.
+ * Sama dengan `rupiah()` di `src/components/promo/PromoCetakWizard.tsx`
+ * ("Rp. 1.100.000") supaya angka di dashboard staf dan di form tenant
+ * terbaca identik.
+ */
+function rupiah(n: number): string {
+  return `Rp. ${Number(n || 0).toLocaleString('id-ID')}`;
 }
 
 /** Ikon materi: tautan eksternal punya ikon sendiri (mime kosong). */
@@ -236,6 +249,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     && STATUS_WAJIB_CATATAN.includes(newStatus)
     && newStatus !== detail.status
     && !reviewNotes.trim();
+
+  /**
+   * Sheet detail: jenis pemohon menentukan label baris nama dan apakah penanda
+   * MID bermakna. Pemohon non-tenant tidak punya MID sama sekali, jadi label
+   * "Tenant"/"(manual, tidak tertaut MID)" akan menyesatkan staf.
+   */
+  const detailNonTenant = detail?.applicant_type === 'non_tenant';
 
   async function saveStatus() {
     if (!detail) return;
@@ -608,19 +628,49 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             </div>
 
             <dl className="space-y-2.5 text-sm">
-              <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">PIC</dt><dd className="text-slate-900 dark:text-white">{detail.pic_name} · {detail.pic_phone}</dd></div>
+              {/* Jenis pemohon menentukan label baris nama di bawah. Pengajuan
+               * cetak boleh diajukan tenant maupun non-tenant; tanpa baris ini
+               * staf tidak bisa membedakannya dan label "Tenant" menyesatkan
+               * untuk pemohon non-tenant. */}
               <div className="flex gap-2">
-                <dt className="w-32 shrink-0 font-semibold ui-text-muted">Tenant</dt>
+                <dt className="w-32 shrink-0 font-semibold ui-text-muted">Jenis Pemohon</dt>
                 <dd className="text-slate-900 dark:text-white">
-                  {detail.tenant_name}
-                  {detail.unit_number && <span className="ml-1.5 text-xs ui-text-muted">Unit {detail.unit_number}</span>}
-                  {detail.tenant_id
-                    ? <span className="ml-1.5 text-xs ui-text-muted">(MID {detail.tenant_id})</span>
-                    : <span className="ml-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">(manual, tidak tertaut MID)</span>}
+                  {APPLICANT_TYPE_LABELS[detail.applicant_type ?? 'tenant'] ?? APPLICANT_TYPE_LABELS.tenant}
                 </dd>
               </div>
+              <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">PIC</dt><dd className="text-slate-900 dark:text-white">{detail.pic_name} · {detail.pic_phone}</dd></div>
+              <div className="flex gap-2">
+                <dt className="w-32 shrink-0 font-semibold ui-text-muted">{detailNonTenant ? 'Nama Non Tenant' : 'Nama Tenant'}</dt>
+                <dd className="text-slate-900 dark:text-white">
+                  {detail.tenant_name}
+                  {/* Penanda MID hanya bermakna untuk tenant: non-tenant memang
+                   * tidak pernah punya MID, jadi tidak boleh ditandai
+                   * "manual, tidak tertaut MID". */}
+                  {!detailNonTenant && detail.unit_number && <span className="ml-1.5 text-xs ui-text-muted">Unit {detail.unit_number}</span>}
+                  {!detailNonTenant && (detail.tenant_id
+                    ? <span className="ml-1.5 text-xs ui-text-muted">(MID {detail.tenant_id})</span>
+                    : <span className="ml-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">(manual, tidak tertaut MID)</span>)}
+                </dd>
+              </div>
+              {/* Nomor batch: satu kirim form cetak bisa memuat beberapa media. */}
+              {detail.batch_number && (
+                <div className="flex gap-2">
+                  <dt className="w-32 shrink-0 font-semibold ui-text-muted">Nomor Batch</dt>
+                  <dd className="font-mono text-xs text-slate-900 dark:text-white">{detail.batch_number}</dd>
+                </div>
+              )}
               {detail.campaign_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Campaign</dt><dd className="text-slate-900 dark:text-white">{detail.campaign_name}</dd></div>}
-              {detail.material_description && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Deskripsi</dt><dd className="text-slate-900 dark:text-white">{detail.material_description}</dd></div>}
+              {/* Baris Deskripsi SELALU tampil. Dulu baris ini hilang saat
+               * `material_description` kosong, sehingga staf mengira data
+               * hilang padahal field-nya memang tidak diisi - khususnya
+               * pengajuan kanal cetak, yang form-nya tidak meminta deskripsi.
+               * Kini kekosongan dinyatakan eksplisit, bukan disembunyikan. */}
+              <div className="flex gap-2">
+                <dt className="w-32 shrink-0 font-semibold ui-text-muted">Deskripsi</dt>
+                <dd className="text-slate-900 dark:text-white">
+                  {detail.material_description || <span className="ui-text-muted">tidak diisi</span>}
+                </dd>
+              </div>
               {detail.material_type && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Jenis materi</dt><dd className="text-slate-900 dark:text-white">{detail.material_type}</dd></div>}
               {detail.media_target && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Media/lokasi</dt><dd className="text-slate-900 dark:text-white">{detail.media_target}</dd></div>}
               {(detail.air_start_date || detail.air_end_date) && (
@@ -661,6 +711,27 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 </dd>
               </div>
               {detail.notes && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Catatan tenant</dt><dd className="text-slate-900 dark:text-white">{detail.notes}</dd></div>}
+              {/* Snapshot harga hanya dimiliki pengajuan hasil form cetak.
+               * Dirender HANYA bila totalnya > 0, supaya pengajuan lama tanpa
+               * snapshot tidak menampilkan baris nol yang menyesatkan.
+               * Ketiga angka ditulis terpisah (bukan "subtotal + PPN = total")
+               * karena untuk media ber-`ppn_included` PPN sudah berada DI DALAM
+               * subtotal sehingga penjumlahan itu keliru. */}
+              {(detail.total_amount ?? 0) > 0 && (
+                <div className="flex gap-2">
+                  <dt className="w-32 shrink-0 font-semibold ui-text-muted">Perkiraan biaya</dt>
+                  <dd className="text-slate-900 dark:text-white">
+                    <div className="flex flex-wrap gap-x-3 gap-y-0.5">
+                      <span className="tabular-nums">{`Subtotal ${rupiah(detail.subtotal ?? 0)}`}</span>
+                      <span className="tabular-nums">{`${detail.ppn_included ? 'Termasuk PPN' : 'PPN'} ${rupiah(detail.ppn_amount ?? 0)}`}</span>
+                      <span className="font-semibold tabular-nums">{`Total ${rupiah(detail.total_amount ?? 0)}`}</span>
+                    </div>
+                    <p className="mt-1 text-xs ui-text-muted">
+                      Angka perkiraan; pengajuan ini tidak melakukan penagihan.
+                    </p>
+                  </dd>
+                </div>
+              )}
               {detail.reviewed_by_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Direview oleh</dt><dd className="text-slate-900 dark:text-white">{detail.reviewed_by_name}</dd></div>}
             </dl>
 
@@ -739,16 +810,31 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     </div>
                   )}
                   {detailData.installation.notes && <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Catatan</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.notes}</dd></div>}
-                  {detailData.installation.proof_url && (
-                    <div className="flex gap-2">
-                      <dt className="w-28 shrink-0 ui-text-muted">Bukti</dt>
-                      <dd>
-                        <a href={detailData.installation.proof_url} target="_blank" rel="noopener noreferrer" className="font-medium text-brand-primary-700 dark:text-brand-primary-300">
-                          Buka bukti pemasangan
+                  {/* Bukti tayang dua kanal (tautan + berkas unggahan). Sebelumnya
+                   * hanya `proof_url` yang dirender, sehingga staf yang baru saja
+                   * mengunggah berkas tidak melihat buktinya di tempat yang sama. */}
+                  {installationProofViews(detailData.installation).map((p) => (
+                    <div key={p.kind} className="flex gap-2">
+                      <dt className="w-28 shrink-0 ui-text-muted">{p.label}</dt>
+                      <dd className="min-w-0">
+                        <a
+                          href={p.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex min-h-11 items-center gap-1.5 break-all font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          {p.linkLabel}
                         </a>
+                        {p.fileName && <p className="break-all text-xs ui-text-muted">{p.fileName}</p>}
+                        {(p.meta || p.uploaded) && (
+                          <p className="text-xs ui-text-muted">
+                            {[p.meta, p.uploaded].filter(Boolean).join(' · ')}
+                          </p>
+                        )}
                       </dd>
                     </div>
-                  )}
+                  ))}
                   {detailData.installation.installed_by && <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Dicatat oleh</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.installed_by}</dd></div>}
                 </dl>
               </div>
@@ -1168,17 +1254,38 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
     }
   }
 
-  const textInput = (label: string, field: keyof CatalogFormState, placeholder = '') => (
+  /**
+   * Input teks katalog. `multiline` untuk kolom yang isinya boleh berbaris
+   * banyak (`price_note` menyimpan tangga tarif dari deck, mis.
+   * "Rp. 600.000,-/hari\nRp. 4.200.000,-/7 hari").
+   *
+   * `<input type="text">` MEMBUANG karakter baris baru (spesifikasi HTML:
+   * nilai input disanitasi dengan men-strip CR/LF), jadi mengedit kolom itu
+   * lewat input satu baris akan menggabungkan seluruh tarif menjadi satu baris
+   * panjang begitu disimpan. `<textarea>` mempertahankan baris baru.
+   */
+  const textInput = (label: string, field: keyof CatalogFormState, placeholder = '', multiline = false) => (
     <div>
       <label htmlFor={`cf-${field}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">{label}</label>
-      <input
-        id={`cf-${field}`}
-        type="text"
-        value={String(form?.[field] ?? '')}
-        placeholder={placeholder}
-        onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
-        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
-      />
+      {multiline ? (
+        <textarea
+          id={`cf-${field}`}
+          rows={3}
+          value={String(form?.[field] ?? '')}
+          placeholder={placeholder}
+          onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
+          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+        />
+      ) : (
+        <input
+          id={`cf-${field}`}
+          type="text"
+          value={String(form?.[field] ?? '')}
+          placeholder={placeholder}
+          onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
+          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+        />
+      )}
     </div>
   );
 
@@ -1318,7 +1425,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {textInput('Format diterima', 'accepted_formats', 'JPEG,PDF')}
               {textInput('Ukuran', 'size_spec', '0.9 M x 6.0 M')}
               {textInput('Materi', 'material_spec', 'Flexi 280gr')}
-              {textInput('Harga', 'price_note', 'Rp. 70.000,-/hari')}
+              {textInput('Harga', 'price_note', 'Rp. 70.000,-/hari', true)}
               {textInput('Lokasi', 'location_note', 'Sisi Pintu Tol Bekasi Barat')}
 
               {/* Harga numerik - dipakai menghitung PPN pengajuan cetak dan
@@ -1426,8 +1533,17 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                 rows={5}
                 value={form.rules}
                 onChange={(e) => setForm((f) => (f ? { ...f, rules: e.target.value } : f))}
+                aria-describedby="cf-rules-hint"
                 className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
               />
+              {/* Isi kolom ini bukan sekadar catatan internal: tenant membacanya
+               * di katalog publik, dan sistem mem-parse kalimat batas waktu di
+               * dalamnya untuk menghitung lead time. Tanpa keterangan ini staf
+               * mengira kolomnya hanya untuk arsip. */}
+              <p id="cf-rules-hint" className="mt-1 text-xs ui-text-muted">
+                Tampil ke tenant di katalog publik sebagai Ketentuan pemasangan. Kalimat batas waktu
+                seperti &quot;3 hari kerja sebelum pemasangan&quot; dipakai menghitung lead time pengajuan.
+              </p>
             </div>
 
             <label className="mt-3 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">

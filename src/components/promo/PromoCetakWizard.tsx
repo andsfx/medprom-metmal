@@ -1,7 +1,8 @@
 /**
  * Wizard pengajuan media promosi CETAK - 3 langkah:
  *   1. Data Pemohon (tenant ATAU non-tenant)
- *   2. Pilih Media & Periode (beberapa media sekaligus)
+ *   2. Pilih Media & Periode (beberapa media sekaligus, dikelompokkan per
+ *      kategori Outdoor / Indoor; satu media boleh dipasang di beberapa lokasi)
  *   3. Ringkasan & Kirim
  *
  * Berbeda dari `PromoUploadWizard` (materi digital, satu media, wajib materi),
@@ -10,16 +11,26 @@
  * pemasangan, lokasi pemasangan), boleh beberapa media dalam satu kirim, dan
  * TIDAK meminta berkas materi (menyusul lewat alur revisi).
  *
+ * Tiap BARIS terpilih punya `id` unik sendiri (bukan `slug`), sehingga media
+ * yang sama boleh dipasang di beberapa lokasi dalam satu pengajuan; `slug`
+ * tetap menjadi referensi katalog. Server (`POST /promo/submit-batch`) memang
+ * sudah menerima slug duplikat dan mem-fan-out satu pengajuan per baris.
+ *
  * Perhitungan harga/PPN memakai cermin `src/utils/pricing.ts`; server
- * menghitung ulang dan menyimpan snapshot (klien tidak dipercaya).
+ * menghitung ulang dan menyimpan snapshot (klien tidak dipercaya). Karena itu
+ * Total ringkasan SELALU = Σ `totalAmount` (satu sumber kebenaran) - untuk
+ * media yang harganya SUDAH termasuk PPN, menambahkan `ppnAmount` di atas
+ * `subtotal` akan menghitung PPN dua kali.
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2 } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import { fetchMediaTypes, searchTenants, submitBatch, errorsFromApiError } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
-import { APPLICANT_TYPE_LABELS, MAX_BATCH_ITEMS, CATEGORY_LABELS } from '../../constants/promo';
+import {
+  APPLICANT_TYPE_LABELS, CATEGORY_LABELS, CATEGORY_ORDER, MAX_BATCH_ITEMS,
+} from '../../constants/promo';
 import { cekDurasiMinimal, durationDays, hitungHarga, MIN_DURATION_DAYS, PPN_RATE } from '../../utils/pricing';
 import { toIsoDate } from '../../utils/leadTime';
 import type { PromoMediaType, TenantOption, BatchSubmitResult } from '../../types/promo';
@@ -36,8 +47,13 @@ const STEPS = [
 
 const DRAFT_KEY = 'metmal_promo_cetak_draft';
 
-/** Satu media terpilih beserta field per-item. */
+/**
+ * Satu baris media terpilih beserta field per-item.
+ * `id` unik per baris (media yang sama boleh muncul beberapa kali);
+ * `slug` hanya referensi katalog.
+ */
 interface ItemState {
+  id: string;
   slug: string;
   media_target: string;
   installation_date: string;
@@ -45,9 +61,67 @@ interface ItemState {
   air_end_date: string;
 }
 
+/** Draf `sessionStorage` - bentuk lama (baris tanpa `id`) tetap dipulihkan. */
+interface DraftState {
+  applicantType?: unknown;
+  nonTenantName?: unknown;
+  picName?: unknown;
+  picPhone?: unknown;
+  submissionDate?: unknown;
+  notes?: unknown;
+  items?: unknown;
+  tenantName?: unknown;
+  tenantId?: unknown;
+  unitNumber?: unknown;
+}
+
 function rupiah(n: number): string {
   return `Rp. ${Number(n || 0).toLocaleString('id-ID')}`;
 }
+
+/** Id unik baris; `crypto.randomUUID` bila tersedia (konteks aman/HTTPS). */
+function buatIdBaris(): string {
+  const c = globalThis.crypto;
+  if (c && typeof c.randomUUID === 'function') {
+    try { return c.randomUUID(); } catch { /* jatuh ke fallback */ }
+  }
+  return `baris-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Basis id elemen untuk satu baris pada satu media.
+ *
+ * Baris PERTAMA sebuah media memakai basis `<slug>` polos, baris KEDUA dan
+ * seterusnya memakai sufiks indeks baris (`<slug>-2`, `<slug>-3`, ...). Kontrak
+ * ini dipakai skrip verifikasi produksi `scripts/verify-cetak.mjs`, yang
+ * mengisi field lewat selector deterministik `input#cetak-target-<slug>`.
+ *
+ * Unik karena `slug` unik per blok media di dalam satu dokumen dan indeks baris
+ * unik di dalam blok tersebut. Dipakai untuk id input DAN kunci `fieldErrors`,
+ * sehingga keduanya tidak mungkin bertabrakan antar baris.
+ */
+function basisIdBaris(slug: string, idx: number): string {
+  return idx === 0 ? slug : `${slug}-${idx + 1}`;
+}
+
+/** Baris baru untuk satu media katalog. */
+function buatBaris(slug: string): ItemState {
+  return {
+    id: buatIdBaris(),
+    slug,
+    media_target: '',
+    installation_date: '',
+    air_start_date: '',
+    air_end_date: '',
+  };
+}
+
+/**
+ * Label PPN standar (media belum termasuk PPN). Angka mengikuti `PPN_RATE`
+ * efektif; label ini juga dipakai ringkasan agregat selama tidak ada media
+ * yang harganya sudah termasuk PPN.
+ */
+const LABEL_PPN_STANDAR = `PPN ${(PPN_RATE * 100).toFixed(0)}%`;
 
 function formatTanggal(iso: string): string {
   if (!iso) return '-';
@@ -96,6 +170,40 @@ export default function PromoCetakWizard() {
     () => Object.fromEntries(cetakMedia.map((m) => [m.slug, m])),
     [cetakMedia],
   );
+  // Baris terpilih dikelompokkan per slug: satu media boleh punya banyak baris.
+  const barisPerSlug = useMemo<Record<string, ItemState[]>>(() => {
+    const map: Record<string, ItemState[]> = {};
+    for (const it of items) (map[it.slug] ??= []).push(it);
+    return map;
+  }, [items]);
+  // Daftar media di langkah 2 dikelompokkan per kategori katalog (outdoor/indoor).
+  const kelompokMedia = useMemo(() => {
+    const perKategori = new Map<string, PromoMediaType[]>();
+    for (const m of cetakMedia) {
+      const key = m.category || 'lainnya';
+      const arr = perKategori.get(key);
+      if (arr) arr.push(m);
+      else perKategori.set(key, [m]);
+    }
+    const urutan = [
+      ...CATEGORY_ORDER.filter((k) => perKategori.has(k)),
+      ...[...perKategori.keys()].filter((k) => !CATEGORY_ORDER.includes(k)),
+    ];
+    return urutan.map((kategori) => ({ kategori, media: perKategori.get(kategori) ?? [] }));
+  }, [cetakMedia]);
+
+  // Harga per baris: satu tempat menghitung, dipakai langkah 2 dan 3.
+  const barisHarga = useMemo(
+    () => items.map((it) => {
+      const m = mediaBySlug[it.slug];
+      const dur = durationDays(it.air_start_date, it.air_end_date);
+      const harga = m
+        ? hitungHarga({ priceAmount: m.price_amount || 0, ppnIncluded: Boolean(m.ppn_included), durationDays: dur })
+        : null;
+      return { it, m, dur, harga };
+    }),
+    [items, mediaBySlug],
+  );
 
   // Pindah langkah: gulir ke atas + fokus judul langkah (pola wizard lama).
   useEffect(() => {
@@ -118,7 +226,7 @@ export default function PromoCetakWizard() {
         if (cancelled) return;
         setMediaTypes(rows);
         if (preselect && rows.some((m) => m.slug === preselect)) {
-          setItems([{ slug: preselect, media_target: '', installation_date: '', air_start_date: '', air_end_date: '' }]);
+          setItems([buatBaris(preselect)]);
           setStep(2);
         }
       })
@@ -126,6 +234,56 @@ export default function PromoCetakWizard() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [preselect]);
+
+  // Pulihkan draf saat katalog siap (sekali). Toleran terhadap draf lama:
+  // baris tanpa `id` diberi id baru, slug yang tak ada di katalog dibuang.
+  const draftRestoredRef = useRef(false);
+  useEffect(() => {
+    if (draftRestoredRef.current || mediaTypes.length === 0) return;
+    draftRestoredRef.current = true;
+    let draft: DraftState | null = null;
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) draft = JSON.parse(raw) as DraftState;
+    } catch { draft = null; }
+    if (!draft || typeof draft !== 'object') return;
+    if (draft.applicantType === 'tenant' || draft.applicantType === 'non_tenant') {
+      setApplicantType(draft.applicantType);
+    }
+    if (typeof draft.nonTenantName === 'string') setNonTenantName(draft.nonTenantName);
+    if (typeof draft.picName === 'string') setPicName(draft.picName);
+    if (typeof draft.picPhone === 'string') setPicPhone(draft.picPhone);
+    if (typeof draft.submissionDate === 'string' && draft.submissionDate) setSubmissionDate(draft.submissionDate);
+    if (typeof draft.notes === 'string') setNotes(draft.notes);
+    if (typeof draft.tenantName === 'string' && draft.tenantName) {
+      setTenant({
+        id: typeof draft.tenantId === 'string' ? draft.tenantId : '',
+        name: draft.tenantName,
+        floor: '',
+        lot: typeof draft.unitNumber === 'string' ? draft.unitNumber : '',
+        category: '',
+      });
+    }
+    if (Array.isArray(draft.items)) {
+      const rows: ItemState[] = [];
+      for (const raw of draft.items) {
+        if (!raw || typeof raw !== 'object') continue;
+        const r = raw as Record<string, unknown>;
+        const slug = typeof r.slug === 'string' ? r.slug : '';
+        if (!slug || !mediaBySlug[slug]) continue;
+        rows.push({
+          id: typeof r.id === 'string' && r.id ? r.id : buatIdBaris(),
+          slug,
+          media_target: typeof r.media_target === 'string' ? r.media_target : '',
+          installation_date: typeof r.installation_date === 'string' ? r.installation_date : '',
+          air_start_date: typeof r.air_start_date === 'string' ? r.air_start_date : '',
+          air_end_date: typeof r.air_end_date === 'string' ? r.air_end_date : '',
+        });
+        if (rows.length >= MAX_BATCH_ITEMS) break;
+      }
+      if (rows.length > 0) setItems(rows);
+    }
+  }, [mediaTypes, mediaBySlug]);
 
   // Draf sessionStorage (teks saja).
   useEffect(() => {
@@ -139,30 +297,43 @@ export default function PromoCetakWizard() {
   }, [mediaTypes, applicantType, nonTenantName, picName, picPhone, submissionDate, notes, items, tenant]);
 
   const dipilih = items.length;
-  const totalSubtotal = items.reduce((sum, it) => {
-    const m = mediaBySlug[it.slug];
-    if (!m) return sum;
-    const dur = durationDays(it.air_start_date, it.air_end_date);
-    return sum + hitungHarga({ priceAmount: m.price_amount || 0, ppnIncluded: Boolean(m.ppn_included), durationDays: dur }).subtotal;
-  }, 0);
-  const totalPpn = items.reduce((sum, it) => {
-    const m = mediaBySlug[it.slug];
-    if (!m) return sum;
-    const dur = durationDays(it.air_start_date, it.air_end_date);
-    return sum + hitungHarga({ priceAmount: m.price_amount || 0, ppnIncluded: Boolean(m.ppn_included), durationDays: dur }).ppnAmount;
-  }, 0);
+  // Total ringkasan = Σ totalAmount (satu sumber kebenaran). Untuk media
+  // `ppn_included`, subtotal SUDAH memuat PPN sehingga tidak boleh ditambah lagi.
+  const totalSubtotal = barisHarga.reduce((sum, b) => sum + (b.harga?.subtotal ?? 0), 0);
+  const totalPpn = barisHarga.reduce((sum, b) => sum + (b.harga?.ppnAmount ?? 0), 0);
+  const totalTagihan = barisHarga.reduce((sum, b) => sum + (b.harga?.totalAmount ?? 0), 0);
+  const adaTermasukPpn = barisHarga.some((b) => Boolean(b.m?.ppn_included));
+  const adaBelumTermasukPpn = barisHarga.some((b) => Boolean(b.m) && !b.m?.ppn_included);
+  // Label agregat: selama tidak ada media yang sudah termasuk PPN, label tetap
+  // "PPN 11%" (angka = PPN yang ditambahkan ke subtotal).
+  const labelAgregatPpn = adaTermasukPpn ? 'Termasuk PPN' : LABEL_PPN_STANDAR;
 
   function toggleMedia(slug: string) {
     setItems((prev) => {
       const ada = prev.some((it) => it.slug === slug);
+      // Menghapus centang = menghapus SEMUA baris media itu.
       if (ada) return prev.filter((it) => it.slug !== slug);
       if (prev.length >= MAX_BATCH_ITEMS) return prev;
-      return [...prev, { slug, media_target: '', installation_date: '', air_start_date: '', air_end_date: '' }];
+      // Mencentang = menambah SATU baris lokasi baru.
+      return [...prev, buatBaris(slug)];
     });
   }
 
-  function updateItem(slug: string, patch: Partial<ItemState>) {
-    setItems((prev) => prev.map((it) => (it.slug === slug ? { ...it, ...patch } : it)));
+  /** Tambah satu baris lokasi lagi untuk media yang sudah terpilih. */
+  function tambahLokasi(slug: string) {
+    setItems((prev) => (prev.length >= MAX_BATCH_ITEMS ? prev : [...prev, buatBaris(slug)]));
+  }
+
+  function hapusBaris(id: string) {
+    setItems((prev) => prev.filter((it) => it.id !== id));
+  }
+
+  function updateItem(id: string, patch: Partial<ItemState>) {
+    setItems((prev) => prev.map((it) => (it.id === id ? { ...it, ...patch } : it)));
+  }
+
+  function bersihkanError(key: string) {
+    setFieldErrors((er) => ({ ...er, [key]: '' }));
   }
 
   function goStep2() {
@@ -186,11 +357,18 @@ export default function PromoCetakWizard() {
   function goStep3() {
     const errs: Record<string, string> = {};
     if (items.length === 0) errs.media = 'Pilih minimal satu media promosi cetak.';
+    // Kunci error memakai basis id baris yang SAMA dengan id input di langkah 2
+    // (`<slug>` untuk baris pertama, `<slug>-<n>` untuk berikutnya) supaya tidak
+    // bertabrakan antar baris dan pesan galat bisa ditampilkan per baris.
+    const urutPerSlug: Record<string, number> = {};
     for (const [i, it] of items.entries()) {
+      const idxBaris = urutPerSlug[it.slug] ?? 0;
+      urutPerSlug[it.slug] = idxBaris + 1;
+      const key = basisIdBaris(it.slug, idxBaris);
       const label = `Media ke-${i + 1}`;
-      if (!it.media_target.trim()) errs[`target_${it.slug}`] = `${label}: lokasi pemasangan wajib diisi.`;
+      if (!it.media_target.trim()) errs[`target_${key}`] = `${label}: lokasi pemasangan wajib diisi.`;
       const cek = cekDurasiMinimal(it.air_start_date, it.air_end_date);
-      if (!cek.ok) errs[`periode_${it.slug}`] = `${label}: ${cek.message}`;
+      if (!cek.ok) errs[`periode_${key}`] = `${label}: ${cek.message}`;
     }
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
@@ -286,6 +464,152 @@ export default function PromoCetakWizard() {
           </div>
         </div>
       </AppShell>
+    );
+  }
+
+  /** Blok satu media di langkah 2 (checkbox + satu baris field per lokasi). */
+  function renderBlokMedia(m: PromoMediaType) {
+    const barisMedia = barisPerSlug[m.slug] ?? [];
+    const terpilih = barisMedia.length > 0;
+    // Basis id per baris (deterministik, berbasis slug): `<slug>` untuk baris
+    // pertama, `<slug>-<n>` untuk baris berikutnya. `row.id` (UUID) tetap
+    // dipakai sebagai `key` React dan identitas baris di state.
+    const basisIdPerBaris: Record<string, string> = {};
+    barisMedia.forEach((row, idx) => { basisIdPerBaris[row.id] = basisIdBaris(m.slug, idx); });
+    return (
+      <div key={m.slug} className={`rounded-md border p-3.5 transition ${terpilih ? 'border-brand-primary-500 bg-brand-primary-50/40 dark:border-brand-primary-400 dark:bg-brand-primary-950/20' : 'border-slate-200 dark:border-slate-700'}`}>
+        <label className="flex cursor-pointer items-start gap-3">
+          <input
+            id={`cetak-media-${m.slug}`}
+            type="checkbox"
+            checked={terpilih}
+            disabled={!terpilih && items.length >= MAX_BATCH_ITEMS}
+            onChange={() => toggleMedia(m.slug)}
+            className="mt-1 h-4 w-4 accent-[var(--brand-tosca)]"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="flex flex-wrap items-center gap-2">
+              <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
+              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-400">
+                {CATEGORY_LABELS[m.category] ?? m.category}
+              </span>
+            </span>
+            <span className="mt-1 block text-xs ui-text-muted">
+              {[m.size_spec, m.material_spec].filter(Boolean).join(' · ')}
+            </span>
+            {m.price_note && (
+              <span className="mt-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                {m.price_note} {m.ppn_included ? '(sudah termasuk PPN)' : '(belum termasuk PPN)'}
+              </span>
+            )}
+          </span>
+        </label>
+
+        {terpilih && (
+          <div className="mt-3 space-y-3 border-t border-slate-200 pt-3 dark:border-slate-700">
+            {barisMedia.map((row, idx) => {
+              const dur = durationDays(row.air_start_date, row.air_end_date);
+              const harga = m.price_amount
+                ? hitungHarga({ priceAmount: m.price_amount, ppnIncluded: Boolean(m.ppn_included), durationDays: dur })
+                : null;
+              // Basis id/kunci error baris ini (lihat `basisIdBaris`).
+              const basis = basisIdPerBaris[row.id] ?? basisIdBaris(m.slug, idx);
+              return (
+                <fieldset key={row.id} className="rounded-md border border-slate-200 p-3 dark:border-slate-700">
+                  <legend className="px-1 text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    Lokasi ke-{idx + 1}
+                  </legend>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <div className="sm:col-span-2">
+                      <label htmlFor={`cetak-target-${basis}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                        Lokasi Pemasangan <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id={`cetak-target-${basis}`}
+                        type="text"
+                        value={row.media_target}
+                        maxLength={200}
+                        placeholder={m.location_note || 'Contoh: Sisi Pintu Tol Bekasi Barat'}
+                        onChange={(e) => { updateItem(row.id, { media_target: e.target.value }); bersihkanError(`target_${basis}`); }}
+                        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors[`target_${basis}`] && <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors[`target_${basis}`]}</p>}
+                      </div>
+                    </div>
+                    <div>
+                      <label htmlFor={`cetak-start-${basis}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Periode Mulai</label>
+                      <input
+                        id={`cetak-start-${basis}`}
+                        type="date"
+                        value={row.air_start_date}
+                        onChange={(e) => { updateItem(row.id, { air_start_date: e.target.value }); bersihkanError(`periode_${basis}`); }}
+                        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor={`cetak-end-${basis}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Periode Selesai</label>
+                      <input
+                        id={`cetak-end-${basis}`}
+                        type="date"
+                        value={row.air_end_date}
+                        onChange={(e) => { updateItem(row.id, { air_end_date: e.target.value }); bersihkanError(`periode_${basis}`); }}
+                        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                      />
+                    </div>
+                    <div className="sm:col-span-2">
+                      <label htmlFor={`cetak-install-${basis}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal Pemasangan</label>
+                      <input
+                        id={`cetak-install-${basis}`}
+                        type="date"
+                        value={row.installation_date}
+                        onChange={(e) => updateItem(row.id, { installation_date: e.target.value })}
+                        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
+                      />
+                    </div>
+                    {fieldErrors[`periode_${basis}`] && (
+                      <p role="alert" className="text-xs font-medium text-red-600 sm:col-span-2 dark:text-red-400">{fieldErrors[`periode_${basis}`]}</p>
+                    )}
+                    {harga && dur > 0 && (
+                      <>
+                        <dl className="grid grid-cols-3 gap-2 rounded-md bg-white p-2.5 text-xs sm:col-span-2 dark:bg-slate-800/60">
+                          <div><dt className="ui-text-muted">Durasi</dt><dd className="font-semibold text-slate-800 dark:text-slate-100">{dur} hari</dd></div>
+                          <div><dt className="ui-text-muted">Subtotal</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.subtotal)}</dd></div>
+                          <div><dt className="ui-text-muted">{m.ppn_included ? 'Termasuk PPN' : LABEL_PPN_STANDAR}</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.ppnAmount)}</dd></div>
+                        </dl>
+                        <p className="text-xs ui-text-muted sm:col-span-2">
+                          Perkiraan; harga final sesuai penawaran Tenant Relations.
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  {barisMedia.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => hapusBaris(row.id)}
+                      className="mt-3 inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 dark:text-red-400"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                      Hapus lokasi ke-{idx + 1}
+                    </button>
+                  )}
+                </fieldset>
+              );
+            })}
+
+            <button
+              type="button"
+              onClick={() => tambahLokasi(m.slug)}
+              disabled={items.length >= MAX_BATCH_ITEMS}
+              title={`Tambah lokasi lain untuk ${m.name}`}
+              className="inline-flex items-center gap-1.5 rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 transition disabled:opacity-50 dark:border-slate-600 dark:text-slate-200"
+            >
+              <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+              Tambah lokasi lain
+            </button>
+          </div>
+        )}
+      </div>
     );
   }
 
@@ -482,122 +806,37 @@ export default function PromoCetakWizard() {
               <div className="p-5 sm:p-6">
                 <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section text-slate-900 focus:outline-none dark:text-white">Pilih Media &amp; Periode</h2>
                 <p className="ui-body ui-text-muted mt-2">
-                  Pilih satu atau beberapa media promosi cetak. Minimal sewa {MIN_DURATION_DAYS} hari.
+                  Pilih satu atau beberapa media promosi cetak outdoor dan indoor. Minimal sewa {MIN_DURATION_DAYS} hari.
+                  Media yang sama boleh dipasang di beberapa lokasi: centang sekali, lalu tekan "Tambah lokasi lain".
                 </p>
 
-                <div className="mt-5 space-y-2">
+                <div className="mt-5 space-y-5">
                   {cetakMedia.length === 0 && (
                     <p className="ui-text-muted text-sm">Belum ada media promosi cetak yang aktif.</p>
                   )}
-                  {cetakMedia.map((m) => {
-                    const it = items.find((x) => x.slug === m.slug);
-                    const terpilih = Boolean(it);
-                    const dur = it ? durationDays(it.air_start_date, it.air_end_date) : 0;
-                    const harga = it && m.price_amount
-                      ? hitungHarga({ priceAmount: m.price_amount, ppnIncluded: Boolean(m.ppn_included), durationDays: dur })
-                      : null;
-                    return (
-                      <div key={m.slug} className={`rounded-md border p-3.5 transition ${terpilih ? 'border-brand-primary-500 bg-brand-primary-50/40 dark:border-brand-primary-400 dark:bg-brand-primary-950/20' : 'border-slate-200 dark:border-slate-700'}`}>
-                        <label className="flex cursor-pointer items-start gap-3">
-                          <input
-                            id={`cetak-media-${m.slug}`}
-                            type="checkbox"
-                            checked={terpilih}
-                            onChange={() => toggleMedia(m.slug)}
-                            className="mt-1 h-4 w-4 accent-[var(--brand-tosca)]"
-                          />
-                          <span className="min-w-0 flex-1">
-                            <span className="flex flex-wrap items-center gap-2">
-                              <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
-                              <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                                {CATEGORY_LABELS[m.category] ?? m.category}
-                              </span>
-                            </span>
-                            <span className="mt-1 block text-xs ui-text-muted">
-                              {[m.size_spec, m.material_spec].filter(Boolean).join(' · ')}
-                            </span>
-                            {m.price_note && (
-                              <span className="mt-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                                {m.price_note} {m.ppn_included ? '(sudah termasuk PPN)' : '(belum termasuk PPN)'}
-                              </span>
-                            )}
-                          </span>
-                        </label>
-
-                        {terpilih && it && (
-                          <div className="mt-3 grid gap-3 border-t border-slate-200 pt-3 sm:grid-cols-2 dark:border-slate-700">
-                            <div className="sm:col-span-2">
-                              <label htmlFor={`cetak-target-${m.slug}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                                Lokasi Pemasangan <span className="text-red-500">*</span>
-                              </label>
-                              <input
-                                id={`cetak-target-${m.slug}`}
-                                type="text"
-                                value={it.media_target}
-                                maxLength={200}
-                                placeholder={m.location_note || 'Contoh: Sisi Pintu Tol Bekasi Barat'}
-                                onChange={(e) => { updateItem(m.slug, { media_target: e.target.value }); setFieldErrors((er) => ({ ...er, [`target_${m.slug}`]: '' })); }}
-                                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
-                              />
-                              <div className="ui-helper-slot mt-1">
-                                {fieldErrors[`target_${m.slug}`] && <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors[`target_${m.slug}`]}</p>}
-                              </div>
-                            </div>
-                            <div>
-                              <label htmlFor={`cetak-start-${m.slug}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Periode Mulai</label>
-                              <input
-                                id={`cetak-start-${m.slug}`}
-                                type="date"
-                                value={it.air_start_date}
-                                onChange={(e) => { updateItem(m.slug, { air_start_date: e.target.value }); setFieldErrors((er) => ({ ...er, [`periode_${m.slug}`]: '' })); }}
-                                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
-                              />
-                            </div>
-                            <div>
-                              <label htmlFor={`cetak-end-${m.slug}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Periode Selesai</label>
-                              <input
-                                id={`cetak-end-${m.slug}`}
-                                type="date"
-                                value={it.air_end_date}
-                                onChange={(e) => { updateItem(m.slug, { air_end_date: e.target.value }); setFieldErrors((er) => ({ ...er, [`periode_${m.slug}`]: '' })); }}
-                                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
-                              />
-                            </div>
-                            <div className="sm:col-span-2">
-                              <label htmlFor={`cetak-install-${m.slug}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal Pemasangan</label>
-                              <input
-                                id={`cetak-install-${m.slug}`}
-                                type="date"
-                                value={it.installation_date}
-                                onChange={(e) => updateItem(m.slug, { installation_date: e.target.value })}
-                                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
-                              />
-                            </div>
-                            {fieldErrors[`periode_${m.slug}`] && (
-                              <p role="alert" className="text-xs font-medium text-red-600 sm:col-span-2 dark:text-red-400">{fieldErrors[`periode_${m.slug}`]}</p>
-                            )}
-                            {harga && dur > 0 && (
-                              <>
-                                <dl className="grid grid-cols-3 gap-2 rounded-md bg-white p-2.5 text-xs sm:col-span-2 dark:bg-slate-800/60">
-                                  <div><dt className="ui-text-muted">Durasi</dt><dd className="font-semibold text-slate-800 dark:text-slate-100">{dur} hari</dd></div>
-                                  <div><dt className="ui-text-muted">Subtotal</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.subtotal)}</dd></div>
-                                  <div><dt className="ui-text-muted">PPN 11%</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(harga.ppnAmount)}</dd></div>
-                                </dl>
-                                <p className="text-xs ui-text-muted sm:col-span-2">
-                                  Perkiraan; harga final sesuai penawaran Tenant Relations.
-                                </p>
-                              </>
-                            )}
-                          </div>
-                        )}
+                  {kelompokMedia.map((grup) => (
+                    <section key={grup.kategori} aria-labelledby={`cetak-kategori-${grup.kategori}`}>
+                      <h3
+                        id={`cetak-kategori-${grup.kategori}`}
+                        className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500 dark:text-slate-400"
+                      >
+                        {CATEGORY_LABELS[grup.kategori] ?? grup.kategori}
+                      </h3>
+                      <div className="space-y-2">
+                        {grup.media.map((m) => renderBlokMedia(m))}
                       </div>
-                    );
-                  })}
+                    </section>
+                  ))}
                 </div>
 
                 <div className="ui-helper-slot mt-3">
                   {fieldErrors.media && <p role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media}</p>}
                 </div>
+                {items.length >= MAX_BATCH_ITEMS && (
+                  <p className="mt-2 text-xs ui-text-muted">
+                    Batas maksimal {MAX_BATCH_ITEMS} baris media per pengajuan sudah tercapai.
+                  </p>
+                )}
 
                 <button
                   type="button"
@@ -629,37 +868,40 @@ export default function PromoCetakWizard() {
                 <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
                   <p className="text-xs font-semibold ui-text-muted">Media dipilih ({dipilih})</p>
                   <ul className="mt-1.5 space-y-2">
-                    {items.map((it) => {
-                      const m = mediaBySlug[it.slug];
-                      const dur = durationDays(it.air_start_date, it.air_end_date);
-                      const harga = m ? hitungHarga({ priceAmount: m.price_amount || 0, ppnIncluded: Boolean(m.ppn_included), durationDays: dur }) : null;
-                      return (
-                        <li key={it.slug} className="rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
-                          <p className="font-semibold text-slate-800 dark:text-slate-100">{m?.name ?? it.slug}</p>
-                          <p className="mt-0.5 ui-text-muted">Lokasi: {it.media_target || '-'}</p>
-                          <p className="ui-text-muted">Periode: {formatTanggal(it.air_start_date)} s/d {formatTanggal(it.air_end_date)} ({dur} hari)</p>
-                          {it.installation_date && <p className="ui-text-muted">Tanggal pemasangan: {formatTanggal(it.installation_date)}</p>}
-                          {harga && (
-                            <p className="mt-1 font-semibold text-slate-800 tabular-nums dark:text-slate-100">
-                              {rupiah(harga.subtotal)} + PPN {rupiah(harga.ppnAmount)} = {rupiah(harga.totalAmount)}
-                            </p>
-                          )}
-                        </li>
-                      );
-                    })}
+                    {barisHarga.map(({ it, m, dur, harga }) => (
+                      <li key={it.id} className="rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
+                        <p className="font-semibold text-slate-800 dark:text-slate-100">{m?.name ?? it.slug}</p>
+                        <p className="mt-0.5 ui-text-muted">Lokasi: {it.media_target || '-'}</p>
+                        <p className="ui-text-muted">Periode: {formatTanggal(it.air_start_date)} s/d {formatTanggal(it.air_end_date)} ({dur} hari)</p>
+                        {it.installation_date && <p className="ui-text-muted">Tanggal pemasangan: {formatTanggal(it.installation_date)}</p>}
+                        {harga && (
+                          <p className="mt-1 font-semibold text-slate-800 tabular-nums dark:text-slate-100">
+                            {m?.ppn_included
+                              ? `${rupiah(harga.totalAmount)} (sudah termasuk PPN ${rupiah(harga.ppnAmount)})`
+                              : `${rupiah(harga.subtotal)} + PPN ${rupiah(harga.ppnAmount)} = ${rupiah(harga.totalAmount)}`}
+                          </p>
+                        )}
+                      </li>
+                    ))}
                   </ul>
                 </div>
 
                 <div className="mt-4 rounded-md bg-brand-primary-50/60 p-3 dark:bg-brand-primary-950/30">
                   <dl className="grid grid-cols-3 gap-2 text-xs">
                     <div><dt className="ui-text-muted">Subtotal</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(totalSubtotal)}</dd></div>
-                    <div><dt className="ui-text-muted">PPN {(PPN_RATE * 100).toFixed(0)}%</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(totalPpn)}</dd></div>
-                    <div><dt className="ui-text-muted">Total</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(totalSubtotal + totalPpn)}</dd></div>
+                    <div><dt className="ui-text-muted">{labelAgregatPpn}</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(totalPpn)}</dd></div>
+                    <div><dt className="ui-text-muted">Total</dt><dd className="font-semibold text-slate-800 tabular-nums dark:text-slate-100">{rupiah(totalTagihan)}</dd></div>
                   </dl>
                   <p className="mt-2 text-xs ui-text-muted">
                     Perkiraan; harga final sesuai penawaran Tenant Relations. Penagihan
                     dilakukan di luar aplikasi ini.
                   </p>
+                  {adaTermasukPpn && adaBelumTermasukPpn && (
+                    <p className="mt-1 text-xs ui-text-muted">
+                      Sebagian media harganya sudah termasuk PPN dan sebagian belum; angka PPN di atas adalah
+                      porsi PPN dari seluruh baris.
+                    </p>
+                  )}
                 </div>
 
                 <label className="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
