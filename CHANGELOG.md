@@ -344,6 +344,24 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   pembaruan dua skrip verifikasi" dan **MENUNGGU PERSETUJUAN**. **Kedua skrip
   sengaja TIDAK diubah** di putaran ini; menyunting aset verifikasi demi
   meloloskan pemeriksaan dilarang.
+- **Catatan keputusan pemilik: integrasi email ditunda, cukup notifikasi
+  dashboard admin.** Untuk pengingat masa berlaku pajak/reklame, pemilik
+  memutuskan integrasi email **DITUNDA ("nanti saja")** dan cukup memakai
+  notifikasi di dashboard admin. Keputusan ini **MENUTUP** pertanyaan terbuka
+  soal integrasi email, dan **menegaskan** keputusan desain lama **D4** di
+  `docs/PLAN_2026-09-20_16-00.md` (baris 41, bagian 3.4, dan bagian 4.5) bahwa
+  pengingat adalah query turunan tanpa email/cron. **Tidak ada kode yang
+  berubah**: `package.json` tetap tidak memuat dependensi mailer (pencarian
+  `nodemailer|sendgrid|mailgun|resend|postmark` menghasilkan 0 kemunculan),
+  dan notifikasi dashboard sudah ada di `server/src/routes/admin.js:489`
+  (endpoint `GET /admin/submissions/reminders`) serta panel di
+  `src/components/admin/AdminDashboardPage.tsx:346` sampai `:349`. Pertanyaan
+  lain (sisa hari untuk tenant, celah pemasangan tanpa materi, pembaruan dua
+  skrip verifikasi) **TETAP TERBUKA**. Rincian di
+  `docs/PLAN_2026-09-23_21-18.md` bagian "Keputusan pemilik: integrasi email
+  ditunda". **Pilihan seksi:** ditulis di `### Dirapikan`, bukan
+  `### Diperbaiki` maupun `### Ditambahkan`, karena tidak ada perilaku yang
+  diperbaiki dan tidak ada fitur baru.
 
 
 ### Ditambahkan
