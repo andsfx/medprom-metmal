@@ -5,6 +5,64 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Kartu katalog media cetak mengarah ke wizard digital yang mewajibkan
+  unggah materi.** `PromoLandingPage.tsx` merender kartu untuk SEMUA media
+  aktif dan setiap kartu menaut ke `/ajukan` (wizard materi digital), padahal
+  tiga media berkanal `cetak` (spanduk, big-banner, umbul-umbul) juga muncul
+  di katalog Outdoor/Indoor. Akibatnya kartu media cetak mendarat di wizard
+  yang MEWAJIBKAN unggah/tautan materi, sedangkan alur cetak justru tidak
+  meminta berkas (materi menyusul lewat revisi) dan punya form sendiri di
+  `/ajukan-cetak` (multi-media + perkiraan PPN 11%). Fitur alur cetak jadi
+  tidak terjangkau dari katalog, hanya bisa lewat tombol di hero. Tujuan
+  tautan kini mengikuti KANAL media: `media_channel === 'cetak'` menuju
+  `/ajukan-cetak?media=<slug>`, selainnya tetap `/ajukan?media=<slug>`.
+  Label "Ajukan Materi" SENGAJA tidak diubah karena dipakai bersama kartu
+  digital di grid yang sama dan sudah dikunci test lama. Dikunci 5 test baru
+  di `src/components/promo/__tests__/PromoLandingPage.test.tsx` (berkas lama
+  yang ditambahi) yang memakai dua kartu cetak di kategori BERBEDA (spanduk
+  outdoor, big-banner indoor) untuk membuktikan kanal, bukan kategori, yang
+  menentukan. **PENGECUALIAN yang disengaja:** satu assertion lama di berkas
+  yang sama diperbarui dari `'/ajukan?media=spanduk'` menjadi
+  `'/ajukan-cetak?media=spanduk'`, karena assertion itu menuntut tujuan wizard
+  digital untuk Spanduk yang berkanal cetak sehingga justru **MENGUNCI BUG**,
+  bukan perilaku yang diinginkan. Angka tegas: 1 assertion diubah, 0 test
+  dihapus, dan assertion lain tidak disentuh.
+- **Wizard digital masih menerima media cetak, di dua sisi sekaligus.**
+  `PromoUploadWizard.tsx` memanggil `fetchMediaTypes()` tanpa argumen kanal
+  sehingga media cetak ikut ditawarkan di langkah 1, dan handler
+  `POST /promo/submit` (`server/src/routes/promo.js`) mencari media hanya
+  dengan `slug` + `is_active` tanpa memeriksa kanal sehingga server MENERIMA
+  pengajuan digital untuk media cetak. Tenant yang tersasar ke wizard digital
+  diminta mengunggah materi yang seharusnya menyusul lewat revisi. Daftar
+  langkah 1 kini disaring dengan `media_channel !== 'cetak'`, dan server
+  menolak `400` dengan pesan yang menuntun ke `/ajukan-cetak`. Penegakan
+  server ini adalah cermin yang sepadan dengan `loadCetakMedia` di
+  `POST /promo/submit-batch` yang sudah lebih dulu menegakkan
+  `media_channel = 'cetak'`. **Keputusan penting:** penyaringan memakai
+  `!== 'cetak'` (BUKAN `=== 'digital'`) dan penolakan server memakai
+  `=== 'cetak'`, keduanya fail-safe, karena banyak baris katalog dan fixture
+  lama tidak mengisi `media_channel` sehingga media warisan harus tetap boleh
+  dipilih dan tetap diterima server. Dikunci `__tests__/api/promo-submit-kanal.test.js`
+  (baru, 4 test yang memanggil HANDLER SUNGGUHAN: cetak ditolak `400` tanpa
+  `INSERT`, digital lolos, media tanpa penanda kanal lolos, dan `SELECT`
+  memuat kolom `media_channel`) dan
+  `src/components/promo/__tests__/PromoUploadWizardSaringCetak.test.tsx`
+  (baru, 3 test).
+- **Jalur pintas `?media=` di wizard digital melewati penyaring kanal.**
+  Blok `preselect` di `PromoUploadWizard` hanya memeriksa KEBERADAAN slug
+  (`rows.some(...)`) lalu langsung `setStep(2)` tanpa memeriksa kanal,
+  sehingga membuka `/ajukan?media=spanduk` melompat ke langkah 2 dengan media
+  cetak terpilih dan pengguna baru ditolak server di AKHIR form. Server memang
+  sudah menangkapnya (tidak gagal senyap), tetapi pengalamannya buruk karena
+  pengguna baru tahu setelah mengisi semuanya. Bila slug yang diminta
+  berkanal `cetak`, wizard kini mengalihkan ke `/ajukan-cetak?media=<slug>`
+  (memakai `useNavigate` dengan `replace: true`) alih-alih melompat ke
+  langkah 2; form cetak sudah membaca param yang sama. Penjaga tetap
+  `=== 'cetak'` (fail-safe, media tanpa penanda kanal berperilaku lama).
+  Dikunci `src/components/promo/__tests__/PromoUploadWizardPreselectCetak.test.tsx`
+  (baru, 3 test: cetak dialihkan, digital berperilaku lama, tanpa penanda
+  kanal berperilaku lama). Test dibuktikan bermakna lewat uji sementara
+  (cabang redirect dinonaktifkan, 1 test gagal, lalu dipulihkan).
 - **Header ekspor CSV masih memakai istilah lama `Nama Gerai`.** Repo sudah
   memutuskan mengganti "gerai" menjadi "tenant" di seluruh teks yang dilihat
   pengguna, tetapi kolom ekspor CSV di handler `GET /export`
@@ -164,6 +222,39 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   em-dash terencana di `scripts/`.
 
 ### Dirapikan
+- **Tabel cermin `AGENTS.md` tertinggal dari cermin yang sudah dikunci test.**
+  Tabel "Cermin FE↔BE yang disengaja" di `AGENTS.md` belum memuat pasangan
+  `MAX_BATCH_ITEMS`, padahal commit `414ae35` sudah menguncinya sebagai cermin
+  lewat `__tests__/api/cetak-batch-limits.test.js`: `src/constants/promo.ts`
+  (dipakai `PromoCetakWizard`) dan `server/src/routes/promo.js` (dipakai
+  `POST /promo/submit-batch`) bisa menyimpang tanpa satu pun test gagal.
+  Tabel ditambah satu baris `| Batas jumlah media batch | src/constants/promo.ts
+  (MAX_BATCH_ITEMS) | server/src/routes/promo.js (MAX_BATCH_ITEMS) |`, dan
+  paragraf di bawah tabel diperluas menyebut berkas test penguncinya beserta
+  dua cara pengujiannya (membaca sumber server untuk menangkap drift nilai
+  konstanta, dan menguji handler sungguhan untuk menangkap penegakan yang
+  salah). Diff minimal: 5 insertions, 1 deletion (satu baris lama ikut
+  ter-reflow pembungkusan, teksnya identik). **Pilihan seksi:** entri ini
+  diletakkan di `### Dirapikan`, bukan `### Diperbaiki` maupun
+  `### Ditambahkan`, karena commit `dd55a3b` tidak mengubah perilaku runtime
+  dan tidak menambah berkas/API baru; ia menyelaraskan artefak dokumentasi
+  yang sudah ada dengan kenyataan kode, persis pola "merapikan" yang sudah
+  dipakai seksi ini. (Repo belum punya seksi `### Dokumentasi`.)
+- **Audit kecocokan `scripts/verify-cetak.mjs` terhadap komponen terkini:
+  28 dari 28 selector COCOK, 0 BASI.** Hasil audit read-only (tanpa perubahan
+  kode) atas skrip verifikasi alur cetak, berguna bagi operator sebelum
+  deploy. Dua fakta yang menurunkan risiko: (a) skrip menurunkan slug dari
+  ATRIBUT ID checkbox (`getAttribute('id')` lalu menghapus prefiks
+  `cetak-media-`), BUKAN dari posisi/urutan yang diasumsikan, sehingga
+  pengelompokan daftar media per kategori (Outdoor/Indoor) tidak dapat
+  memecahkan selector field per baris; (b) asersi `/PPN 11%/` di ringkasan
+  sah karena dua media pertama yang dipilih skrip (`spanduk`, `big-banner`)
+  keduanya `ppn_included: false` (diturunkan seed dari teks rules "Harga belum
+  termasuk PPN."). Sisa risiko yang TIDAK bisa dihilangkan dari sisi kode,
+  dicatat sebagai risiko operasional dan bukan cacat: asersi "tanpa console
+  error" bergantung pada lingkungan runtime, dan batas anti-spam 5
+  pengajuan/24 jam per perangkat bergantung pada konteks peramban segar tiap
+  run.
 - **Sapuan em-dash dan banner dekoratif di kode aktif.** Seluruh `—`/`–` di
   komentar `src/`, `server/`, `scripts/`, `public/`, `index.html`, dan CSS
   diganti koma, titik dua, atau tanda hubung ASCII; banner komentar
