@@ -5,6 +5,86 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Header ekspor CSV masih memakai istilah lama `Nama Gerai`.** Repo sudah
+  memutuskan mengganti "gerai" menjadi "tenant" di seluruh teks yang dilihat
+  pengguna, tetapi kolom ekspor CSV di handler `GET /export`
+  (`server/src/routes/admin.js`) masih memakai `'Nama Gerai'`, sehingga berkas
+  yang diunduh staf memakai istilah yang sudah tidak dipakai di UI mana pun.
+  Kolomnya kini `'Nama Tenant'`. Dikunci assertion baru di
+  `__tests__/api/admin-export-csv.test.js` (header memuat `'Nama Tenant'` dan
+  tidak memuat `'Nama Gerai'`). Sisa istilah `gerai` di repo hanya ada di
+  komentar `scripts/verify-tenant-upload.mjs` dan data uji
+  `src/components/promo/__tests__/PromoUploadWizard.test.tsx`, keduanya bukan
+  teks UI dan sengaja dibiarkan.
+- **Pengajuan cetak tanpa materi dirender sebagai tautan materi kosong.**
+  Form cetak (`POST /promo/submit-batch`) sengaja tidak meminta berkas materi
+  sehingga pengajuan disimpan `source_type='none'` (materi menyusul lewat alur
+  revisi), tetapi kedua UI memperlakukan semua yang bukan `'link'` sebagai
+  berkas. Akibatnya pengajuan itu tampil dengan `href=""` yang saat diklik
+  hanya memuat ulang halaman: di `SubmissionDetail` (halaman status tenant,
+  pelacakan, dan batch) berlabel "Berkas materi" dengan teks "Lihat berkas";
+  di `AdminDashboardPage` baris materi berlabel "File", SEL MATERI di tabel
+  pengajuan, tombol primer "Buka tautan materi", dan tombol "Salin tautan"
+  yang menyalin baris `Tautan: ` kosong. Kanal `none` kini berupa baris
+  informasi "Materi menyusul setelah pengajuan disetujui." tanpa anchor, tombol
+  buka materi tidak dirender (tombol WA tetap dirender karena tidak bergantung
+  materi), sel tabel menampilkan "menyusul" (istilah yang sama dengan ekspor
+  CSV), dan "Salin tautan" menyalin keterangan menyusul. Perilaku `link` dan
+  `upload` tidak berubah: label, `href`, `target`, dan `rel` diverifikasi tetap
+  sama lewat assert. Dikunci
+  `src/components/promo/__tests__/SubmissionDetailMateriMenyusul.test.tsx` dan
+  `src/components/admin/__tests__/AdminDashboardMateriMenyusul.test.tsx`;
+  test baru itu diverifikasi bermakna dengan memulihkan kode lama sementara
+  (6 dari 11 test gagal terhadap kode lama).
+- **Backfill versi materi bisa menggagalkan `db:migrate` berulang di DB yang
+  sudah berisi pengajuan cetak.** `server/schema.sql` bersifat idempotent dan
+  dijalankan ulang, sedangkan blok backfill yang menyalin
+  `promo_submissions.source_type` ke `promo_submission_files.source_type`
+  memakai `WHERE NOT EXISTS` yang **selalu benar** untuk pengajuan cetak:
+  pengajuan itu (`source_type='none'`) tidak pernah membuat baris versi materi,
+  sehingga backfill menyalin `'none'` ke tabel files yang
+  `CHECK (source_type IN ('upload','link'))` dan `npm run db:migrate` gagal
+  pada pelanggaran CHECK. Sifatnya deterministik dan berulang setiap migrate,
+  dan hanya muncul di DB yang sudah berisi pengajuan cetak (DB baru selalu
+  hijau) sehingga tidak tertangkap test DB baru. Ini kelas pitfall #6 yang sama
+  dengan urutan migrasi `source_type` untuk `promo_submissions`. Klausa `WHERE`
+  backfill kini ditambah `s.source_type <> 'none'`. CHECK tabel files
+  **sengaja tidak** dilonggarkan: tabel itu menyimpan **versi materi**, dan
+  pengajuan tanpa materi memang tidak punya versi, sehingga melonggarkan CHECK
+  akan mengizinkan baris "versi materi" yang tidak bermakna. Dikunci 3 test
+  baru di `__tests__/api/schema-migration.test.js` (berkas lama yang ditambahi;
+  test lama tidak diubah) yang mengunci pengecualian `none` sekaligus mengunci
+  CHECK tetap hanya `('upload','link')`.
+- **Baris "Nomor Batch" di Sheet detail staf tidak akan pernah tampil.** Baris
+  itu dirender bila `detail.batch_number` ada, tetapi endpoint
+  `GET /admin/submissions` dan `GET /admin/submissions/:id` memakai `SELECT
+  s.*` tanpa join ke `promo_submission_batches`, sehingga kolomnya tidak
+  pernah ikut terkirim dan baris itu hanya lolos di test karena fixture test
+  mengarang nilainya. Ini kelas bug "kolom hilang dari SELECT" yang sudah
+  pernah terjadi (kasus `media_channel`). Kedua handler kini memakai
+  `LEFT JOIN promo_submission_batches b ON b.id = s.batch_id` dan mengambil
+  HANYA `b.batch_number` (bukan `b.*`, karena banyak kolom bertabrakan dengan
+  `s.*`). Karena join membuat `created_at` ambigu (ada di kedua tabel) dan
+  `buildSubmissionFilters` menghasilkan klausa `WHERE` tanpa prefix alias,
+  seluruh kolom filter dikualifikasi `s.` dan query COUNT diberi alias `s` agar
+  `whereSql` yang sama tetap valid. Dikunci
+  `__tests__/api/admin-submission-batch.test.js` (baru) yang memanggil HANDLER
+  SUNGGUHAN lewat `router.stack`, bukan mock FE.
+- **Label PPN ringkasan batch selalu "Total PPN" walau harganya sudah termasuk
+  PPN.** Untuk media ber-`ppn_included`, `ppn_amount` adalah **porsi PPN di
+  dalam** subtotal (bukan pajak yang ditambahkan), sehingga labelnya
+  menyesatkan dengan cara yang sama seperti label di wizard sebelum
+  diperbaiki. Label di `src/components/promo/BatchStatusPage.tsx` kini
+  mengikuti data batch: `Total PPN` bila tidak ada item ber-`ppn_included`, dan
+  `Termasuk PPN` bila ada, ditambah keterangan kecil hanya untuk kasus
+  campuran (kalimatnya sama dengan yang dipakai `PromoCetakWizard.tsx`). Nilai
+  angkanya tidak diubah (Sigma `ppn_amount` dan Sigma `total_amount` tetap),
+  dan label "Total tagihan" tidak diubah. Label non-included yang berbeda antar
+  komponen adalah keputusan sadar, bukan cacat: di wizard kolom itu berdiri di
+  antara Subtotal dan Total (baris tarif, "PPN 11%"), sedangkan di halaman
+  batch kolom itu berdiri di samping "Total tagihan" (nilai agregat, "Total
+  PPN"). Dikunci `src/components/promo/__tests__/BatchStatusPagePpn.test.tsx`
+  (baru).
 - **Bukti tayang kanal unggahan tidak pernah terlihat tenant.** Staf sudah
   dapat mengunggah bukti tayang ke Google Drive, tetapi halaman status tenant
   hanya merender `proof_url`. Akibatnya berkas tersimpan ke Drive dan DB tanpa
@@ -189,6 +269,24 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   `$13`** sehingga indeks parameter yang dikunci test lama tidak bergeser.
   **Operator: jalankan `npm run db:migrate` lalu `npm run db:seed` sebelum
   kode baru dilayani** (kode + skema harus naik bersamaan — pitfall #10).
+- **Test pengunci cermin batas jumlah media batch FE↔BE (`MAX_BATCH_ITEMS`).**
+  `AGENTS.md` mencantumkan cermin FE↔BE yang wajib diubah berpasangan, dan
+  pasangan lead time / status / harga sudah dikunci, tetapi batas
+  `MAX_BATCH_ITEMS` belum dikunci test mana pun: `src/constants/promo.ts`
+  (dipakai `PromoCetakWizard` untuk menonaktifkan checkbox dan tombol "Tambah
+  lokasi lain") dan `server/src/routes/promo.js` (dipakai
+  `POST /promo/submit-batch`) bisa menyimpang tanpa ada yang gagal. Akibatnya
+  klien mengizinkan jumlah media berbeda dari yang diterima server, dan
+  pengguna menerima `400` baru di akhir form setelah mengisi semuanya.
+  Ditambah `__tests__/api/cetak-batch-limits.test.js` (baru) yang memakai DUA
+  cara, karena `server/src/routes/promo.js` tidak mengekspor konstanta itu:
+  membaca sumber server dengan `readFileSync` untuk menangkap drift NILAI
+  konstanta walau handler tidak pernah dieksekusi, dan menguji handler
+  sungguhan untuk menangkap konstanta yang benar tetapi penegakan yang salah.
+  Penegakan sisi server (11 media ditolak `400`) sudah ada dan dikunci
+  `__tests__/api/promo-batch.test.js`; yang baru adalah cermin konstanta dan
+  sisi "tepat 10 diterima". Test dibuktikan bermakna lewat uji mutasi
+  (konstanta FE sementara diubah ke 9, 3 test gagal, lalu dipulihkan).
 
 ### Diperbaiki
 - **Pengingat pajak tidak lagi memuat pengajuan gratis.** Syarat pengingat
