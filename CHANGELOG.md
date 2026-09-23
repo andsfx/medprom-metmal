@@ -496,6 +496,44 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   `__tests__/api/promo-batch.test.js`; yang baru adalah cermin konstanta dan
   sisi "tepat 10 diterima". Test dibuktikan bermakna lewat uji mutasi
   (konstanta FE sementara diubah ke 9, 3 test gagal, lalu dipulihkan).
+- **Keadaan "materi belum diterima" kini terlihat staf tepat di fieldset
+  "Catat pemasangan".** Sebuah audit menemukan celah integritas: staf dapat
+  mencatat pemasangan dan menetapkan status `sudah_dipasang` untuk pengajuan
+  yang materinya belum pernah diterima, karena pengajuan cetak disimpan
+  `source_type='none'` (form cetak tidak meminta berkas materi; materinya
+  menyusul lewat revisi) dan tidak ada penjaga materi di jalur pemasangan.
+  Celah itu **SUDAH tercatat sebagai keputusan terbuka** di
+  `docs/PLAN_2026-09-23_19-45.md` bagian "Keputusan menunggu pemilik"
+  (opsi A tolak, B izinkan dengan peringatan, C tambah jalur staf melampirkan
+  materi), dan pemilik **BELUM memilih arah**. Perubahan ini **BUKAN
+  pengambilan keputusan atas celah itu dan celahnya MASIH TERBUKA**: ia
+  sengaja tidak memblokir, tidak menolak, dan tidak menambah konfirmasi.
+  `AdminDashboardPage.tsx` kini merender blok peringatan di dalam fieldset
+  "Catat pemasangan" (tepat setelah `</legend>`) HANYA bila
+  `detail.source_type === 'none'`, menyatakan materi belum pernah diterima,
+  bahwa pengajuan cetak memang tidak melampirkan materi saat diajukan,
+  bahwa menyimpan pemasangan akan menetapkan status materi menjadi Sudah
+  Dipasang, dan menyarankan memastikan materinya sudah diterima lebih dulu
+  (misalnya koordinasi dengan tenant). Gaya memakai pola peringatan
+  `leadTimeRisk` yang sudah ada (ikon `AlertTriangle` ber-`aria-hidden`,
+  warna amber: `border-amber-300`, `bg-amber-50`, `text-amber-700`/
+  `text-amber-800`, varian gelap `dark:border-amber-700`,
+  `dark:bg-amber-950/30`, `dark:text-amber-300`/`dark:text-amber-400`),
+  **bukan merah** yang dikhususkan untuk galat. Memakai `role="status"`
+  (live region polite), **bukan `role="alert"`**, karena peringatan ini
+  muncul sebagai bagian dari pembacaan konten Sheet, bukan peristiwa
+  mendesak; `role="alert"` akan mengumumkan secara assertive dan menghentikan
+  pembacaan judul Sheet padahal staf belum mengisi apa pun. Tombol "Catat
+  Pemasangan" **tetap aktif**; kondisi `disabled`-nya tetap
+  `saving || !installLocation.trim()` dan TIDAK memuat `source_type`, dan
+  tidak ada konfirmasi tambahan. Guard server **TIDAK disentuh** (commit ini
+  tidak menyentuh `server/`). Dikunci
+  `src/components/admin/__tests__/AdminDashboardPeringatanMateri.test.tsx`
+  (baru, 198 baris, 3 test: peringatan tampil untuk `source_type='none'` DAN
+  tombol tetap ada serta tidak disabled; peringatan tidak tampil untuk
+  `source_type='link'`; tidak tampil untuk `source_type='upload'`). Test
+  dibuktikan bermakna lewat uji sementara (render peringatan dilepas, test
+  gagal, lalu dipulihkan; hash berkas identik sebelum dan sesudah).
 
 ### Diperbaiki
 - **Pengingat pajak tidak lagi memuat pengajuan gratis.** Syarat pengingat
