@@ -5,6 +5,35 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Label "(N media dalam kiriman ini)" di riwayat tenant menghitung angka
+  dari baris yang termuat sehingga undercount.** Commit sebelumnya
+  (`8c601d6`) menambahkan label itu di `MySubmissionsPage.tsx`, tetapi nilai N
+  dihitung DI KLIEN lewat `useMemo` `jumlahPerBatch` yang menurunkan angka dari
+  array `rows`, padahal `GET /promo/submissions/mine` memakai `LIMIT 50`.
+  Untuk tenant dengan lebih dari 50 pengajuan, sebagian baris batch tidak ikut
+  dimuat dan batch berisi 5 media bisa tertulis "1 media dalam kiriman ini".
+  Label yang seharusnya membantu justru memberi angka salah. Handler
+  `/submissions/mine` (`server/src/routes/promo.js`) kini menambahkan subquery
+  eksplisit
+  `(SELECT count(*)::int FROM promo_submissions x WHERE x.batch_id = s.batch_id) AS batch_item_count`
+  yang TIDAK punya LIMIT sendiri, sehingga tidak terkena `LIMIT 50` milik
+  daftar (LIMIT memotong daftar pengajuan per perangkat, bukan isi batch).
+  Kolom itu ditambahkan HANYA di query `/mine`; konstanta bersama
+  `SUBMISSION_PUBLIC_COLUMNS` dan varian ber-alias `SUBMISSION_PUBLIC_COLUMNS_S`
+  sengaja TIDAK diubah supaya jalur publik lain tidak ikut membawanya. Di FE,
+  `useMemo` `jumlahPerBatch` dihapus beserta impor `useMemo` yang menjadi tak
+  terpakai, dan label kini memakai `r.batch_item_count` dari server; nomor
+  batch, tautan status, tautan batch, dan urutan data tidak diubah. Angka total
+  yang benar hanya diketahui server karena klien tidak punya informasi baris
+  yang terpotong oleh LIMIT. Dikunci 3 test baru di
+  `__tests__/api/promo-mine-batch.test.js` (berkas lama yang ditambahi, test
+  lama dipertahankan utuh) dan 2 test baru di
+  `src/components/promo/__tests__/MySubmissionsPageBatch.test.tsx` (berkas lama
+  yang ditambahi, test lama tidak dihapus atau dilemahkan; fixture `ROW_BATCH`
+  diberi `batch_item_count: 2` agar test lama tetap bermakna). Test dibuktikan
+  bermakna lewat uji dua arah: melepas kolom server menyebabkan 2 test BE
+  gagal, mengembalikan hitungan klien menyebabkan 2 test FE gagal, lalu
+  keduanya dipulihkan dan hijau.
 - **Panel "Pengingat periode berakhir" menyembunyikan item tepat pada kasus
   yang paling butuh perhatian.** Panel itu hanya merender
   `reminders.items.slice(0, 5)` lalu menampilkan teks mati `+N lainnya`,
