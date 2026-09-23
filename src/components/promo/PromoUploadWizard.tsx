@@ -303,7 +303,22 @@ export default function PromoUploadWizard() {
       .then((rows) => {
         if (cancelled) return;
         setMediaTypes(rows);
-        if (preselectSlug && rows.some((m) => m.slug === preselectSlug)) {
+        const match = preselectSlug
+          ? rows.find((m) => m.slug === preselectSlug)
+          : undefined;
+        if (match) {
+          // Media berkanal 'cetak' (spanduk, big-banner, umbul-umbul) BUKAN
+          // urusan wizard digital: materinya menyusul lewat revisi, bukan
+          // diunggah di sini, dan langkah 1 pun menyaringnya. Kalau slug cetak
+          // datang lewat `?media=`, alihkan ke form cetak yang memang membaca
+          // param yang sama - jangan melompat ke langkah 2 lalu ditolak server
+          // di akhir. Cek `=== 'cetak'` (fail-safe sama dengan penyaring di
+          // langkah 1): media tanpa `media_channel` atau berkanal 'digital'
+          // tetap memakai perilaku lama.
+          if (match.media_channel === 'cetak') {
+            navigate(`/ajukan-cetak?media=${encodeURIComponent(match.slug)}`, { replace: true });
+            return;
+          }
           setSelectedSlug(preselectSlug);
           setStep(2);
         }
