@@ -98,29 +98,29 @@ function buildSubmissionFilters(query) {
   const values = [];
   if (status && STATUSES.includes(status)) {
     values.push(status);
-    where.push(`status = $${values.length}`);
+    where.push(`s.status = $${values.length}`);
   }
   if (mediaType) {
     values.push(mediaType);
-    where.push(`media_type_slug = $${values.length}`);
+    where.push(`s.media_type_slug = $${values.length}`);
   }
   if (tenant) {
     values.push(`%${tenant}%`);
-    where.push(`tenant_name ILIKE $${values.length}`);
+    where.push(`s.tenant_name ILIKE $${values.length}`);
   }
   if (DATE_RE.test(dateFrom)) {
     values.push(dateFrom);
-    where.push(`created_at >= $${values.length}::date`);
+    where.push(`s.created_at >= $${values.length}::date`);
   }
   if (DATE_RE.test(dateTo)) {
     values.push(dateTo);
     // `dateTo` inklusif sampai akhir hari.
-    where.push(`created_at < ($${values.length}::date + interval '1 day')`);
+    where.push(`s.created_at < ($${values.length}::date + interval '1 day')`);
   }
   if (search) {
     values.push(`%${search}%`);
     const p = `$${values.length}`;
-    where.push(`(submission_number ILIKE ${p} OR tenant_name ILIKE ${p} OR material_title ILIKE ${p})`);
+    where.push(`(s.submission_number ILIKE ${p} OR s.tenant_name ILIKE ${p} OR s.material_title ILIKE ${p})`);
   }
   return { whereSql: where.length > 0 ? `WHERE ${where.join(' AND ')}` : '', values };
 }
@@ -132,7 +132,7 @@ router.get('/submissions', requireRole(READ_ROLES), async (req, res, next) => {
     const { whereSql, values } = buildSubmissionFilters(req.query);
 
     const { rows: countRows } = await db.query(
-      `SELECT COUNT(*)::int AS n FROM promo_submissions ${whereSql}`,
+      `SELECT COUNT(*)::int AS n FROM promo_submissions s ${whereSql}`,
       values,
     );
     const total = countRows[0]?.n || 0;
@@ -140,9 +140,10 @@ router.get('/submissions', requireRole(READ_ROLES), async (req, res, next) => {
     values.push(perPage);
     values.push((page - 1) * perPage);
     const { rows } = await db.query(
-      `SELECT s.*, u.display_name AS reviewed_by_name
+      `SELECT s.*, u.display_name AS reviewed_by_name, b.batch_number
        FROM promo_submissions s
        LEFT JOIN users u ON u.id = s.reviewed_by
+       LEFT JOIN promo_submission_batches b ON b.id = s.batch_id
        ${whereSql}
        ORDER BY s.created_at DESC
        LIMIT $${values.length - 1} OFFSET $${values.length}`,
@@ -188,9 +189,10 @@ router.get('/submissions/:id', requireRole(READ_ROLES), async (req, res, next) =
     if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
 
     const { rows } = await db.query(
-      `SELECT s.*, u.display_name AS reviewed_by_name
+      `SELECT s.*, u.display_name AS reviewed_by_name, b.batch_number
        FROM promo_submissions s
        LEFT JOIN users u ON u.id = s.reviewed_by
+       LEFT JOIN promo_submission_batches b ON b.id = s.batch_id
        WHERE s.id = $1 LIMIT 1`,
       [id],
     );
