@@ -144,6 +144,57 @@ describe('GET /promo/submissions/mine — kolom batch', () => {
     expect(res.body.data[0].batch_token).toBe('btok-1');
   });
 
+  it('menghitung jumlah item batch di server lewat subquery atas SELURUH baris batch', async () => {
+    await call('/submissions/mine', 'get', { query: { fingerprint: 'fp123' } });
+    const sql = mineSql();
+
+    // Kolom turunan dikirim per baris, bukan diserahkan ke hitungan klien.
+    expect(sql).toContain('AS batch_item_count');
+    // Dihitung dari seluruh baris batch ini (korelasi ke batch_id baris luar).
+    expect(sql).toMatch(
+      /SELECT count\(\*\)::int FROM promo_submissions x WHERE x\.batch_id = s\.batch_id/,
+    );
+  });
+
+  it('hitungan item batch tidak terkena LIMIT 50 daftar pengajuan', async () => {
+    await call('/submissions/mine', 'get', { query: { fingerprint: 'fp123' } });
+    const sql = mineSql();
+
+    // LIMIT 50 hanya membatasi daftar pengajuan per perangkat.
+    expect(sql).toContain('LIMIT 50');
+    // Subquery hitungan TIDAK boleh punya LIMIT sendiri; kalau ada, batch yang
+    // sebagian barisnya terpotong akan undercount.
+    const subquery = sql.slice(sql.indexOf('SELECT count(*)'), sql.indexOf('FROM promo_submissions s'));
+    expect(subquery.length).toBeGreaterThan(0);
+    expect(subquery).not.toMatch(/LIMIT/i);
+  });
+
+  it('meneruskan batch_item_count dari server apa adanya pada baris respons', async () => {
+    // Server mengirim 7 meski klien hanya memuat 2 baris batch ini: label harus
+    // memakai angka server, bukan jumlah baris yang termuat.
+    mockedQuery.mockResolvedValue({
+      rows: [
+        {
+          id: 'sub-1', submission_number: 'MP-260920-A7K2QX', status_token: 'tok-1',
+          batch_id: 'batch-1', batch_number: 'MPB-260920-ABC234', batch_token: 'btok-1',
+          batch_item_count: 7,
+        },
+        {
+          id: 'sub-2', submission_number: 'MP-260920-B7K2QX', status_token: 'tok-2',
+          batch_id: 'batch-1', batch_number: 'MPB-260920-ABC234', batch_token: 'btok-1',
+          batch_item_count: 7,
+        },
+      ],
+    });
+
+    const res = await call('/submissions/mine', 'get', { query: { fingerprint: 'fp123' } });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toHaveLength(2);
+    expect(res.body.data[0].batch_item_count).toBe(7);
+    expect(res.body.data[1].batch_item_count).toBe(7);
+  });
+
   it('jalur publik lain tidak ikut membawa token batch', async () => {
     // Jalur satu-tabel tetap memakai SUBMISSION_PUBLIC_COLUMNS apa adanya.
     await call('/submissions/track', 'get', { query: { number: 'MP-260920-A7K2QX' } });

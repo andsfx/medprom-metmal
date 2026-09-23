@@ -8,7 +8,7 @@
  * kartu-kartu itu satu kirim, dan tetap punya jalan kembali ke
  * `/batch/<batch_token>` setelah meninggalkan layar sukses wizard.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   CheckCircle2, Clock, ExternalLink, Info, Layers, XCircle, Loader2, Wrench,
@@ -55,21 +55,6 @@ export default function MySubmissionsPage() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
-
-  /**
-   * Jumlah kartu per nomor batch, dihitung dari baris yang MEMANG dikirim
-   * server (urutan tidak diubah). Dipakai hanya untuk memberi tahu tenant
-   * berapa media yang terlihat dalam kiriman itu; nomor batch tetap yang
-   * menandai kartu-kartu sekiriman.
-   */
-  const jumlahPerBatch = useMemo(() => {
-    const hitung: Record<string, number> = {};
-    for (const r of rows) {
-      if (!r.batch_number) continue;
-      hitung[r.batch_number] = (hitung[r.batch_number] ?? 0) + 1;
-    }
-    return hitung;
-  }, [rows]);
 
   return (
     <AppShell title="Riwayat Pengajuan">
@@ -145,8 +130,8 @@ export default function MySubmissionsPage() {
                         </p>
                         <p className="mt-0.5 text-xs leading-relaxed text-brand-primary-800 dark:text-brand-primary-200">
                           Pengajuan ini bagian dari satu kirim berisi beberapa media
-                          {jumlahPerBatch[r.batch_number]
-                            ? ` (${jumlahPerBatch[r.batch_number]} media dalam kiriman ini)`
+                          {r.batch_item_count
+                            ? ` (${r.batch_item_count} media dalam kiriman ini)`
                             : ''}
                           .
                         </p>

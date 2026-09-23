@@ -511,9 +511,16 @@ router.get('/submissions/mine', async (req, res, next) => {
     // applicant_type), sehingga `b.*` akan menimpa nilai pengajuan dengan nilai
     // batch pada kunci JSON yang sama. Alias `s` wajib: tanpa itu `created_at`
     // dan `id` di `SUBMISSION_PUBLIC_COLUMNS` menjadi ambigu begitu di-join.
+    // `batch_item_count` = jumlah SELURUH baris batch, dihitung di server lewat
+    // subquery yang TIDAK ikut dibatasi `LIMIT 50`: LIMIT memotong daftar
+    // pengajuan per perangkat, bukan isi batch, sehingga tenant dengan lebih
+    // dari 50 pengajuan tetap melihat angka yang benar (klien dulu menghitung
+    // dari baris yang termuat saja, jadi bisa kurang dari kenyataan).
     const { rows } = await db.query(
       `SELECT ${SUBMISSION_PUBLIC_COLUMNS_S}, s.status_token,
-              b.batch_number, b.batch_token
+              b.batch_number, b.batch_token,
+              (SELECT count(*)::int FROM promo_submissions x WHERE x.batch_id = s.batch_id)
+                AS batch_item_count
        FROM promo_submissions s
        LEFT JOIN promo_submission_batches b ON b.id = s.batch_id
        WHERE s.device_fingerprint = $1

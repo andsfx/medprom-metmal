@@ -175,6 +175,14 @@ export interface MySubmissionRow {
    * sama dengan `status_token` (akses digerbangi fingerprint perangkat).
    */
   batch_token?: string | null;
+  /**
+   * Jumlah SELURUH media dalam batch induk, dihitung server pada
+   * `/promo/submissions/mine` lewat subquery yang tidak dibatasi `LIMIT 50`.
+   * Angka ini yang dipakai UI, bukan hitungan baris yang termuat, supaya
+   * label "N media dalam kiriman ini" tidak undercount saat daftar pengajuan
+   * per perangkat terpotong limit.
+   */
+  batch_item_count?: number | null;
   price_amount?: number;
   price_unit?: string;
   ppn_included?: boolean;

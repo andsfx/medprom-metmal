@@ -44,6 +44,7 @@ const ROW_BATCH: MySubmissionRow = {
   id: 'sub-b1', submission_number: 'MP-260920-B7K2QX', status_token: 'tok-b1',
   material_title: 'Spanduk Gerai Baru',
   batch_id: 'batch-1', batch_number: 'MPB-260920-ABC234', batch_token: 'btok-1',
+  batch_item_count: 2,
 };
 
 beforeEach(() => {
@@ -111,5 +112,29 @@ describe('MySubmissionsPage — penandaan batch', () => {
     // Nomor batch sama untuk kedua kartu → jelas satu kiriman.
     expect(screen.getAllByText('MPB-260920-ABC234')).toHaveLength(2);
     expect(screen.getAllByText(/2 media dalam kiriman ini/i)).toHaveLength(2);
+  });
+
+  it('label memakai angka dari server, bukan jumlah baris yang termuat', async () => {
+    // Skenario undercount lama: daftar pengajuan per perangkat terpotong LIMIT
+    // 50 sehingga hanya SATU baris batch ini yang termuat, padahal batch asli
+    // berisi 5 media. Angka 5 hanya bisa datang dari server.
+    mockedFetch.mockResolvedValue([{ ...ROW_BATCH, batch_item_count: 5 }]);
+    renderPage();
+
+    expect(await screen.findByText('MP-260920-B7K2QX')).toBeInTheDocument();
+    expect(screen.getByText(/5 media dalam kiriman ini/i)).toBeInTheDocument();
+    // Hitungan klien yang lama (1 baris termuat) tidak boleh muncul.
+    expect(screen.queryByText(/1 media dalam kiriman ini/i)).not.toBeInTheDocument();
+  });
+
+  it('tanpa batch_item_count dari server, label tidak menyebut jumlah', async () => {
+    // Server belum/tidak mengirim hitungan: jangan mengarang angka dari baris
+    // yang termuat, cukup keterangan kualitatif.
+    mockedFetch.mockResolvedValue([{ ...ROW_BATCH, batch_item_count: undefined }]);
+    renderPage();
+
+    expect(await screen.findByText('MP-260920-B7K2QX')).toBeInTheDocument();
+    expect(screen.getByText(/satu kirim berisi beberapa media/i)).toBeInTheDocument();
+    expect(screen.queryByText(/media dalam kiriman ini/i)).not.toBeInTheDocument();
   });
 });
