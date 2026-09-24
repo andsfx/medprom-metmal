@@ -201,12 +201,4 @@ describe('POST /promo/submit-batch - persetujuan ketentuan tersimpan apa adanya'
     expect(typeof values[IDX_TERMS]).toBe('boolean');
     expect(values[IDX_TERMS]).toBe(false);
   });
-
-  it('sumber handler tidak lagi memuat literal `true` pada kolom terms_accepted', async () => {
-    // Penjaga regresi: pastikan baris array `row` memakai `termsAccepted`,
-    // bukan konstanta `true`. Dibaca dari sumber handler sungguhan.
-    const src = String(getHandler('/submit-batch', 'post'));
-    expect(src).toContain('termsAccepted');
-    expect(src).not.toMatch(/installation_date, true,/);
-  });
 });

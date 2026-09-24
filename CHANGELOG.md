@@ -465,6 +465,19 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   em-dash terencana di `scripts/`.
 
 ### Dirapikan
+- **Assertion baca-sumber yang rapuh dihapus dari test T5 (persetujuan
+  ketentuan batch cetak).** `__tests__/api/promo-batch-terms.test.js` memuat
+  satu blok `it(...)` terakhir yang membaca TEKS SUMBER handler
+  (`String(getHandler('/submit-batch', 'post'))`) lalu mencocokkan regex
+  (`toContain('termsAccepted')`, `not.toMatch(/installation_date, true,/)`).
+  Assertion itu mengunci detail implementasi/plumbing, bukan perilaku, dan
+  rapuh (gagal palsu bila urutan kolom INSERT diubah). Blok itu dihapus; tiga
+  assertion perilaku yang tersisa (`true` tersimpan boolean `true`, `false`
+  tersimpan boolean `false`, field dihilangkan tersimpan boolean `false`)
+  tetap mengunci kontrak, dan revert ke konstanta `true` akan tetap tertangkap
+  kasus "field dihilangkan -> false". Test lain tidak disentuh. **Pilihan
+  seksi:** ditulis di `### Dirapikan` karena tidak ada perilaku produk yang
+  diubah, hanya test yang dibersihkan.
 - **Hasil audit field form cetak: semua field yang diminta pemilik sudah ada.**
   Audit read-only memetakan tiap field permintaan pemilik (`docs/PLAN_2026-09-20_16-00.md:299-301`,
   yaitu tanggal pengajuan, nama pemohon, nama tenant/non-tenant, telepon,
