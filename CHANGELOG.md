@@ -5,6 +5,31 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Tiga cacat tampilan sisi tenant: anchor materi mati, galat API disamakan
+  dengan "tidak ditemukan", dan teks batch kontradiktif.** (1) Di
+  `src/components/promo/SubmissionDetail.tsx`, blok materi dan blok riwayat
+  versi materi hanya memisahkan literal `source_type === 'none'`, sehingga
+  `source_type` `'link'`/`'upload'` dengan `link_url`/`file_url` kosong tetap
+  dirender `<a href="">` dan klik hanya memuat ulang halaman. Kanal kini
+  ditentukan dari ADA/TIDAKNYA URL (preseden `src/utils/proof.ts`): URL kosong
+  menjadi baris informasi, bukan anchor; perilaku `'none'` dan kasus URL
+  terisi tidak berubah. (2) `SubmissionStatusPage.tsx` dan
+  `BatchStatusPage.tsx` memakai `catch { setNotFound(true); }`, sehingga galat
+  jaringan/503 tampil sebagai "Pengajuan tidak ditemukan". `ApiError`
+  (`src/lib/rest.ts`) kini membawa `status` HTTP (properti tambahan, pesan/tipe
+  lama utuh), `promoApi.ts` menambah `isNotFoundError`, dan kedua halaman
+  memisahkan 404 ("tidak ditemukan") dari galat lain (panel "gagal memuat"
+  dengan tombol "Coba lagi" yang memanggil ulang pemuatan). (3)
+  `MySubmissionsPage.tsx` selalu menulis "beberapa media (N media dalam
+  kiriman ini)", sehingga batch berisi 1 media menampilkan "beberapa media (1
+  media...)". Kalimat kini dipilih dari `batch_item_count`: `> 1` menyebut
+  "beberapa media" + jumlah, tepat 1 memakai kalimat tanpa kata "beberapa",
+  dan tanpa angka tetap kualitatif tanpa mengarang jumlah. Dikunci tiga test
+  baru: `SubmissionDetailMateriUrlKosong.test.tsx` (5 test),
+  `StatusPageGagalMuat.test.tsx` (7 test), dan
+  `MySubmissionsPageBatchSatu.test.tsx` (3 test). Dua arah terbukti: pada kode
+  sebelum perbaikan 9 test merah (6 test penjaga perilaku lama tetap hijau),
+  sesudah perbaikan 15 test hijau. Catatan `docs/PLAN_2026-09-24_09-41.md`.
 - **Nomor batch dibuang UI di kolom "Nomor" tabel daftar pengajuan
   dashboard admin, sehingga staf tidak bisa mengenali baris pengajuan cetak
   (batch) dari daftar.** API daftar `GET /admin/submissions`

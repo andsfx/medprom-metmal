@@ -11,7 +11,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import SubmissionDetail from './SubmissionDetail';
-import { fetchBatchByToken } from '../../utils/promoApi';
+import { fetchBatchByToken, isNotFoundError } from '../../utils/promoApi';
 import { APPLICANT_TYPE_LABELS } from '../../constants/promo';
 import type { BatchStatusData } from '../../types/promo';
 
@@ -24,14 +24,20 @@ export default function BatchStatusPage() {
   const [data, setData] = useState<BatchStatusData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setNotFound(false);
+    setLoadError(false);
     try {
       setData(await fetchBatchByToken(token));
-    } catch {
-      setNotFound(true);
+    } catch (err) {
+      // Gagal memuat ≠ tidak ditemukan: hanya 404 yang berarti tautan batch
+      // tidak cocok. Gangguan jaringan/503 ditampilkan sebagai galat yang
+      // bisa dicoba ulang.
+      if (isNotFoundError(err)) setNotFound(true);
+      else setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -56,6 +62,27 @@ export default function BatchStatusPage() {
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
             <span className="text-sm ui-text-muted">Memuat status batch…</span>
+          </div>
+        )}
+
+        {!loading && loadError && (
+          <div className="ui-alert p-5" role="alert">
+            <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat status batch.</p>
+            <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+              Pengajuan Anda tidak hilang. Sambungan ke server sedang bermasalah. Coba lagi sebentar lagi.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => { void load(); }}
+                className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition"
+              >
+                Coba lagi
+              </button>
+              <Link to="/riwayat" className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Lihat Riwayat Perangkat
+              </Link>
+            </div>
           </div>
         )}
 

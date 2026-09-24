@@ -129,11 +129,11 @@ export default function MySubmissionsPage() {
                           <span className="font-mono font-bold tracking-wide">{r.batch_number}</span>
                         </p>
                         <p className="mt-0.5 text-xs leading-relaxed text-brand-primary-800 dark:text-brand-primary-200">
-                          Pengajuan ini bagian dari satu kirim berisi beberapa media
-                          {r.batch_item_count
-                            ? ` (${r.batch_item_count} media dalam kiriman ini)`
-                            : ''}
-                          .
+                          {typeof r.batch_item_count === 'number' && r.batch_item_count > 1
+                            ? `Pengajuan ini bagian dari satu kirim berisi beberapa media (${r.batch_item_count} media dalam kiriman ini).`
+                            : typeof r.batch_item_count === 'number' && r.batch_item_count === 1
+                              ? 'Pengajuan ini bagian dari satu kiriman (1 media dalam kiriman ini).'
+                              : 'Pengajuan ini bagian dari satu kirim berisi beberapa media.'}
                         </p>
                         {r.batch_token && (
                           <Link

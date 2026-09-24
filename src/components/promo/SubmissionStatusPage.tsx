@@ -10,7 +10,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import SubmissionDetail from './SubmissionDetail';
-import { fetchStatusByToken } from '../../utils/promoApi';
+import { fetchStatusByToken, isNotFoundError } from '../../utils/promoApi';
 import type { StatusPageData } from '../../types/promo';
 
 export default function SubmissionStatusPage() {
@@ -18,14 +18,20 @@ export default function SubmissionStatusPage() {
   const [data, setData] = useState<StatusPageData | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [loadError, setLoadError] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     setNotFound(false);
+    setLoadError(false);
     try {
       setData(await fetchStatusByToken(token));
-    } catch {
-      setNotFound(true);
+    } catch (err) {
+      // Gagal memuat ≠ tidak ditemukan: hanya 404 yang berarti tautan tidak
+      // cocok. Gangguan jaringan/503 ditampilkan sebagai galat yang bisa
+      // dicoba ulang, bukan "Pengajuan tidak ditemukan".
+      if (isNotFoundError(err)) setNotFound(true);
+      else setLoadError(true);
     } finally {
       setLoading(false);
     }
@@ -40,6 +46,27 @@ export default function SubmissionStatusPage() {
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
             <span className="text-sm ui-text-muted">Memuat status pengajuan…</span>
+          </div>
+        )}
+
+        {!loading && loadError && (
+          <div className="ui-alert p-5" role="alert">
+            <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat status pengajuan.</p>
+            <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+              Pengajuan Anda tidak hilang. Sambungan ke server sedang bermasalah. Coba lagi sebentar lagi.
+            </p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => { void load(); }}
+                className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition"
+              >
+                Coba lagi
+              </button>
+              <Link to="/lacak" className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                Lacak dengan Nomor Pengajuan
+              </Link>
+            </div>
           </div>
         )}
 

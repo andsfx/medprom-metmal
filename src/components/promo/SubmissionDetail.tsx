@@ -61,6 +61,14 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
   // Halaman pelacakan sudah menampilkan formulir nomor - jangan tautkan ke
   // dirinya sendiri dari catatan di bawah.
   const onTrackPage = useLocation().pathname.startsWith('/lacak');
+  // Kanal materi ditentukan dari ADA/TIDAKNYA URL, bukan hanya `source_type`
+  // (preseden `src/utils/proof.ts`): `source_type` 'link'/'upload' dengan URL
+  // kosong tidak boleh menjadi tautan mati `href=""`.
+  const materiUrl = String(
+    data.submission.source_type === 'link'
+      ? data.submission.link_url
+      : data.submission.file_url,
+  ).trim();
   // Form revisi.
   const [revLink, setRevLink] = useState('');
   const [revFile, setRevFile] = useState<File | null>(null);
@@ -186,7 +194,9 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
          * tidak meminta berkas (materi menyusul lewat alur revisi); dulu kanal
          * ini ikut dirender sebagai berkas, sehingga tenant melihat tautan
          * `href=""` pada pengajuan yang baru saja ia kirim. Kanal tanpa materi
-         * kini dinyatakan sebagai baris informasi, bukan tautan. */}
+         * kini dinyatakan sebagai baris informasi, bukan tautan. Kanal
+         * 'link'/'upload' yang URL-nya kosong diperlakukan sama: baris
+         * informasi, bukan anchor mati (kunci dari ADA/TIDAKNYA URL). */}
         <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-700">
           <p className="text-xs font-semibold ui-text-muted">
             {data.submission.source_type === 'link'
@@ -197,18 +207,24 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
             <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
               Materi menyusul setelah pengajuan disetujui.
             </p>
-          ) : (
+          ) : materiUrl ? (
             <a
-              href={data.submission.source_type === 'link' ? data.submission.link_url : data.submission.file_url}
+              href={materiUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="mt-1 inline-flex items-center gap-1.5 break-all text-sm font-medium text-brand-primary-700 dark:text-brand-primary-300"
             >
               <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {data.submission.source_type === 'link'
-                ? data.submission.link_url
+                ? materiUrl
                 : (data.submission.file_name || 'Lihat berkas')}
             </a>
+          ) : (
+            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+              {data.submission.source_type === 'link'
+                ? 'Tautan materi belum tersedia.'
+                : 'Berkas materi belum tersedia.'}
+            </p>
           )}
         </div>
       </div>
@@ -425,26 +441,36 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
         <div className="ui-card p-5">
           <h2 className="ui-title-card text-slate-900 dark:text-white">Riwayat Versi Materi</h2>
           <ul className="mt-3 space-y-2">
-            {data.files.map((f) => (
-              <li key={f.id} className="flex items-start justify-between gap-3 rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
-                <div className="min-w-0">
-                  <p className="font-semibold text-slate-800 dark:text-slate-100">
-                    Versi {f.version}{f.version === 1 ? ' (awal)' : ''}
-                  </p>
-                  <p className="mt-0.5 ui-text-muted">{formatDateTime(f.created_at)}</p>
-                  {f.notes && <p className="mt-0.5 ui-text-muted">{f.notes}</p>}
-                </div>
-                <a
-                  href={f.source_type === 'link' ? f.link_url : f.file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
-                >
-                  <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                  Buka
-                </a>
-              </li>
-            ))}
+            {data.files.map((f) => {
+              // Sama seperti blok materi: kanal versi ditentukan dari
+              // ADA/TIDAKNYA URL, agar versi tanpa URL tidak menjadi tautan
+              // mati `href=""`.
+              const versiUrl = String(f.source_type === 'link' ? f.link_url : f.file_url).trim();
+              return (
+                <li key={f.id} className="flex items-start justify-between gap-3 rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-slate-800 dark:text-slate-100">
+                      Versi {f.version}{f.version === 1 ? ' (awal)' : ''}
+                    </p>
+                    <p className="mt-0.5 ui-text-muted">{formatDateTime(f.created_at)}</p>
+                    {f.notes && <p className="mt-0.5 ui-text-muted">{f.notes}</p>}
+                  </div>
+                  {versiUrl ? (
+                    <a
+                      href={versiUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                      Buka
+                    </a>
+                  ) : (
+                    <span className="shrink-0 ui-text-muted">Tautan belum tersedia</span>
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

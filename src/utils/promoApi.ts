@@ -111,6 +111,23 @@ export function errorsFromApiError(err: unknown): string[] {
 }
 
 /**
+ * Benarkah galat ini berarti "tidak ditemukan" (HTTP 404)?
+ *
+ * Halaman status tenant dulu menyamakan SEMUA galat dengan "Pengajuan tidak
+ * ditemukan", sehingga gangguan jaringan atau server 503 membuat tenant
+ * mengira pengajuannya hilang. Pembedaan mengutamakan status HTTP yang
+ * dipasang `ApiError.status` oleh `src/lib/rest.ts`. Galat tanpa status HTTP
+ * (mis. `Error('404')` warisan atau `NETWORK`) diperiksa dari pesannya supaya
+ * pemanggil lama tetap berperilaku sama; galat 503/`NETWORK` yang tidak
+ * menyebut 404 tetap dianggap "gagal memuat", bukan "tidak ditemukan".
+ */
+export function isNotFoundError(err: unknown): boolean {
+  if (err instanceof ApiError && typeof err.status === 'number') return err.status === 404;
+  const pesan = err instanceof Error ? err.message : String(err ?? '');
+  return /\b404\b/.test(pesan) || /tidak ditemukan/i.test(pesan);
+}
+
+/**
  * Petakan pesan validasi server ke field form wizard.
  *
  * Server mengembalikan `errors[]` sebagai teks tanpa nama field, jadi

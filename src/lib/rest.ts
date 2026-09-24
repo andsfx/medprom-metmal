@@ -17,12 +17,25 @@ export function apiUrl(path: string): string {
 export class ApiError extends Error {
   code: string;
   payload: Record<string, unknown> | undefined;
+  /**
+   * Status HTTP respons; `undefined` untuk galat non-HTTP (mis. `NETWORK`).
+   * Dipakai pemanggil untuk membedakan 404 ("tidak ditemukan") dari galat
+   * lain (jaringan/503) tanpa menebak dari pesan. Properti tambahan ini
+   * tidak mengubah pesan/tipe galat yang sudah ada.
+   */
+  status?: number;
 
-  constructor(message: string, code: string, payload?: Record<string, unknown>) {
+  constructor(
+    message: string,
+    code: string,
+    payload?: Record<string, unknown>,
+    status?: number,
+  ) {
     super(message);
     this.name = 'ApiError';
     this.code = code;
     this.payload = payload;
+    this.status = status;
   }
 }
 
@@ -90,7 +103,7 @@ async function request<T>(
     }
     const fallback =
       options.errorMessageFallback?.(response.status) ?? `Permintaan gagal (HTTP ${response.status})`;
-    throw new ApiError(message ?? fallback, code ?? String(response.status), payload);
+    throw new ApiError(message ?? fallback, code ?? String(response.status), payload, response.status);
   }
 
   return (await response.json()) as T;
