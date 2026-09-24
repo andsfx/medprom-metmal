@@ -403,6 +403,7 @@ export interface BatchSubmitPayload {
   pic_phone: string;
   submission_date: string;
   notes: string;
+  terms_accepted: boolean;
   device_fingerprint: string;
   items: Array<{
     media_type_slug: string;

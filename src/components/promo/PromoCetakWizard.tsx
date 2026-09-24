@@ -395,6 +395,7 @@ export default function PromoCetakWizard() {
         pic_phone: picPhone.trim(),
         submission_date: submissionDate,
         notes: notes.trim(),
+        terms_accepted: termsAccepted,
         device_fingerprint: getDeviceFingerprint(),
         items: items.map((it) => ({
           media_type_slug: it.slug,

@@ -5,6 +5,28 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Persetujuan ketentuan pada pengajuan cetak batch tidak lagi dipalsukan.**
+  Handler `POST /promo/submit-batch` (`server/src/routes/promo.js`) menuliskan
+  nilai KONSTANTA `true` ke kolom `terms_accepted` tiap baris `promo_submissions`
+  dan tidak pernah membaca `body.terms_accepted`, sehingga kolom itu tidak
+  membuktikan persetujuan apa pun; sementara alur digital `POST /promo/submit`
+  memang menegakkannya (`if (!termsAccepted) errors.push('Persetujuan ketentuan
+  wajib dicentang')`). Server kini membaca `const termsAccepted =
+  body.terms_accepted === true;` dan menyimpan nilai itu APA ADANYA pada array
+  `row` (literal `true` dihapus). `BatchSubmitPayload`
+  (`src/utils/promoApi.ts`) menambah `terms_accepted: boolean`, dan
+  `PromoCetakWizard.tsx` mengirim `terms_accepted: termsAccepted` di payload
+  `submitBatch(...)` pada `handleSubmit` (state itu sudah menggerbang tombol
+  kirim). **Penegakan 400 SENGAJA DITUNDA:** menolak 400 saat `terms_accepted`
+  bukan `true` akan memecahkan fixture batch lama
+  (`__tests__/api/promo-batch.test.js`, `__tests__/api/cetak-batch-limits.test.js`)
+  yang tidak mengirim field itu dan masih mengharapkan 201/429, sehingga
+  perubahan kontrak itu menunggu keputusan pemilik. **Test lama tidak
+  tersentuh.** Dikunci `__tests__/api/promo-batch-terms.test.js` (berkas baru,
+  4 test, handler sungguhan): `true` tersimpan boolean `true`, `false` tersimpan
+  boolean `false`, field dihilangkan tersimpan boolean `false` (bukan lagi
+  `true`), plus penjaga regresi sumber handler. Catatan
+  `docs/PLAN_2026-09-24_11-11.md`.
 - **Riwayat tenant terpotong 50 secara senyap, dan tombol kembali halaman
   status bergantung pada riwayat perangkat.** (1) `GET /promo/submissions/mine`
   (`server/src/routes/promo.js`) memakai `LIMIT 50` dan membalas `{ success,
