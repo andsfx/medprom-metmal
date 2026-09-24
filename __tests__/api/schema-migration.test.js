@@ -283,9 +283,52 @@ describe('schema.sql - CHECK durasi & kuantitas pengajuan cetak', () => {
     expect(blok).toMatch(/quantity\s*>=\s*1/);
   });
 
+  it('kedua CHECK dipasang NOT VALID agar migrasi tidak gagal pada data lama', () => {
+    // `ADD CONSTRAINT` tanpa NOT VALID memvalidasi SELURUH baris lama; satu
+    // baris cetak warisan berdurasi < 7 akan menggagalkan `db:migrate` hanya
+    // di DB produksi. NOT VALID menjaga constraint tetap MENGIKAT baris baru
+    // tanpa memvalidasi ulang baris lama.
+    const blok = blokDurasi();
+    // Setiap ADD CONSTRAINT di blok ini harus diakhiri NOT VALID.
+    const addConstraints = blok.match(/ADD CONSTRAINT[\s\S]*?;/g) || [];
+    expect(addConstraints).toHaveLength(2);
+    for (const c of addConstraints) {
+      expect(c).toMatch(/NOT VALID\s*;/);
+    }
+    // Keduanya tetap memasang CHECK (bukan hanya nama).
+    for (const c of addConstraints) {
+      expect(c).toContain('CHECK (');
+    }
+  });
+
   it('blok integritas ditulis SETELAH blok migrasi status (heuristik DO $$)', () => {
     // `indexOf('DO $$')` milik test status harus tetap menunjuk blok status.
     expect(sql.indexOf('-- ── Integritas harga & durasi pengajuan cetak'))
       .toBeGreaterThan(sql.indexOf('SET status_token = md5('));
+  });
+});
+
+/**
+ * Index pengingat berpredikat parsial dan predikatnya PERNAH berubah (dulu
+ * hanya `sudah_dipasang`, kini tiga status). `CREATE INDEX IF NOT EXISTS`
+ * TIDAK memperbarui index lama, sehingga tanpa DROP lebih dulu DB produksi
+ * akan tetap memakai index sempit - tidak gagal, hanya kehilangan manfaat
+ * index. Test ini mengunci pasangan DROP/CREATE-nya.
+ */
+describe('schema.sql - index pengingat diperbarui saat predikat berubah', () => {
+  it('idx_ps_status_airend dilepas sebelum dibuat ulang', () => {
+    const drop = sql.indexOf('DROP INDEX IF EXISTS idx_ps_status_airend');
+    const create = sql.indexOf('CREATE INDEX IF NOT EXISTS idx_ps_status_airend');
+    expect(drop).toBeGreaterThan(-1);
+    expect(create).toBeGreaterThan(-1);
+    expect(drop).toBeLessThan(create);
+  });
+
+  it('index pengingat mencakup ketiga status', () => {
+    const start = sql.indexOf('CREATE INDEX IF NOT EXISTS idx_ps_status_airend');
+    const blok = sql.slice(start, start + 250);
+    expect(blok).toContain('sudah_dipasang');
+    expect(blok).toContain('disetujui');
+    expect(blok).toContain('siap_dipasang');
   });
 });

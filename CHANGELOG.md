@@ -23,7 +23,9 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   Query kini menyertakan `disetujui` dan `siap_dipasang` sebagai kategori
   terpisah ("belum tercatat terpasang"), sehingga periode yang habis tanpa
   pernah dicatat pemasangannya tidak luput. Panel menampilkan jumlah dan badge
-  kategori.
+  kategori. Index `idx_ps_status_airend` ikut diperluas ke ketiga status
+  (dilepas lalu dibuat ulang, karena `CREATE INDEX IF NOT EXISTS` tidak
+  memperbarui index yang sudah ada).
 - **Pengingat tidak lagi kehilangan baris ber-pajak yang PPN-nya membulat
   nol.** Penanda "kena pajak" berubah dari `ppn_amount > 0` (hasil pembulatan)
   menjadi `ppn_rate > 0` (tarif yang benar-benar terpasang).
@@ -32,11 +34,14 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   (`days=0` sebelumnya menjadi 14 tanpa pemberitahuan).
 - **Integritas durasi dan kuantitas pengajuan cetak ditegakkan di skema.**
   CHECK BERSYARAT `source_type <> 'none' OR duration_days >= 7` (baris cetak
-  wajib minimal 7 hari) dan `quantity >= 1`. Pembebasnya adalah KANAL, bukan
-  nilai durasinya: `duration_days` adalah kolom bersama alur digital yang sah
-  bernilai 0, dan bentuk `duration_days = 0 OR duration_days >= 7` akan selalu
-  benar sehingga CHECK-nya vakum. Perubahan skema ini memerlukan
-  `npm run db:migrate` saat deploy.
+  wajib minimal 7 hari) dan `quantity >= 1`, keduanya dipasang `NOT VALID`.
+  Pembebasnya adalah KANAL, bukan nilai durasinya: `duration_days` adalah kolom
+  bersama alur digital yang sah bernilai 0, dan bentuk
+  `duration_days = 0 OR duration_days >= 7` akan selalu benar sehingga
+  CHECK-nya vakum. `NOT VALID` wajib supaya baris cetak warisan berdurasi
+  kurang dari 7 hari tidak menggagalkan `db:migrate` (constraint tetap
+  mengikat baris baru). Perubahan skema ini memerlukan `npm run db:migrate`
+  saat deploy.
 - **Dokumen desain `docs/PLAN_2026-09-20_16-00.md` dikoreksi.** `PPN_RATE`
   berada di `src/utils/pricing.ts` (bukan `src/constants/promo.ts`), dan rumus
   PPN yang benar adalah `subtotal - subtotal / (1 + rate)` dengan pembulatan

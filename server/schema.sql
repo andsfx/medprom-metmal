@@ -342,6 +342,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_token  ON promo_submission_batches (ba
 CREATE INDEX IF NOT EXISTS idx_ps_batch ON promo_submissions (batch_id) WHERE batch_id IS NOT NULL;
 -- Pengingat: cari periode berakhir pada materi yang statusnya sudah masuk
 -- cakupan pengingat (terpasang DAN belum tercatat terpasang).
+--
+-- Predikat index ini PERNAH berubah (dulu hanya `sudah_dipasang`). `CREATE
+-- INDEX IF NOT EXISTS` TIDAK memperbarui index yang sudah ada, jadi pada DB
+-- yang sudah jalan index lama yang sempit akan tetap dipakai dan kueri
+-- pengingat kehilangan manfaat index (tidak gagal, hanya lambat). Karena itu
+-- index dilepas lebih dulu; pasangan DROP/CREATE ini idempotent dan selalu
+-- menuju bentuk terbaru.
+DROP INDEX IF EXISTS idx_ps_status_airend;
 CREATE INDEX IF NOT EXISTS idx_ps_status_airend ON promo_submissions (status, air_end_date)
   WHERE status IN ('sudah_dipasang','disetujui','siap_dipasang');
 CREATE INDEX IF NOT EXISTS idx_amt_channel ON promo_media_types (media_channel);
@@ -362,6 +370,13 @@ CREATE INDEX IF NOT EXISTS idx_amt_channel ON promo_media_types (media_channel);
 -- JANGAN menulis `duration_days = 0 OR duration_days >= 7`: klausa itu selalu
 -- benar untuk SETIAP nilai, sehingga durasi cetak 1-6 hari ikut lolos dan
 -- CHECK-nya menjadi vakum.
+--
+-- NOT VALID itu SENGAJA dan WAJIB: `ADD CONSTRAINT` biasa memvalidasi SELURUH
+-- baris yang sudah ada, sehingga satu baris cetak warisan berdurasi < 7 hari
+-- akan MENGGAGALKAN `db:migrate` - kegagalan yang hanya muncul di DB produksi,
+-- bukan di DB kosong (kelas bug yang sama dengan backfill `source_type` di
+-- migrasi sebelumnya). Dengan NOT VALID, constraint tetap MENGIKAT setiap
+-- INSERT/UPDATE baru, tetapi baris lama tidak divalidasi ulang.
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -372,7 +387,7 @@ BEGIN
   ) THEN
     ALTER TABLE promo_submissions
       ADD CONSTRAINT promo_submissions_duration_days_chk
-      CHECK (source_type <> 'none' OR duration_days >= 7);
+      CHECK (source_type <> 'none' OR duration_days >= 7) NOT VALID;
   END IF;
 END $$;
 
@@ -386,7 +401,7 @@ BEGIN
   ) THEN
     ALTER TABLE promo_submissions
       ADD CONSTRAINT promo_submissions_quantity_chk
-      CHECK (quantity >= 1);
+      CHECK (quantity >= 1) NOT VALID;
   END IF;
 END $$;
 
