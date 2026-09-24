@@ -1,40 +1,36 @@
 /**
- * Detail pengajuan - dipakai bersama halaman status ber-token dan halaman
- * pelacakan nomor, supaya kedua jalur publik menampilkan bentuk yang identik.
+ * Detail pengajuan - dipakai bersama halaman status ber-token, halaman
+ * pelacakan nomor, dan daftar item batch cetak, supaya ketiga jalur publik
+ * menampilkan bentuk yang identik.
  *
- * Isinya: ringkasan pengajuan, catatan tim, materi terkini, informasi
- * pemasangan, form revisi (bila Perlu Revisi), riwayat status, dan riwayat
- * versi materi. Tidak mengambil data sendiri - pemanggil yang memuat.
+ * Bentuknya TIKET PEKERJAAN, bukan kartu: kepala tiket memuat nomor job
+ * monospace dan stempel status, tepi perforasi memisahkan kepala dari isi,
+ * data pengajuan disajikan sebagai tabel titik penghubung, dan riwayat
+ * (status maupun versi materi) sebagai daftar bergaris - bukan kartu
+ * bersarang. Tidak mengambil data sendiri - pemanggil yang memuat.
  */
 import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
-  AlertTriangle, CheckCircle2, ExternalLink, Info, Loader2, Send, Upload, X,
+  AlertTriangle, ExternalLink, Info, Loader2, Send, Upload, X,
 } from 'lucide-react';
+import Stamp from './Stamp';
 import { submitRevision, uploadFile, errorsFromApiError } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
 import { installationProofViews } from '../../utils/proof';
-import { STATUS_LABELS } from '../../constants/promo';
 import { daysUntil } from '../../utils/pricing';
 import { toIsoDate } from '../../utils/leadTime';
 import type { StatusPageData } from '../../types/promo';
 
-const STATUS_TONE: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300',
-  menunggu_review: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  perlu_revisi: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
-  disetujui: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  ditolak: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  siap_dipasang: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300',
-  sudah_dipasang: 'bg-brand-primary-100 text-brand-primary-800 dark:bg-brand-primary-950/50 dark:text-brand-primary-300',
-  selesai: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200',
-};
-
-export function StatusBadge({ status }: { status: string }) {
+/** Tanda potong di empat sudut lembar - murni dekoratif, jadi aria-hidden. */
+function CropMarks() {
   return (
-    <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${STATUS_TONE[status] ?? STATUS_TONE.draft}`}>
-      {STATUS_LABELS[status] ?? status}
-    </span>
+    <>
+      <span className="doc-crop" data-corner="tl" aria-hidden="true" />
+      <span className="doc-crop" data-corner="tr" aria-hidden="true" />
+      <span className="doc-crop" data-corner="bl" aria-hidden="true" />
+      <span className="doc-crop" data-corner="br" aria-hidden="true" />
+    </>
   );
 }
 
@@ -127,14 +123,19 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
 
   return (
     <div className="space-y-4">
-      <div className="ui-card overflow-hidden">
-        <div className="border-b border-slate-100 bg-gradient-to-r from-brand-primary-50/60 to-transparent px-5 py-4 dark:border-slate-700 dark:from-brand-primary-950/30">
-          <div className="flex items-start justify-between gap-3">
+      {/* Tiket pekerjaan: kepala (nomor job + stempel) dipisahkan tepi
+       * perforasi dari isi tiket. */}
+      <article className="doc-sheet overflow-hidden">
+        <CropMarks />
+
+        <div className="px-7 pt-7 pb-4">
+          <div className="flex items-start justify-between gap-4">
             <div className="min-w-0">
-              <p className="font-mono text-sm font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
+              <span className="doc-plate-no">Tiket pengajuan</span>
+              <p className="doc-num mt-1 text-sm font-bold tracking-wide text-slate-900">
                 {data.submission.submission_number}
               </p>
-              <h2 className="ui-title-card mt-1 text-slate-900 dark:text-white">
+              <h2 className="ui-title-card mt-1 text-slate-900">
                 {data.submission.material_title || data.submission.media_type_slug}
               </h2>
               <p className="mt-0.5 text-xs ui-text-muted">
@@ -142,65 +143,82 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
                 {data.submission.unit_number ? ` · Unit ${data.submission.unit_number}` : ''}
               </p>
             </div>
-            <StatusBadge status={data.submission.status} />
+            <Stamp status={data.submission.status} className="shrink-0" />
           </div>
         </div>
 
-        <dl className="grid gap-x-6 gap-y-2.5 px-5 py-4 text-sm sm:grid-cols-2">
-          <div className="flex gap-2">
-            <dt className="shrink-0 font-semibold ui-text-muted">Media</dt>
-            <dd className="text-slate-900 dark:text-white">{data.submission.media_type_slug}</dd>
-          </div>
-          {data.submission.campaign_name && (
-            <div className="flex gap-2">
-              <dt className="shrink-0 font-semibold ui-text-muted">Campaign</dt>
-              <dd className="text-slate-900 dark:text-white">{data.submission.campaign_name}</dd>
+        <div className="doc-perf" />
+
+        {/* Tabel data pengajuan: label kiri, nilai kanan, dihubungkan titik. */}
+        <div className="px-7 py-4">
+          <dl className="doc-rows">
+            <div className="doc-row">
+              <dt>Media</dt>
+              <span className="doc-leader" aria-hidden="true" />
+              <dd>{data.submission.media_type_slug}</dd>
             </div>
-          )}
-          {data.submission.media_target && (
-            <div className="flex gap-2">
-              <dt className="shrink-0 font-semibold ui-text-muted">Lokasi</dt>
-              <dd className="text-slate-900 dark:text-white">{data.submission.media_target}</dd>
+            {data.submission.campaign_name && (
+              <div className="doc-row">
+                <dt>Campaign</dt>
+                <span className="doc-leader" aria-hidden="true" />
+                <dd>{data.submission.campaign_name}</dd>
+              </div>
+            )}
+            {data.submission.media_target && (
+              <div className="doc-row">
+                <dt>Lokasi</dt>
+                <span className="doc-leader" aria-hidden="true" />
+                <dd>{data.submission.media_target}</dd>
+              </div>
+            )}
+            {(data.submission.air_start_date || data.submission.air_end_date) && (
+              <div className="doc-row">
+                <dt>Periode</dt>
+                <span className="doc-leader" aria-hidden="true" />
+                <dd>
+                  {data.submission.air_start_date || '-'} s/d {data.submission.air_end_date || '-'}
+                  {sisaHari !== null && (
+                    <span className={`ml-1.5 text-xs font-semibold ${sisaHari < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                      ({sisaHari > 0 ? `${sisaHari} hari lagi` : sisaHari === 0 ? 'berakhir hari ini' : `lewat ${Math.abs(sisaHari)} hari`})
+                    </span>
+                  )}
+                </dd>
+              </div>
+            )}
+            {data.submission.installation_date && (
+              <div className="doc-row">
+                <dt>Tgl pasang</dt>
+                <span className="doc-leader" aria-hidden="true" />
+                <dd>{data.submission.installation_date}</dd>
+              </div>
+            )}
+            <div className="doc-row">
+              <dt>Diajukan</dt>
+              <span className="doc-leader" aria-hidden="true" />
+              <dd>{formatDateTime(data.submission.created_at)}</dd>
             </div>
-          )}
-          {(data.submission.air_start_date || data.submission.air_end_date) && (
-            <div className="flex gap-2">
-              <dt className="shrink-0 font-semibold ui-text-muted">Periode</dt>
-              <dd className="text-slate-900 dark:text-white">
-                {data.submission.air_start_date || '-'} s/d {data.submission.air_end_date || '-'}
-                {sisaHari !== null && (
-                  <span className={`ml-1.5 text-xs font-semibold ${sisaHari < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
-                    ({sisaHari > 0 ? `${sisaHari} hari lagi` : sisaHari === 0 ? 'berakhir hari ini' : `lewat ${Math.abs(sisaHari)} hari`})
-                  </span>
-                )}
-              </dd>
-            </div>
-          )}
-          {data.submission.installation_date && (
-            <div className="flex gap-2">
-              <dt className="shrink-0 font-semibold ui-text-muted">Tgl pasang</dt>
-              <dd className="text-slate-900 dark:text-white">{data.submission.installation_date}</dd>
-            </div>
-          )}
-          <div className="flex gap-2">
-            <dt className="shrink-0 font-semibold ui-text-muted">Diajukan</dt>
-            <dd className="text-slate-900 dark:text-white">{formatDateTime(data.submission.created_at)}</dd>
-          </div>
-          {data.submission.material_description && (
-            <div className="flex gap-2 sm:col-span-2">
-              <dt className="shrink-0 font-semibold ui-text-muted">Deskripsi</dt>
-              <dd className="text-slate-900 dark:text-white">{data.submission.material_description}</dd>
-            </div>
-          )}
-        </dl>
+            {data.submission.material_description && (
+              <div className="doc-row items-start">
+                <dt className="pt-0.5">Deskripsi</dt>
+                <span className="doc-leader mt-2.5" aria-hidden="true" />
+                <dd className="text-left font-sans text-xs leading-snug font-normal">
+                  {data.submission.material_description}
+                </dd>
+              </div>
+            )}
+          </dl>
+        </div>
 
         {data.submission.review_notes && (
-          <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-700">
-            <p className="text-xs font-semibold ui-text-muted">Catatan Tim Tenant Relations</p>
-            <p className="mt-1 rounded-md bg-slate-50 p-3 text-sm leading-relaxed text-slate-700 dark:bg-slate-800/60 dark:text-slate-200">
-              {data.submission.review_notes}
-            </p>
-          </div>
+          <>
+            <div className="doc-perf" />
+            <div className="px-7 py-4">
+              <p className="doc-plate-no">Catatan Tim Tenant Relations</p>
+              <p className="mt-1.5 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-3 text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+                {data.submission.review_notes}
+              </p>
+            </div>
+          </>
         )}
 
         {/* Materi: tiga kanal. 'none' berasal dari pengajuan cetak yang formnya
@@ -210,14 +228,15 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
          * kini dinyatakan sebagai baris informasi, bukan tautan. Kanal
          * 'link'/'upload' yang URL-nya kosong diperlakukan sama: baris
          * informasi, bukan anchor mati (kunci dari ADA/TIDAKNYA URL). */}
-        <div className="border-t border-slate-100 px-5 py-4 dark:border-slate-700">
-          <p className="text-xs font-semibold ui-text-muted">
+        <div className="doc-perf" />
+        <div className="px-7 py-4">
+          <p className="doc-plate-no">
             {data.submission.source_type === 'link'
               ? 'Tautan materi'
               : data.submission.source_type === 'upload' ? 'Berkas materi' : 'Materi'}
           </p>
           {data.submission.source_type === 'none' ? (
-            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+            <p className="mt-1.5 text-sm text-slate-700 dark:text-slate-200">
               Materi menyusul setelah pengajuan disetujui.
             </p>
           ) : materiUrl ? (
@@ -225,7 +244,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
               href={materiUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-1 inline-flex items-center gap-1.5 break-all text-sm font-medium text-brand-primary-700 dark:text-brand-primary-300"
+              className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 break-all text-sm font-medium text-brand-primary-700 dark:text-brand-primary-300"
             >
               <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
               {data.submission.source_type === 'link'
@@ -233,36 +252,41 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
                 : (data.submission.file_name || 'Lihat berkas')}
             </a>
           ) : (
-            <p className="mt-1 text-sm text-slate-700 dark:text-slate-200">
+            <p className="mt-1.5 text-sm text-slate-700 dark:text-slate-200">
               {data.submission.source_type === 'link'
                 ? 'Tautan materi belum tersedia.'
                 : 'Berkas materi belum tersedia.'}
             </p>
           )}
         </div>
-      </div>
+      </article>
 
-      {/* Pemasangan (FR-047) */}
+      {/* Pemasangan (FR-047) - lembar terpisah, data sebagai titik penghubung. */}
       {data.installation && (
-        <div className="ui-card p-5">
-          <h2 className="ui-title-card text-slate-900 dark:text-white">Informasi Pemasangan</h2>
-          <dl className="mt-3 space-y-2 text-sm">
-            <div className="flex gap-2">
-              <dt className="w-28 shrink-0 font-semibold ui-text-muted">Lokasi</dt>
-              <dd className="text-slate-900 dark:text-white">{data.installation.media_location}</dd>
+        <div className="doc-sheet p-5">
+          <h2 className="ui-title-card text-slate-900">Informasi Pemasangan</h2>
+          <dl className="doc-rows mt-3">
+            <div className="doc-row">
+              <dt>Lokasi</dt>
+              <span className="doc-leader" aria-hidden="true" />
+              <dd>{data.installation.media_location}</dd>
             </div>
             {(data.installation.start_date || data.installation.end_date) && (
-              <div className="flex gap-2">
-                <dt className="w-28 shrink-0 font-semibold ui-text-muted">Periode</dt>
-                <dd className="text-slate-900 dark:text-white">
+              <div className="doc-row">
+                <dt>Periode</dt>
+                <span className="doc-leader" aria-hidden="true" />
+                <dd>
                   {data.installation.start_date || '-'} s/d {data.installation.end_date || '-'}
                 </dd>
               </div>
             )}
             {data.installation.notes && (
-              <div className="flex gap-2">
-                <dt className="w-28 shrink-0 font-semibold ui-text-muted">Catatan</dt>
-                <dd className="text-slate-900 dark:text-white">{data.installation.notes}</dd>
+              <div className="doc-row items-start">
+                <dt className="pt-0.5">Catatan</dt>
+                <span className="doc-leader mt-2.5" aria-hidden="true" />
+                <dd className="text-left font-sans text-xs leading-snug font-normal">
+                  {data.installation.notes}
+                </dd>
               </div>
             )}
             {/* Bukti tayang (FR-047): DUA kanal - tautan dan berkas unggahan
@@ -270,9 +294,10 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
              * hasil unggah tidak pernah terlihat tenant. Baris hanya muncul bila
              * kanalnya benar-benar berisi. */}
             {installationProofViews(data.installation).map((p) => (
-              <div key={p.kind} className="flex gap-2">
-                <dt className="w-28 shrink-0 font-semibold ui-text-muted">{p.label}</dt>
-                <dd className="min-w-0">
+              <div key={p.kind} className="doc-row items-start">
+                <dt className="pt-0.5">{p.label}</dt>
+                <span className="doc-leader mt-2.5" aria-hidden="true" />
+                <dd className="min-w-0 text-left">
                   <a
                     href={p.url}
                     target="_blank"
@@ -301,8 +326,8 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
        * gerbang ini, form tampil di perangkat yang tidak berhak lalu kiriman
        * ditolak server. Penegakan sebenarnya tetap di server. */}
       {data.submission.status === 'perlu_revisi' && data.is_owner !== true && (
-        <div className="ui-card p-5">
-          <h2 className="ui-title-card text-slate-900 dark:text-white">Materi Revisi</h2>
+        <div className="doc-sheet p-5">
+          <h2 className="ui-title-card text-slate-900">Materi Revisi</h2>
           <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
             Materi ini perlu diperbaiki, tetapi revisi hanya dapat dikirim dari perangkat yang
             mengirim pengajuan. Buka halaman ini di perangkat tersebut, atau hubungi Tim Tenant
@@ -311,8 +336,8 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
         </div>
       )}
       {data.submission.status === 'perlu_revisi' && data.is_owner === true && (
-        <div className="ui-card p-5">
-          <h2 className="ui-title-card text-slate-900 dark:text-white">Kirim Materi Revisi</h2>
+        <div className="doc-sheet p-5">
+          <h2 className="ui-title-card text-slate-900">Kirim Materi Revisi</h2>
           <p className="mt-2 text-xs ui-text-muted">
             Perbaiki materi sesuai catatan di atas, lalu kirim ulang. Materi lama tetap tersimpan
             sebagai versi sebelumnya.
@@ -384,7 +409,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
                 />
               </label>
               {revFile && (
-                <p className="mt-1.5 text-xs ui-text-muted">
+                <p className="doc-num mt-1.5 text-xs ui-text-muted">
                   {(revFile.size / (1024 * 1024)).toFixed(1)} MB
                 </p>
               )}
@@ -416,7 +441,7 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
             type="button"
             onClick={handleRevision}
             disabled={saving}
-            className="ui-btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
+            className="ui-btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold transition"
           >
             {saving ? (
               <>
@@ -440,65 +465,78 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
         </p>
       )}
 
-      {/* Riwayat status (FR-020) */}
-      <div className="ui-card p-5">
-        <h2 className="ui-title-card text-slate-900 dark:text-white">Riwayat Status</h2>
-        <ol className="mt-3 space-y-3">
-          {data.history.map((h) => (
-            <li key={h.id} className="flex items-start gap-3">
-              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-900 dark:text-white">
-                  {STATUS_LABELS[h.to_status] ?? h.to_status}
-                </p>
-                <p className="text-xs ui-text-muted">
-                  {formatDateTime(h.created_at)} · {actorLabel(h.actor_type, h.actor_name)}
-                </p>
+      {/* Riwayat status (FR-020) - baris bertanggal, dipisahkan garis. */}
+      <div className="doc-sheet">
+        <CropMarks />
+        <div className="px-7 py-4">
+          <div className="flex items-baseline gap-4 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+            <h2 className="text-xl font-extrabold uppercase tracking-wide text-slate-900">Riwayat Status</h2>
+            <span className="doc-plate-no ml-auto">{data.history.length} baris</span>
+          </div>
+          <ol className="mt-3">
+            {data.history.map((h) => (
+              <li key={h.id} className="border-b border-[color:var(--rule-color)] py-3 last:border-b-0 last:pb-0">
+                <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
+                  <Stamp status={h.to_status} />
+                  <span className="doc-num text-xs font-semibold text-slate-700 dark:text-slate-200">
+                    {formatDateTime(h.created_at)}
+                  </span>
+                  <span className="text-xs ui-text-muted">{actorLabel(h.actor_type, h.actor_name)}</span>
+                </div>
                 {h.comment && (
-                  <p className="mt-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{h.comment}</p>
+                  <p className="mt-1.5 text-xs leading-relaxed text-slate-600 dark:text-slate-300">{h.comment}</p>
                 )}
-              </div>
-            </li>
-          ))}
-        </ol>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
 
-      {/* Riwayat versi materi (FR-030) */}
+      {/* Riwayat versi materi (FR-030) - daftar bergaris, bukan kartu bersarang. */}
       {data.files.length > 0 && (
-        <div className="ui-card p-5">
-          <h2 className="ui-title-card text-slate-900 dark:text-white">Riwayat Versi Materi</h2>
-          <ul className="mt-3 space-y-2">
-            {data.files.map((f) => {
-              // Sama seperti blok materi: kanal versi ditentukan dari
-              // ADA/TIDAKNYA URL, agar versi tanpa URL tidak menjadi tautan
-              // mati `href=""`.
-              const versiUrl = String(f.source_type === 'link' ? f.link_url : f.file_url).trim();
-              return (
-                <li key={f.id} className="flex items-start justify-between gap-3 rounded-md bg-slate-50 p-3 text-xs dark:bg-slate-800/60">
-                  <div className="min-w-0">
-                    <p className="font-semibold text-slate-800 dark:text-slate-100">
-                      Versi {f.version}{f.version === 1 ? ' (awal)' : ''}
-                    </p>
-                    <p className="mt-0.5 ui-text-muted">{formatDateTime(f.created_at)}</p>
-                    {f.notes && <p className="mt-0.5 ui-text-muted">{f.notes}</p>}
-                  </div>
-                  {versiUrl ? (
-                    <a
-                      href={versiUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
-                    >
-                      <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                      Buka
-                    </a>
-                  ) : (
-                    <span className="shrink-0 ui-text-muted">Tautan belum tersedia</span>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
+        <div className="doc-sheet">
+          <CropMarks />
+          <div className="px-7 py-4">
+            <div className="flex items-baseline gap-4 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+              <h2 className="text-xl font-extrabold uppercase tracking-wide text-slate-900">Riwayat Versi Materi</h2>
+              <span className="doc-plate-no ml-auto">{data.files.length} versi</span>
+            </div>
+            <ul className="mt-3">
+              {data.files.map((f) => {
+                // Sama seperti blok materi: kanal versi ditentukan dari
+                // ADA/TIDAKNYA URL, agar versi tanpa URL tidak menjadi tautan
+                // mati `href=""`.
+                const versiUrl = String(f.source_type === 'link' ? f.link_url : f.file_url).trim();
+                return (
+                  <li
+                    key={f.id}
+                    className="flex items-start justify-between gap-3 border-b border-[color:var(--rule-color)] py-3 text-xs last:border-b-0 last:pb-0"
+                  >
+                    <div className="min-w-0">
+                      <p className="doc-num font-semibold text-slate-800 dark:text-slate-100">
+                        Versi {f.version}{f.version === 1 ? ' (awal)' : ''}
+                      </p>
+                      <p className="mt-0.5 ui-text-muted">{formatDateTime(f.created_at)}</p>
+                      {f.notes && <p className="mt-0.5 ui-text-muted">{f.notes}</p>}
+                    </div>
+                    {versiUrl ? (
+                      <a
+                        href={versiUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                        Buka
+                      </a>
+                    ) : (
+                      <span className="shrink-0 ui-text-muted">Tautan belum tersedia</span>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
         </div>
       )}
 

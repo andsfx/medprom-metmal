@@ -39,7 +39,11 @@
   /* Tinta */
   --ink-primary: #101010;
   --ink-secondary: #4b4b48;
-  --ink-muted: #7a7a74;
+  /* Muted dinaikkan ke #66665f: pada kertas kerja (#f2f2ef) dan lembar
+   * (#fbfbf9), nilai sebelumnya (#7a7a74) hanya mencapai 3,85:1 dan 4,17:1 -
+   * di bawah ambang AA 4,5:1 untuk teks normal, padahal kelas ini dipakai
+   * luas untuk helper, metadata, dan cap. Nilai ini 5,16:1 / 5,58:1. */
+  --ink-muted: #66665f;
   --ink-invert: #fbfbf9;
   --ink-invert-2: #b9b9b3;
 
@@ -122,9 +126,12 @@
   --color-slate-100: #f0f0ec;
   --color-slate-200: #e2e2db;
   --color-slate-300: #c9c9c0;
-  --color-slate-400: #a3a39a;
-  --color-slate-500: #7a7a74;
-  --color-slate-600: #5f5f58;
+  /* 400/500 disamakan ke nilai yang lolos AA 4,5:1 di ketiga permukaan
+   * (lembar, meja kerja, blok tenang). Keduanya dipakai untuk teks kecil
+   * (nomor langkah, penanda urutan), jadi keduanya harus terbaca. */
+  --color-slate-400: #6a6a64;
+  --color-slate-500: #66665f;
+  --color-slate-600: #5a5a54;
   --color-slate-700: #454540;
   --color-slate-800: #2a2a26;
   --color-slate-900: #101010;
@@ -134,9 +141,9 @@
   --color-stone-100: #f0f0ec;
   --color-stone-200: #e2e2db;
   --color-stone-300: #c9c9c0;
-  --color-stone-400: #a3a39a;
-  --color-stone-500: #7a7a74;
-  --color-stone-600: #5f5f58;
+  --color-stone-400: #6a6a64;
+  --color-stone-500: #66665f;
+  --color-stone-600: #5a5a54;
   --color-stone-700: #454540;
   --color-stone-800: #2a2a26;
   --color-stone-900: #101010;
@@ -144,6 +151,59 @@
   /* Font untuk utilitas Tailwind (font-sans / font-mono). */
   --font-sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Skala semantik: MEMETAKAN ULANG red/amber/green/emerald ke ramp stempel
+   * dunia ini. Komponen lama memakai ratusan utilitas `text-red-600`,
+   * `bg-amber-50`, `text-green-800` untuk galat/peringatan/sukses; tanpa
+   * pemetaan ini warnanya melawan palet kertas-tinta. Sekarang ketiganya
+   * diderivasi dari warna stempel yang sama dengan `.doc-stamp`. */
+  --color-red-50: #fdf3f2;
+  --color-red-100: #fae7e5;
+  --color-red-200: #f3c9c5;
+  --color-red-300: #e9a19b;
+  --color-red-400: #d96b62;
+  --color-red-500: #c94338;
+  --color-red-600: #b3261e;
+  --color-red-700: #941c16;
+  --color-red-800: #7a1913;
+  --color-red-900: #661712;
+  --color-red-950: #3a0b08;
+
+  --color-amber-50: #fdf8ef;
+  --color-amber-100: #f8eedd;
+  --color-amber-200: #f0d8b0;
+  --color-amber-300: #e4bb78;
+  --color-amber-400: #d19a41;
+  --color-amber-500: #b87a10;
+  --color-amber-600: #a15c00;
+  --color-amber-700: #834a02;
+  --color-amber-800: #6b3d06;
+  --color-amber-900: #58330a;
+  --color-amber-950: #331c03;
+
+  --color-green-50: #f0f9f4;
+  --color-green-100: #e3f1e9;
+  --color-green-200: #bfe0cd;
+  --color-green-300: #8fc9ab;
+  --color-green-400: #55ab82;
+  --color-green-500: #2a8c60;
+  --color-green-600: #0d6b3f;
+  --color-green-700: #0a5633;
+  --color-green-800: #0a462b;
+  --color-green-900: #093a25;
+  --color-green-950: #032015;
+
+  --color-emerald-50: #f0f9f4;
+  --color-emerald-100: #e3f1e9;
+  --color-emerald-200: #bfe0cd;
+  --color-emerald-300: #8fc9ab;
+  --color-emerald-400: #55ab82;
+  --color-emerald-500: #2a8c60;
+  --color-emerald-600: #0d6b3f;
+  --color-emerald-700: #0a5633;
+  --color-emerald-800: #0a462b;
+  --color-emerald-900: #093a25;
+  --color-emerald-950: #032015;
 
   /* Radius: MEMETAKAN ULANG skala Tailwind ke dokumen. Dunia ini siku
    * (lembar kerja, bukan aplikasi membulat), jadi seluruh utilitas
@@ -168,7 +228,7 @@
 
   --ink-primary: #f2f2ef;
   --ink-secondary: #b9b9b3;
-  --ink-muted: #8e8e88;
+  --ink-muted: #9a9a94;
   --ink-invert: #131312;
   --ink-invert-2: #454540;
 

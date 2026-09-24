@@ -1,41 +1,34 @@
 /**
  * Riwayat pengajuan per perangkat - publik (fingerprint = identitas soft).
  *
- * Baris yang berasal dari satu kirim form cetak membawa `batch_number` dan
- * `batch_token` (hanya endpoint ini yang mengirimkannya; lihat komentar di
- * `server/src/routes/promo.js`). Keduanya ditampilkan supaya tenant yang
- * mengirim beberapa media dalam satu kali kirim bisa mengenali bahwa
- * kartu-kartu itu satu kirim, dan tetap punya jalan kembali ke
- * `/batch/<batch_token>` setelah meninggalkan layar sukses wizard.
+ * Setiap baris dibaca sebagai TIKET PEKERJAAN: nomor job monospace di kepala
+ * tiket, stempel status, tepi perforasi, lalu isi tiket (kiriman batch,
+ * catatan TR, tautan). Baris yang berasal dari satu kirim form cetak membawa
+ * `batch_number` dan `batch_token` (hanya endpoint ini yang mengirimkannya;
+ * lihat komentar di `server/src/routes/promo.js`). Keduanya ditampilkan
+ * supaya tenant yang mengirim beberapa media dalam satu kali kirim bisa
+ * mengenali bahwa tiket-tiket itu satu kiriman, dan tetap punya jalan kembali
+ * ke `/batch/<batch_token>` setelah meninggalkan layar sukses wizard.
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import {
-  CheckCircle2, Clock, ExternalLink, Info, Layers, XCircle, Loader2, Wrench,
-} from 'lucide-react';
+import { ExternalLink, Info, Layers, Loader2 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
+import Stamp from './Stamp';
 import { fetchMySubmissions, normalizeMySubmissions } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
-import { STATUS_LABELS, MY_SUBMISSIONS_PAGE_SIZE } from '../../constants/promo';
+import { MY_SUBMISSIONS_PAGE_SIZE } from '../../constants/promo';
 import type { MySubmissionRow } from '../../types/promo';
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { cls: string; icon: React.ReactNode }> = {
-    draft: { cls: 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300', icon: <Info className="h-3.5 w-3.5" aria-hidden="true" /> },
-    menunggu_review: { cls: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300', icon: <Clock className="h-3.5 w-3.5" aria-hidden="true" /> },
-    perlu_revisi: { cls: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300', icon: <Info className="h-3.5 w-3.5" aria-hidden="true" /> },
-    disetujui: { cls: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> },
-    ditolak: { cls: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300', icon: <XCircle className="h-3.5 w-3.5" aria-hidden="true" /> },
-    siap_dipasang: { cls: 'bg-sky-100 text-sky-800 dark:bg-sky-900/30 dark:text-sky-300', icon: <Wrench className="h-3.5 w-3.5" aria-hidden="true" /> },
-    sudah_dipasang: { cls: 'bg-brand-primary-100 text-brand-primary-800 dark:bg-brand-primary-950/50 dark:text-brand-primary-300', icon: <Wrench className="h-3.5 w-3.5" aria-hidden="true" /> },
-    selesai: { cls: 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200', icon: <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> },
-  };
-  const cfg = map[status] ?? map.menunggu_review!;
+/** Tanda potong di empat sudut lembar - murni dekoratif, jadi aria-hidden. */
+function CropMarks() {
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold ${cfg.cls}`}>
-      {cfg.icon}
-      {STATUS_LABELS[status] ?? status}
-    </span>
+    <>
+      <span className="doc-crop" data-corner="tl" aria-hidden="true" />
+      <span className="doc-crop" data-corner="tr" aria-hidden="true" />
+      <span className="doc-crop" data-corner="bl" aria-hidden="true" />
+      <span className="doc-crop" data-corner="br" aria-hidden="true" />
+    </>
   );
 }
 
@@ -107,21 +100,21 @@ export default function MySubmissionsPage() {
 
         <div>
             {loading && (
-              <div className="flex items-center justify-center gap-3 py-10" role="status">
+              <div className="doc-sheet flex items-center justify-center gap-3 py-10" role="status">
                 <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
                 <span className="text-sm ui-text-muted">Memuat riwayat…</span>
               </div>
             )}
 
             {!loading && loadError && (
-              <div className="ui-alert p-5" role="alert">
+              <div className="doc-alert p-5" role="alert">
                 <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat riwayat pengajuan.</p>
                 <p className="mt-1 text-xs text-red-700 dark:text-red-300">
                   Riwayat Anda tidak hilang. Sambungan ke server sedang bermasalah. Muat ulang
                   halaman atau coba lagi sebentar.
                 </p>
                 <div className="mt-4 flex flex-wrap gap-2">
-                  <Link to="/lacak" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+                  <Link to="/lacak" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold transition">
                     Lacak dengan Nomor
                   </Link>
                 </div>
@@ -129,14 +122,14 @@ export default function MySubmissionsPage() {
             )}
 
             {!loading && !loadError && rows.length === 0 && (
-              <div className="ui-empty-panel px-6 py-10">
+              <div className="doc-sheet px-6 py-10">
                 <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada pengajuan dari perangkat ini.</p>
                 <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda. Pilih media yang sesuai, lalu kirim materinya.</p>
-                <div className="mt-4 flex flex-wrap gap-2">
-                  <Link to="/ajukan" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+                <div className="mt-4 flex flex-wrap justify-center gap-2">
+                  <Link to="/ajukan" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold transition">
                     Ajukan Materi
                   </Link>
-                  <Link to="/lacak" className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+                  <Link to="/lacak" className="ui-btn-secondary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold">
                     Lacak dengan Nomor
                   </Link>
                 </div>
@@ -152,73 +145,82 @@ export default function MySubmissionsPage() {
                     : `Menampilkan ${rows.length} pengajuan terbaru.`}
                 </p>
               )}
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {rows.map((r) => (
-                  <li key={r.id} className="ui-card p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
-                          {r.submission_number}
-                        </p>
-                        <p className="ui-title-card mt-0.5 ui-text-strong">
-                          {r.material_title || r.media_type_slug}
-                        </p>
-                        <p className="mt-0.5 text-xs ui-text-muted">
-                          {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
-                        </p>
+                  <li key={r.id} className="doc-sheet overflow-hidden">
+                    <CropMarks />
+                    {/* Kepala tiket: nomor job monospace + stempel status. */}
+                    <div className="px-7 pt-7 pb-4">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="doc-num text-xs font-bold tracking-wide text-slate-900">
+                            {r.submission_number}
+                          </p>
+                          <p className="ui-title-card mt-0.5 ui-text-strong">
+                            {r.material_title || r.media_type_slug}
+                          </p>
+                          <p className="doc-num mt-0.5 text-xs ui-text-muted">
+                            {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+                          </p>
+                        </div>
+                        <Stamp status={r.status} className="shrink-0" />
                       </div>
-                      <StatusBadge status={r.status} />
                     </div>
-                    {r.batch_number && (
-                      <div className="mt-2.5 rounded-md border border-brand-primary-200 bg-brand-primary-50 p-2.5 dark:border-brand-primary-800 dark:bg-brand-primary-950/40">
-                        <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-brand-primary-800 dark:text-brand-primary-200">
-                          <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                          <span>Nomor batch:</span>
-                          <span className="font-mono font-bold tracking-wide">{r.batch_number}</span>
+
+                    <div className="doc-perf" />
+
+                    <div className="px-7 py-4">
+                      {r.batch_number && (
+                        <div className="border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-2.5">
+                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-700 dark:text-slate-200">
+                            <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                            <span>Nomor batch:</span>
+                            <span className="doc-num font-bold tracking-wide">{r.batch_number}</span>
+                          </p>
+                          <p className="mt-0.5 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
+                            {typeof r.batch_item_count === 'number' && r.batch_item_count > 1
+                              ? `Pengajuan ini bagian dari satu kirim berisi beberapa media (${r.batch_item_count} media dalam kiriman ini).`
+                              : typeof r.batch_item_count === 'number' && r.batch_item_count === 1
+                                ? 'Pengajuan ini bagian dari satu kiriman (1 media dalam kiriman ini).'
+                                : 'Pengajuan ini bagian dari satu kirim berisi beberapa media.'}
+                          </p>
+                          {r.batch_token && (
+                            <Link
+                              to={`/batch/${r.batch_token}`}
+                              className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                            >
+                              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                              Lihat status batch
+                            </Link>
+                          )}
+                        </div>
+                      )}
+                      {r.review_notes && (
+                        <p className="mt-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                          <span className="font-semibold">Catatan TR: </span>{r.review_notes}
                         </p>
-                        <p className="mt-0.5 text-xs leading-relaxed text-brand-primary-800 dark:text-brand-primary-200">
-                          {typeof r.batch_item_count === 'number' && r.batch_item_count > 1
-                            ? `Pengajuan ini bagian dari satu kirim berisi beberapa media (${r.batch_item_count} media dalam kiriman ini).`
-                            : typeof r.batch_item_count === 'number' && r.batch_item_count === 1
-                              ? 'Pengajuan ini bagian dari satu kiriman (1 media dalam kiriman ini).'
-                              : 'Pengajuan ini bagian dari satu kirim berisi beberapa media.'}
-                        </p>
-                        {r.batch_token && (
-                          <Link
-                            to={`/batch/${r.batch_token}`}
-                            className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                      )}
+                      <div className="mt-3 flex flex-wrap items-center gap-3">
+                        {(r.source_type === 'link' ? r.link_url : r.file_url) && (
+                          <a
+                            href={r.source_type === 'link' ? r.link_url : r.file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
                           >
                             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                            Lihat status batch
+                            {r.source_type === 'link' ? 'Buka tautan materi' : 'Lihat file materi'}
+                          </a>
+                        )}
+                        {r.status_token && (
+                          <Link
+                            to={`/status/${r.status_token}`}
+                            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                          >
+                            Lihat status & kirim revisi
                           </Link>
                         )}
                       </div>
-                    )}
-                    {r.review_notes && (
-                      <p className="mt-3 rounded-md bg-slate-50 p-2.5 text-xs leading-relaxed text-slate-600 dark:bg-slate-800/60 dark:text-slate-300">
-                        <span className="font-semibold">Catatan TR: </span>{r.review_notes}
-                      </p>
-                    )}
-                    <div className="mt-3 flex flex-wrap items-center gap-3">
-                      {(r.source_type === 'link' ? r.link_url : r.file_url) && (
-                        <a
-                          href={r.source_type === 'link' ? r.link_url : r.file_url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-                          {r.source_type === 'link' ? 'Buka tautan materi' : 'Lihat file materi'}
-                        </a>
-                      )}
-                      {r.status_token && (
-                        <Link
-                          to={`/status/${r.status_token}`}
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
-                        >
-                          Lihat status & kirim revisi
-                        </Link>
-                      )}
                     </div>
                   </li>
                 ))}
@@ -229,7 +231,7 @@ export default function MySubmissionsPage() {
                     type="button"
                     onClick={() => { void loadMore(); }}
                     disabled={loadingMore}
-                    className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 transition disabled:opacity-50 dark:text-slate-200"
+                    className="ui-btn-secondary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold transition disabled:opacity-50"
                   >
                     {loadingMore && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
                     {loadingMore ? 'Memuat…' : 'Muat lagi'}

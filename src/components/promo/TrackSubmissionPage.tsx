@@ -145,18 +145,27 @@ export default function TrackSubmissionPage() {
   return (
     <AppShell title="Lacak Pengajuan">
       <div className="mx-auto max-w-2xl px-4 py-5">
-        <div className="ui-card p-5">
-          <h2 className="ui-title-card text-slate-900 dark:text-white">Lacak dengan Nomor Pengajuan atau Batch</h2>
-          <p className="mt-2 text-xs ui-text-muted">
-            Masukkan nomor yang Anda terima setelah mengirim materi. Formatnya seperti
-            <span className="font-mono font-semibold"> MP-260918-A7K2QX</span> untuk pengajuan satu media, atau
-            <span className="font-mono font-semibold"> MPB-260918-A7K2QX</span> untuk batch media cetak.
-            Tidak perlu akun.
-          </p>
+        <div className="doc-sheet overflow-hidden">
+          <span className="doc-crop" data-corner="tl" aria-hidden="true" />
+          <span className="doc-crop" data-corner="tr" aria-hidden="true" />
+          <span className="doc-crop" data-corner="bl" aria-hidden="true" />
+          <span className="doc-crop" data-corner="br" aria-hidden="true" />
+          <div className="px-7 pt-7 pb-4">
+            <span className="doc-plate-no">Loket pelacakan</span>
+            <h2 className="ui-title-card mt-1 text-slate-900">Lacak dengan Nomor Pengajuan atau Batch</h2>
+            <p className="mt-2 text-xs ui-text-muted">
+              Masukkan nomor yang Anda terima setelah mengirim materi. Formatnya seperti
+              <span className="doc-num font-semibold"> MP-260918-A7K2QX</span> untuk pengajuan satu media, atau
+              <span className="doc-num font-semibold"> MPB-260918-A7K2QX</span> untuk batch media cetak.
+              Tidak perlu akun.
+            </p>
+          </div>
+
+          <div className="doc-perf" />
 
           <form
             onSubmit={(e) => { e.preventDefault(); void search(number, captchaToken); }}
-            className="mt-4"
+            className="px-7 py-4"
           >
             <label htmlFor="track-number" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
               Nomor Pengajuan
@@ -193,7 +202,7 @@ export default function TrackSubmissionPage() {
             <button
               type="submit"
               disabled={loading || captchaBlocked}
-              className="ui-btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
+              className="ui-btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold transition"
             >
               {loading ? (
                 <>
@@ -217,7 +226,8 @@ export default function TrackSubmissionPage() {
             )}
           </form>
 
-          <p className="mt-3 text-xs ui-text-muted">
+          <div className="doc-perf" />
+          <p className="px-7 py-3 text-xs ui-text-muted">
             Nomor juga tersimpan di{' '}
             <Link to="/riwayat" className="font-semibold text-brand-primary-700 dark:text-brand-primary-300">
               Riwayat

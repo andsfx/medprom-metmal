@@ -4,6 +4,21 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Diubah
+- **Redesign UI/UX menyeluruh: dunia "Lembar Spesifikasi & Tiket Pekerjaan".**
+  Seluruh permukaan (landing, wizard digital + cetak, status/batch, lacak,
+  riwayat, login, konsol staf) memakai dunia visual baru: kertas kerja
+  `#f2f2ef` + lembar `#fbfbf9`, tinta `#101010`, satu warna proses `#1440d6`,
+  warna stempel untuk keadaan, dan perabot dokumen (tanda potong, garis
+  dimensi, nomor plate, tabel titik penghubung, stempel, perforasi). Tipografi
+  Archivo (kerja + display) + Spline Sans Mono (data/angka). Tanpa bayangan dan
+  tanpa blur: kedalaman dari garis dan kecerahan permukaan. Radius dipetakan
+  ke 2-6px (siku). Skala Tailwind `slate`/`stone` dan `red`/`amber`/`green`/
+  `emerald` dipetakan ulang di `@theme` ke palet ini, sehingga komponen lama
+  ikut berubah tanpa disentuh. Komponen baru `Stamp.tsx` menjadi satu sumber
+  stempel status. Kontras `--ink-muted` dinaikkan agar lolos AA. Rincian dan
+  bukti verifikasi ada di `docs/PLAN_2026-09-24_19-50.md`.
+
 ### Operasional
 - **Deploy produksi 2026-09-24 (VPS + Vercel).** Produksi sebelumnya
   menjalankan kode `f4effbe` di atas DB yang belum pernah di-migrate untuk

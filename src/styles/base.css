@@ -1,4 +1,5 @@
-/* Base styles: arah "App Produk" (Geist memimpin, Fraunces aksen display). */
+/* Base styles: arah "Lembar Spesifikasi & Tiket Pekerjaan"
+ * (Archivo memimpin kerja & display; Spline Sans Mono memegang data). */
 
 /* Jaring pengaman anti-scroll-horizontal. `clip` (bukan `hidden`) dipakai
  * supaya `position: sticky`/`fixed` pada keturunan tetap bekerja: `hidden`
@@ -920,17 +921,19 @@ summary:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
-/* Blok perhitungan: subtotal / PPN / total pada satu bidang. */
+/* Blok perhitungan: subtotal / PPN / total pada satu bidang.
+ * Dipisah dari isi sekitarnya oleh GARIS TINTA di atas dan bawah (bukan
+ * border kiri berwarna - pola "side-tab" itu justru tell yang dilarang). */
 .doc-calc {
   display: flex;
   flex-wrap: wrap;
   gap: 1.75rem;
   align-items: flex-end;
   padding: 1rem 1.125rem;
-  border: var(--rule-2);
-  border-left: 3px solid var(--process);
-  background: var(--surface-card);
-  border-radius: var(--radius-card);
+  border-top: 1px solid var(--rule-ink);
+  border-bottom: 1px solid var(--rule-ink);
+  background: var(--surface-offset);
+  border-radius: 0;
 }
 
 .doc-calc .doc-calc-k {
@@ -953,6 +956,30 @@ summary:focus-visible,
 .doc-calc .doc-calc-v[data-emphasis='true'] {
   color: var(--process);
   font-size: var(--text-screen);
+}
+
+/* Blok peringatan/galat dokumen: BINGKAI PENUH, bukan garis kiri berwarna
+ * (pola "side-tab" adalah tell yang dilarang detector dan craft floor).
+ * Nada ditentukan oleh data-tone, sama seperti .doc-stamp. */
+.doc-alert {
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-card);
+  background: var(--surface-offset);
+}
+
+.doc-alert[data-tone='no'] {
+  border-color: color-mix(in srgb, var(--stamp-no) 45%, transparent);
+  background: var(--stamp-no-soft);
+}
+
+.doc-alert[data-tone='rev'] {
+  border-color: color-mix(in srgb, var(--stamp-rev) 45%, transparent);
+  background: var(--stamp-rev-soft);
+}
+
+.doc-alert[data-tone='ok'] {
+  border-color: color-mix(in srgb, var(--stamp-ok) 45%, transparent);
+  background: var(--stamp-ok-soft);
 }
 
 /* Permukaan browser yang ikut desain: seleksi, caret, scrollbar, dan

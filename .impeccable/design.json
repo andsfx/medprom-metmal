@@ -1,0 +1,99 @@
+{
+  "name": "Lembar Spesifikasi & Tiket Pekerjaan",
+  "product": "medprom-metmal",
+  "version": 1,
+  "writtenAt": "2026-09-24",
+  "replaces": "App Produk (Fraunces + Geist, aksen tosca, kartu membulat berbayang)",
+  "mode": "operate",
+  "platform": "web",
+  "fonts": {
+    "display": { "family": "Archivo", "weights": [400, 500, 600, 700, 800] },
+    "body": { "family": "Archivo", "weights": [400, 500, 600, 700, 800] },
+    "mono": { "family": "Spline Sans Mono", "weights": [400, 500, 600, 700] }
+  },
+  "colorStrategy": "restrained",
+  "colors": {
+    "surfacePage": "#f2f2ef",
+    "surfaceOffset": "#ebebe7",
+    "surfaceCard": "#fbfbf9",
+    "surfaceHover": "#f0f0ec",
+    "inkPrimary": "#101010",
+    "inkSecondary": "#4b4b48",
+    "inkMuted": "#66665f",
+    "ruleColor": "#d3d3cc",
+    "ruleStrong": "#b4b4ac",
+    "ruleInk": "#101010",
+    "process": "#1440d6",
+    "processStrong": "#0f33ad",
+    "processSoft": "#e7ebfb",
+    "stampOk": "#0d6b3f",
+    "stampRev": "#a15c00",
+    "stampNo": "#b3261e"
+  },
+  "contrast": {
+    "standard": "WCAG AA",
+    "measured": {
+      "inkPrimary/surfaceCard": 18.37,
+      "inkSecondary/surfaceCard": 8.45,
+      "inkMuted/surfaceCard": 5.58,
+      "inkMuted/surfacePage": 5.16,
+      "process/surfaceCard": 7.41,
+      "stampOk/surfaceCard": 6.35,
+      "stampRev/surfaceCard": 5.01,
+      "stampNo/surfaceCard": 6.31,
+      "white/process": 7.68
+    }
+  },
+  "radius": {
+    "card": "3px",
+    "control": "3px",
+    "chip": "2px",
+    "sheet": "6px",
+    "tailwindRemap": { "md": "3px", "lg": "4px", "xl": "5px", "2xl": "6px", "3xl": "8px" }
+  },
+  "elevation": {
+    "policy": "none",
+    "note": "Kedalaman dari garis dan kecerahan permukaan. Token --elevation-* bernilai none hanya untuk kompatibilitas pemanggil lama."
+  },
+  "typeScale": {
+    "sheet": "32px",
+    "screen": "24px",
+    "section": "20px",
+    "title": "18px",
+    "body": "16px",
+    "dense": "14px",
+    "meta": "12px"
+  },
+  "furniture": [
+    "doc-sheet",
+    "doc-crop",
+    "doc-plate-no",
+    "doc-dim",
+    "doc-rows",
+    "doc-row",
+    "doc-leader",
+    "doc-perf",
+    "doc-stamp",
+    "doc-tag",
+    "doc-num",
+    "doc-calc",
+    "doc-alert",
+    "doc-link"
+  ],
+  "components": {
+    "stamp": "src/components/promo/Stamp.tsx"
+  },
+  "banned": [
+    "shadow-*",
+    "backdrop-blur",
+    "border-left/right berwarna >1px (side-tab)",
+    "gradient text",
+    "eyebrow/kicker di atas judul",
+    "pill untuk kontrol besar",
+    "emoji sebagai ikon"
+  ],
+  "darkMode": {
+    "status": "inactive",
+    "note": "Token gelap ada di theme.css (.dark) tetapi tidak ada kode yang memasang kelas .dark. Pemetaan @theme bersifat statis sehingga utilitas slate-* tidak ikut gelap; menyalakan menuntut audit tersendiri."
+  }
+}

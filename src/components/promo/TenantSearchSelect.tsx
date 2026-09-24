@@ -137,7 +137,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
   return (
     <div ref={containerRef}>
       {manualMode && (
-        <p className="mb-2 flex items-start gap-1.5 rounded-md bg-amber-50 px-3 py-2 text-xs leading-relaxed text-amber-800 dark:bg-amber-900/20 dark:text-amber-300" role="status">
+        <p className="mb-2 flex items-start gap-1.5 border border-[color:var(--stamp-rev)] bg-[var(--stamp-rev-soft)] px-3 py-2 text-xs leading-relaxed text-[color:var(--stamp-rev)]" role="status">
           <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
           Daftar tenant sedang tidak dapat dimuat. Ketik nama tenant Anda secara manual (sesuai papan nama).
         </p>
@@ -179,7 +179,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
             onClick={clearSelection}
             disabled={disabled}
             aria-label="Hapus pilihan tenant"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 rounded-full p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -194,25 +194,30 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
           id={listboxId}
           role="listbox"
           aria-label="Daftar tenant"
-          className="ui-card absolute z-30 mt-1 max-h-64 w-full overflow-auto p-1 text-sm shadow-lg"
+          className="doc-sheet absolute z-30 mt-1 max-h-64 w-full overflow-auto py-1 text-sm"
         >
           {loading && tenants.length === 0 && (
             <li className="px-3 py-2 text-slate-500 dark:text-slate-300" role="status">Mencari tenant…</li>
           )}
           {tenants.map((t, i) => (
-            <li key={t.id} role="option" aria-selected={selectedIdRef.current === t.id}>
+            <li
+              key={t.id}
+              role="option"
+              aria-selected={selectedIdRef.current === t.id}
+              className="border-b border-[color:var(--rule-color)] last:border-b-0"
+            >
               <button
                 type="button"
                 onMouseEnter={() => setHighlighted(i)}
                 onClick={() => commitTenant(t)}
-                className={`flex w-full items-center justify-between gap-2 rounded-md px-3 py-2 text-left transition ${
+                className={`flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-left transition ${
                   highlighted === i ? 'bg-brand-primary-50 dark:bg-brand-primary-950/40' : ''
                 }`}
               >
                 <span className="min-w-0">
                   <span className="block truncate font-medium text-slate-900 dark:text-slate-100">{t.name}</span>
                   {(t.floor || t.lot) && (
-                    <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                    <span className="doc-num block truncate text-xs text-slate-500 dark:text-slate-400">
                       {[t.floor, t.lot].filter(Boolean).join(' · ')}
                     </span>
                   )}

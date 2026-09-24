@@ -14,6 +14,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
 import { useConfirmDialog } from '../ConfirmDialog';
 import Sheet from '../ui/Sheet';
+import Stamp from '../promo/Stamp';
 import {
   STATUS_LABELS, STATUS_ORDER, CATEGORY_LABELS, CHANNEL_LABELS, APPLICANT_TYPE_LABELS,
 } from '../../constants/promo';
@@ -56,25 +57,6 @@ const PESAN_CATATAN_WAJIB: Record<string, string> = {
   perlu_revisi: 'Catatan wajib diisi saat meminta revisi materi.',
   ditolak: 'Alasan wajib diisi saat menolak materi.',
 };
-
-function StatusBadge({ status }: { status: string }) {
-  const cls: Record<string, string> = {
-    menunggu_review: 'bg-stone-100 text-stone-700',
-    sedang_ditinjau: 'bg-blue-50 text-blue-700',
-    disetujui: 'bg-green-50 text-green-700',
-    siap_dipasang: 'bg-brand-primary-50 text-brand-primary-700',
-    sedang_dipasang: 'bg-brand-primary-50 text-brand-primary-700 ring-1 ring-inset ring-brand-primary-500/30',
-    sudah_dipasang: 'bg-brand-primary-600 text-white',
-    ditolak: 'bg-red-50 text-red-700',
-    selesai: 'bg-stone-100 text-stone-600',
-    perlu_revisi: 'bg-amber-50 text-amber-700',
-  };
-  return (
-    <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${cls[status] ?? 'bg-stone-100 text-stone-700'}`}>
-      {STATUS_LABELS[status] ?? status}
-    </span>
-  );
-}
 
 /**
  * Format rupiah ringkas untuk snapshot harga pengajuan cetak.
@@ -348,28 +330,33 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       setExporting(false);
     }
   }
-
   return (
+
     <div>
-      {/* Ringkasan jumlah per status */}
-      <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-4">
+      {/* Ringkasan jumlah per status - blok angka dokumen, dipisah garis
+       * (bukan kartu membulat berbayang). Angka mono besar, label kapital. */}
+      <div className="grid grid-cols-2 border-t-2 border-[color:var(--rule-ink)] sm:grid-cols-4 lg:grid-cols-7">
         {STATUS_ORDER.map((s) => (
           <button
             key={s}
             type="button"
             onClick={() => { setStatusFilter(statusFilter === s ? '' : s); setPage(1); }}
             aria-pressed={statusFilter === s}
-            className={`ui-admin-card text-left p-3 transition ${
-              statusFilter === s ? 'ring-2 ring-brand-primary-600' : ''
-            }`}
             aria-label={`${STATUS_LABELS[s]} ${summary[s] ?? 0}`}
+            className={`border-b border-r border-[color:var(--rule-color)] px-3 py-2.5 text-left transition ${
+              statusFilter === s ? 'bg-[var(--process-soft)]' : 'hover:bg-[var(--surface-hover)]'
+            }`}
           >
-            <p className="ui-number text-xl tabular-nums">{summary[s] ?? 0}</p>
-            <p className="mt-0.5 text-xs font-medium text-slate-500">{STATUS_LABELS[s]}</p>
+            <span className={`doc-num block text-2xl font-bold leading-none ${statusFilter === s ? 'text-[color:var(--process)]' : 'text-slate-900'}`}>
+              {summary[s] ?? 0}
+            </span>
+            <span className="mt-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+              {STATUS_LABELS[s]}
+            </span>
           </button>
         ))}
       </div>
-      <p className="mb-4 text-xs ui-text-muted">Total {summaryTotal} pengajuan tercatat.</p>
+      <p className="mb-4 mt-2 text-xs ui-text-muted">Total {summaryTotal} pengajuan tercatat.</p>
 
       {/* Pengingat periode berakhir - query turunan (bukan cron/email).
        * Hanya media ber-pajak yang sudah dipasang; muncul bila ada yang
@@ -380,28 +367,28 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
        * (`AdminDashboardPage.test.tsx` "tidak menampilkan panel bila tidak ada
        * pengingat"). Yang ditambahkan hanya pembeda "gagal memuat". */}
       {remindersError && (
-        <section className="ui-admin-card mb-4 border-l-4 border-red-400 p-3" role="alert">
-          <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat pengingat periode berakhir.</p>
-          <p className="mt-1 text-xs text-red-700 dark:text-red-300">Muat ulang halaman untuk mencoba lagi.</p>
+        <section className="mb-4 border border-[color:var(--rule-color)] border-t-2 border-t-[color:var(--stamp-no)] bg-[var(--stamp-no-soft)] p-3" role="alert">
+          <p className="text-sm font-semibold text-red-800">Gagal memuat pengingat periode berakhir.</p>
+          <p className="mt-1 text-xs text-red-700">Muat ulang halaman untuk mencoba lagi.</p>
         </section>
       )}
       {reminders && reminders.items.length > 0 && (
         <section
-          className="ui-admin-card mb-4 border-l-4 border-amber-400 p-3"
+          className="mb-4 border border-[color:var(--rule-color)] border-t-2 border-t-[color:var(--rule-ink)] bg-[var(--surface-card)] p-3"
           aria-labelledby="pengingat-judul"
         >
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 id="pengingat-judul" className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+          <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[color:var(--rule-color)] pb-2">
+            <h2 id="pengingat-judul" className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-900">
               Pengingat periode berakhir
             </h2>
             <p className="text-xs ui-text-muted">
-              {reminders.overdue > 0 && <span className="font-semibold text-red-600 dark:text-red-400">{reminders.overdue} sudah lewat</span>}
+              {reminders.overdue > 0 && <span className="doc-num font-semibold text-red-600">{reminders.overdue} sudah lewat</span>}
               {reminders.overdue > 0 && reminders.due_soon > 0 && ' · '}
-              {reminders.due_soon > 0 && <span>{reminders.due_soon} dalam {reminders.days} hari</span>}
+              {reminders.due_soon > 0 && <span className="doc-num">{reminders.due_soon} dalam {reminders.days} hari</span>}
               {(reminders.belum_terpasang ?? 0) > 0 && (
                 <>
                   {(reminders.overdue > 0 || reminders.due_soon > 0) && ' · '}
-                  <span className="font-semibold text-sky-700 dark:text-sky-300">{reminders.belum_terpasang} belum tercatat terpasang</span>
+                  <span className="doc-num font-semibold text-[color:var(--process)]">{reminders.belum_terpasang} belum tercatat terpasang</span>
                 </>
               )}
             </p>
@@ -421,7 +408,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               // bila tidak (di luar 20 teratas), buka dari baris ringkas.
               const barisDaftar = rows.find((x) => x.id === r.id);
               return (
-                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-[color:var(--rule-color)] pb-1.5 text-xs last:border-b-0 last:pb-0">
                   <span className="min-w-0">
                     <button
                       type="button"
@@ -435,22 +422,22 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         air_end_date: r.air_end_date,
                         created_at: '',
                       } as AdminSubmissionRow))}
-                      className="min-h-11 font-mono font-semibold text-slate-700 underline-offset-2 transition hover:text-brand-primary-700 hover:underline dark:text-slate-200"
+                      className="doc-num min-h-11 font-semibold text-slate-700 underline-offset-2 transition hover:text-[color:var(--process)] hover:underline"
                     >
                       {r.submission_number}
                     </button>
                     <span className="ml-1.5 ui-text-muted">{r.tenant_name} · {r.media_type_slug}</span>
                     {r.category === 'belum_terpasang' && (
-                      <span className="ml-1.5 shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+                      <span className="doc-tag ml-1.5 shrink-0" data-tone="process">
                         belum tercatat terpasang
                       </span>
                     )}
                   </span>
-                  <span className={`shrink-0 font-semibold tabular-nums ${r.days_left !== null && r.days_left < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                  <span className={`doc-num shrink-0 font-semibold ${r.days_left !== null && r.days_left < 0 ? 'text-red-600' : 'text-amber-700'}`}>
                     {r.days_left === null ? r.end_date || '-' : r.days_left < 0 ? `lewat ${Math.abs(r.days_left)} hari` : `${r.days_left} hari lagi`}
                   </span>
                   {wa && (
-                    <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 font-medium text-brand-primary-700 dark:text-brand-primary-300">
+                    <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 font-medium text-[color:var(--process)]">
                       Ingatkan via WhatsApp
                     </a>
                   )}
@@ -464,7 +451,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               onClick={() => setPengingatTerbuka((v) => !v)}
               aria-expanded={pengingatTerbuka}
               aria-controls="pengingat-daftar"
-              className="ui-control mt-2 inline-flex min-h-11 items-center rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+              className="ui-control mt-2 inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-600 transition hover:text-[color:var(--process)]"
             >
               {pengingatTerbuka
                 ? 'Sembunyikan'
@@ -474,27 +461,27 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </section>
       )}
 
-      {/* Filter bar */}
-      <div className="mb-4 flex flex-wrap items-end gap-2">
+      {/* Baris kontrol dokumen: pencarian, filter, jumlah, ekspor. */}
+      <div className="mb-4 flex flex-wrap items-end gap-x-3 gap-y-2 border-y border-[color:var(--rule-color)] py-3">
         <div className="min-w-48 flex-1">
-          <label htmlFor="filter-search" className="mb-1 block text-xs font-semibold ui-text-muted">Cari</label>
+          <label htmlFor="filter-search" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Cari</label>
           <input
             id="filter-search"
             type="search"
             value={search}
             placeholder="Nomor pengajuan, tenant, atau judul materi"
             onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
           />
         </div>
 
         <div>
-          <label htmlFor="filter-status" className="mb-1 block text-xs font-semibold ui-text-muted">Status</label>
+          <label htmlFor="filter-status" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Status</label>
           <select
             id="filter-status"
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }}
-            className="ui-control rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
           >
             {STATUS_OPTIONS.map((s) => (
               <option key={s} value={s}>{s === '' ? 'Semua' : STATUS_LABELS[s]}</option>
@@ -503,12 +490,12 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </div>
 
         <div>
-          <label htmlFor="filter-media" className="mb-1 block text-xs font-semibold ui-text-muted">Media</label>
+          <label htmlFor="filter-media" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Media</label>
           <select
             id="filter-media"
             value={mediaFilter}
             onChange={(e) => { setMediaFilter(e.target.value); setPage(1); }}
-            className="ui-control max-w-48 rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control max-w-48 border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
           >
             <option value="">Semua</option>
             {mediaTypes.map((m) => <option key={m.slug} value={m.slug}>{m.name}</option>)}
@@ -516,46 +503,46 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </div>
 
         <div>
-          <label htmlFor="filter-tenant" className="mb-1 block text-xs font-semibold ui-text-muted">Tenant</label>
+          <label htmlFor="filter-tenant" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Tenant</label>
           <input
             id="filter-tenant"
             type="text"
             value={tenantFilter}
             placeholder="Nama tenant"
             onChange={(e) => { setTenantFilter(e.target.value); setPage(1); }}
-            className="ui-control w-40 rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control w-40 border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
           />
         </div>
 
         <div>
-          <label htmlFor="filter-date-from" className="mb-1 block text-xs font-semibold ui-text-muted">Dari tanggal</label>
+          <label htmlFor="filter-date-from" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Dari tanggal</label>
           <input
             id="filter-date-from"
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="ui-control rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control doc-num border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
         <div>
-          <label htmlFor="filter-date-to" className="mb-1 block text-xs font-semibold ui-text-muted">Sampai tanggal</label>
+          <label htmlFor="filter-date-to" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Sampai tanggal</label>
           <input
             id="filter-date-to"
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="ui-control rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+            className="ui-control doc-num border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
-        <span className="ml-auto text-xs ui-text-muted">{total} pengajuan</span>
+        <span className="doc-num ml-auto text-xs ui-text-muted">{total} pengajuan</span>
 
         <button
           type="button"
           onClick={handleExport}
           disabled={exporting}
-          className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-60 dark:text-slate-200"
+          className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)] disabled:opacity-60"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
           Unduh CSV
@@ -564,29 +551,30 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
       {error && (
         <div className="ui-alert-panel mb-4 flex items-start gap-2 p-3" role="alert">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />
+          <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
-      {/* Tabel (desktop) */}
+      {/* Tabel dokumen: baris dipisah garis 1px, tanpa kartu bersarang.
+       * Sel angka memakai `.doc-num` rata kanan agar kolom bisa dibandingkan. */}
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead>
-            <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:text-slate-400">
-              <th className="px-3 py-2.5 font-semibold">Nomor</th>
-              <th className="px-3 py-2.5 font-semibold">Tanggal</th>
-              <th className="px-3 py-2.5 font-semibold">Tenant</th>
-              <th className="px-3 py-2.5 font-semibold">Materi</th>
-              <th className="px-3 py-2.5 font-semibold">File</th>
-              <th className="px-3 py-2.5 font-semibold">Status</th>
-              <th className="px-3 py-2.5 font-semibold">Aksi</th>
+            <tr className="border-b-2 border-[color:var(--rule-ink)]">
+              <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Nomor</th>
+              <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Tanggal</th>
+              <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Tenant</th>
+              <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Materi</th>
+              <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">File</th>
+              <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
+              <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
             </tr>
           </thead>
           <tbody>
             {loading && (
               <tr><td colSpan={7} className="px-3 py-10 text-center" role="status">
-                <Loader2 className="mx-auto h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
+                <Loader2 className="mx-auto h-5 w-5 animate-spin text-slate-500" aria-hidden="true" />
                 <span className="sr-only">Memuat pengajuan…</span>
               </td></tr>
             )}
@@ -598,34 +586,34 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               </tr>
             )}
             {!loading && rows.map((r) => (
-              <tr key={r.id} className="border-b border-slate-100 hover:bg-slate-50/60 dark:border-slate-800 dark:hover:bg-slate-800/40">
+              <tr key={r.id} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
                 <td className="px-3 py-3">
-                  <span className="font-mono text-xs font-semibold text-brand-primary-700 dark:text-brand-primary-300">
+                  <span className="doc-num text-xs font-semibold text-slate-900">
                     {r.submission_number || '-'}
                   </span>
                   {/* Nomor batch pengajuan cetak: satu kirim form cetak memuat
                    * beberapa pengajuan, jadi nomor batch membantu staf mengenali
                    * baris kiriman yang sama. Baris non-batch tidak menambah apa pun. */}
                   {r.batch_number && (
-                    <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{r.batch_number}</p>
+                    <p className="doc-plate-no mt-0.5">{r.batch_number}</p>
                   )}
                 </td>
-                <td className="px-3 py-3 text-xs ui-text-muted">
+                <td className="doc-num px-3 py-3 text-right text-xs text-slate-600">
                   {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
                 </td>
                 <td className="px-3 py-3">
-                  <p className="font-semibold text-slate-900 dark:text-white">{r.tenant_name}</p>
+                  <p className="font-semibold text-slate-900">{r.tenant_name}</p>
                   <p className="text-xs ui-text-muted">
                     {r.unit_number ? `Unit ${r.unit_number} · ` : ''}{r.pic_name} · {r.pic_phone}
                   </p>
                 </td>
                 <td className="px-3 py-3">
-                  <p className="text-slate-800 dark:text-slate-200">{r.material_title || r.media_type_slug}</p>
+                  <p className="text-slate-800">{r.material_title || r.media_type_slug}</p>
                   <p className="text-xs ui-text-muted">{r.media_type_slug}</p>
-                  {r.installation_date && <p className="text-xs ui-text-muted">pasang: {r.installation_date}</p>}
+                  {r.installation_date && <p className="doc-num text-xs ui-text-muted">pasang: {r.installation_date}</p>}
                   {leadTimeRisk(r) && (
                     <span
-                      className="mt-1 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-bold text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                      className="mt-1 inline-flex items-center gap-1 border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[11px] font-bold text-amber-800"
                       title={leadTimeRisk(r)}
                     >
                       <AlertTriangle className="h-3 w-3" aria-hidden="true" />
@@ -644,7 +632,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                       href={r.source_type === 'link' ? r.link_url : r.file_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex max-w-40 items-center gap-1.5 truncate text-xs font-medium text-brand-primary-700 hover:text-brand-primary-800 dark:text-brand-primary-300"
+                      className="inline-flex max-w-40 items-center gap-1.5 truncate text-xs font-medium text-[color:var(--process)] hover:text-[color:var(--process-strong)]"
                     >
                       <FileIcon mime={r.mime_type} source={r.source_type} />
                       <span className="truncate">
@@ -654,13 +642,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     </a>
                   )}
                 </td>
-                <td className="px-3 py-3"><StatusBadge status={r.status} /></td>
+                <td className="px-3 py-3"><Stamp status={r.status} /></td>
                 <td className="px-3 py-3">
-                  <div className="flex items-center gap-1.5">
+                  <div className="flex items-center justify-end gap-1.5">
                     <button
                       type="button"
                       onClick={() => openDetail(r)}
-                      className="ui-control inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                      className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
                     >
                       Detail
                     </button>
@@ -669,7 +657,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         type="button"
                         onClick={() => void handleDelete(r)}
                         aria-label={`Hapus pengajuan ${r.tenant_name}`}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
@@ -684,30 +672,32 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
       {/* Paginasi */}
       {totalPages > 1 && (
-        <div className="mt-4 flex items-center justify-center gap-3">
+        <div className="mt-4 flex items-center justify-center gap-3 border-t border-[color:var(--rule-color)] pt-3">
           <button
             type="button"
             onClick={() => setPage((p) => Math.max(1, p - 1))}
             disabled={page <= 1}
             aria-label="Halaman sebelumnya"
-            className="ui-control inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
+            className="ui-control inline-flex min-h-11 min-w-11 items-center justify-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-sm disabled:opacity-40"
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
-          <span className="text-xs font-semibold ui-text-muted">Halaman {page} / {totalPages}</span>
+          <span className="doc-num text-xs font-semibold ui-text-muted">Halaman {page} / {totalPages}</span>
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
             disabled={page >= totalPages}
             aria-label="Halaman berikutnya"
-            className="ui-control inline-flex min-h-11 min-w-11 items-center justify-center rounded-md px-2.5 py-1.5 text-sm disabled:opacity-40 dark:text-slate-200"
+            className="ui-control inline-flex min-h-11 min-w-11 items-center justify-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-sm disabled:opacity-40"
           >
             <ChevronRight className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
       )}
 
-      {/* Modal detail/review */}
+      {/* Modal detail/review - lembar spesifikasi + tiket pekerjaan. Isinya
+       * memakai perabot dokumen: kepala bergaris tinta, tabel titik
+       * penghubung, blok perhitungan, dan stempel status. */}
       <Sheet
         open={detail !== null}
         onClose={() => setDetail(null)}
@@ -715,73 +705,79 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       >
         {detail && (
           <>
-            <div className="mb-4">
-              <p className="font-mono text-xs font-bold tracking-wide text-brand-primary-700 dark:text-brand-primary-300">
-                {detail.submission_number || '-'}
-              </p>
+            <div className="border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <p className="doc-plate-no text-slate-900">{detail.submission_number || '-'}</p>
+                <Stamp status={detail.status} />
+              </div>
               <p className="mt-1 text-xs ui-text-muted">
-                {detail.tenant_name} · {detail.media_type_slug} · {detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
+                {detail.tenant_name} · {detail.media_type_slug} · <span className="doc-num">{detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</span>
               </p>
-              <div className="mt-2"><StatusBadge status={detail.status} /></div>
             </div>
 
-            <dl className="space-y-2.5 text-sm">
+            <dl className="doc-rows mt-3">
               {/* Jenis pemohon menentukan label baris nama di bawah. Pengajuan
                * cetak boleh diajukan tenant maupun non-tenant; tanpa baris ini
                * staf tidak bisa membedakannya dan label "Tenant" menyesatkan
                * untuk pemohon non-tenant. */}
-              <div className="flex gap-2">
-                <dt className="w-32 shrink-0 font-semibold ui-text-muted">Jenis Pemohon</dt>
-                <dd className="text-slate-900 dark:text-white">
+              <div className="doc-row">
+                <dt>Jenis Pemohon</dt>
+                <span className="doc-leader" aria-hidden="true" />
+                <dd>
                   {APPLICANT_TYPE_LABELS[detail.applicant_type ?? 'tenant'] ?? APPLICANT_TYPE_LABELS.tenant}
                 </dd>
               </div>
-              <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">PIC</dt><dd className="text-slate-900 dark:text-white">{detail.pic_name} · {detail.pic_phone}</dd></div>
-              <div className="flex gap-2">
-                <dt className="w-32 shrink-0 font-semibold ui-text-muted">{detailNonTenant ? 'Nama Non Tenant' : 'Nama Tenant'}</dt>
-                <dd className="text-slate-900 dark:text-white">
+              <div className="doc-row"><dt>PIC</dt><span className="doc-leader" aria-hidden="true" /><dd>{detail.pic_name} · {detail.pic_phone}</dd></div>
+              <div className="doc-row">
+                <dt>{detailNonTenant ? 'Nama Non Tenant' : 'Nama Tenant'}</dt>
+                <span className="doc-leader" aria-hidden="true" />
+                <dd>
                   {detail.tenant_name}
                   {/* Penanda MID hanya bermakna untuk tenant: non-tenant memang
                    * tidak pernah punya MID, jadi tidak boleh ditandai
                    * "manual, tidak tertaut MID". */}
-                  {!detailNonTenant && detail.unit_number && <span className="ml-1.5 text-xs ui-text-muted">Unit {detail.unit_number}</span>}
+                  {!detailNonTenant && detail.unit_number && <span className="ml-1.5 font-sans text-xs normal-case ui-text-muted">Unit {detail.unit_number}</span>}
                   {!detailNonTenant && (detail.tenant_id
-                    ? <span className="ml-1.5 text-xs ui-text-muted">(MID {detail.tenant_id})</span>
-                    : <span className="ml-1.5 text-xs font-medium text-amber-700 dark:text-amber-400">(manual, tidak tertaut MID)</span>)}
+                    ? <span className="ml-1.5 font-sans text-xs normal-case ui-text-muted">(MID {detail.tenant_id})</span>
+                    : <span className="ml-1.5 font-sans text-xs font-medium normal-case text-amber-700">(manual, tidak tertaut MID)</span>)}
                 </dd>
               </div>
               {/* Nomor batch: satu kirim form cetak bisa memuat beberapa media. */}
               {detail.batch_number && (
-                <div className="flex gap-2">
-                  <dt className="w-32 shrink-0 font-semibold ui-text-muted">Nomor Batch</dt>
-                  <dd className="font-mono text-xs text-slate-900 dark:text-white">{detail.batch_number}</dd>
+                <div className="doc-row">
+                  <dt>Nomor Batch</dt>
+                  <span className="doc-leader" aria-hidden="true" />
+                  <dd>{detail.batch_number}</dd>
                 </div>
               )}
-              {detail.campaign_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Campaign</dt><dd className="text-slate-900 dark:text-white">{detail.campaign_name}</dd></div>}
+              {detail.campaign_name && <div className="doc-row"><dt>Campaign</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.campaign_name}</dd></div>}
               {/* Baris Deskripsi SELALU tampil. Dulu baris ini hilang saat
                * `material_description` kosong, sehingga staf mengira data
                * hilang padahal field-nya memang tidak diisi - khususnya
                * pengajuan kanal cetak, yang form-nya tidak meminta deskripsi.
                * Kini kekosongan dinyatakan eksplisit, bukan disembunyikan. */}
-              <div className="flex gap-2">
-                <dt className="w-32 shrink-0 font-semibold ui-text-muted">Deskripsi</dt>
-                <dd className="text-slate-900 dark:text-white">
+              <div className="doc-row items-start">
+                <dt className="pt-0.5">Deskripsi</dt>
+                <span className="doc-leader mt-2.5" aria-hidden="true" />
+                <dd className="font-sans font-normal normal-case">
                   {detail.material_description || <span className="ui-text-muted">tidak diisi</span>}
                 </dd>
               </div>
-              {detail.material_type && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Jenis materi</dt><dd className="text-slate-900 dark:text-white">{detail.material_type}</dd></div>}
-              {detail.media_target && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Media/lokasi</dt><dd className="text-slate-900 dark:text-white">{detail.media_target}</dd></div>}
+              {detail.material_type && <div className="doc-row"><dt>Jenis materi</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.material_type}</dd></div>}
+              {detail.media_target && <div className="doc-row"><dt>Media/lokasi</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.media_target}</dd></div>}
               {(detail.air_start_date || detail.air_end_date) && (
-                <div className="flex gap-2">
-                  <dt className="w-32 shrink-0 font-semibold ui-text-muted">Periode tayang</dt>
-                  <dd className="text-slate-900 dark:text-white">{detail.air_start_date || '-'} s/d {detail.air_end_date || '-'}</dd>
+                <div className="doc-row">
+                  <dt>Periode tayang</dt>
+                  <span className="doc-leader" aria-hidden="true" />
+                  <dd>{detail.air_start_date || '-'} s/d {detail.air_end_date || '-'}</dd>
                 </div>
               )}
-              {detail.installation_date && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Tgl pasang</dt><dd className="text-slate-900 dark:text-white">{detail.installation_date}</dd></div>}
+              {detail.installation_date && <div className="doc-row"><dt>Tgl pasang</dt><span className="doc-leader" aria-hidden="true" /><dd>{detail.installation_date}</dd></div>}
               {leadTimeRisk(detail) && (
-                <div className="flex gap-2">
-                  <dt className="w-32 shrink-0 font-semibold text-amber-700 dark:text-amber-400">Lead time</dt>
-                  <dd className="flex items-start gap-1.5 text-amber-800 dark:text-amber-300">
+                <div className="doc-row items-start">
+                  <dt className="pt-0.5 text-amber-700">Lead time</dt>
+                  <span className="doc-leader mt-2.5" aria-hidden="true" />
+                  <dd className="flex items-start justify-end gap-1.5 font-sans font-normal normal-case text-amber-800">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                     <span>{leadTimeRisk(detail)}</span>
                   </dd>
@@ -792,15 +788,16 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                * dirender sebagai berkas, sehingga staf melihat tautan
                * `href=""` yang memuat ulang halaman saat diklik. Kanal tanpa
                * materi kini baris informasi biasa, bukan tautan. */}
-              <div className="flex gap-2">
-                <dt className="w-32 shrink-0 font-semibold ui-text-muted">
+              <div className="doc-row items-start">
+                <dt className="pt-0.5">
                   {detail.source_type === 'link'
                     ? 'Tautan'
                     : detail.source_type === 'upload' ? 'File' : 'Materi'}
                 </dt>
-                <dd className="min-w-0">
+                <span className="doc-leader mt-2.5" aria-hidden="true" />
+                <dd className="min-w-0 font-sans font-normal normal-case">
                   {detail.source_type === 'none' ? (
-                    <span className="text-slate-900 dark:text-white">
+                    <span className="text-slate-900">
                       Materi menyusul setelah pengajuan disetujui.
                     </span>
                   ) : (
@@ -809,7 +806,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 break-all font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                        className="doc-link inline-flex items-center gap-1.5 break-all font-medium"
                       >
                         <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                         {detail.source_type === 'link' ? detail.link_url : (detail.file_name || 'file')}
@@ -823,30 +820,34 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   )}
                 </dd>
               </div>
-              {detail.notes && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Catatan tenant</dt><dd className="text-slate-900 dark:text-white">{detail.notes}</dd></div>}
-              {/* Snapshot harga hanya dimiliki pengajuan hasil form cetak.
-               * Dirender HANYA bila totalnya > 0, supaya pengajuan lama tanpa
-               * snapshot tidak menampilkan baris nol yang menyesatkan.
-               * Ketiga angka ditulis terpisah (bukan "subtotal + PPN = total")
-               * karena untuk media ber-`ppn_included` PPN sudah berada DI DALAM
-               * subtotal sehingga penjumlahan itu keliru. */}
-              {(detail.total_amount ?? 0) > 0 && (
-                <div className="flex gap-2">
-                  <dt className="w-32 shrink-0 font-semibold ui-text-muted">Perkiraan biaya</dt>
-                  <dd className="text-slate-900 dark:text-white">
-                    <div className="flex flex-wrap gap-x-3 gap-y-0.5">
-                      <span className="tabular-nums">{`Subtotal ${rupiah(detail.subtotal ?? 0)}`}</span>
-                      <span className="tabular-nums">{`${detail.ppn_included ? 'Termasuk PPN' : 'PPN'} ${rupiah(detail.ppn_amount ?? 0)}`}</span>
-                      <span className="font-semibold tabular-nums">{`Total ${rupiah(detail.total_amount ?? 0)}`}</span>
-                    </div>
-                    <p className="mt-1 text-xs ui-text-muted">
-                      Angka perkiraan; pengajuan ini tidak melakukan penagihan.
-                    </p>
-                  </dd>
-                </div>
-              )}
-              {detail.reviewed_by_name && <div className="flex gap-2"><dt className="w-32 shrink-0 font-semibold ui-text-muted">Direview oleh</dt><dd className="text-slate-900 dark:text-white">{detail.reviewed_by_name}</dd></div>}
+              {detail.notes && <div className="doc-row items-start"><dt className="pt-0.5">Catatan tenant</dt><span className="doc-leader mt-2.5" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.notes}</dd></div>}
+              {detail.reviewed_by_name && <div className="doc-row"><dt>Direview oleh</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.reviewed_by_name}</dd></div>}
             </dl>
+
+            {/* Snapshot harga hanya dimiliki pengajuan hasil form cetak.
+             * Dirender HANYA bila totalnya > 0, supaya pengajuan lama tanpa
+             * snapshot tidak menampilkan baris nol yang menyesatkan.
+             * Ketiga angka ditulis terpisah (bukan "subtotal + PPN = total")
+             * karena untuk media ber-`ppn_included` PPN sudah berada DI DALAM
+             * subtotal sehingga penjumlahan itu keliru. */}
+            {(detail.total_amount ?? 0) > 0 && (
+              <div className="mt-4 border border-[color:var(--rule-color)] border-t-2 border-t-[color:var(--rule-ink)] bg-[var(--surface-card)] px-3.5 py-3">
+                <p className="doc-plate-no">Perkiraan biaya</p>
+                {/* Tiap baris adalah SATU simpul teks ("Subtotal Rp. ...") yang
+                 * diratakan kanan, sehingga ekor nominalnya sejajar dan bisa
+                 * dibandingkan sekilas. Ketiganya ditulis terpisah (bukan
+                 * "subtotal + PPN = total") karena untuk media ber-`ppn_included`
+                 * PPN sudah berada DI DALAM subtotal. */}
+                <div className="mt-2 text-right">
+                  <p className="doc-num border-b border-[color:var(--rule-color)] py-1 text-xs">{`Subtotal ${rupiah(detail.subtotal ?? 0)}`}</p>
+                  <p className="doc-num border-b border-[color:var(--rule-color)] py-1 text-xs">{`${detail.ppn_included ? 'Termasuk PPN' : 'PPN'} ${rupiah(detail.ppn_amount ?? 0)}`}</p>
+                  <p className="doc-num py-1 text-sm font-bold text-slate-900">{`Total ${rupiah(detail.total_amount ?? 0)}`}</p>
+                </div>
+                <p className="mt-1.5 border-t border-[color:var(--rule-color)] pt-1.5 text-xs ui-text-muted">
+                  Angka perkiraan; pengajuan ini tidak melakukan penagihan.
+                </p>
+              </div>
+            )}
 
             {/* Riwayat versi materi (FR-030) */}
             {detailLoading && (
@@ -856,14 +857,14 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               </p>
             )}
             {!detailLoading && detailData && detailData.files.length > 0 && (
-              <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
-                <p className="text-xs font-semibold ui-text-muted">Versi materi</p>
-                <ul className="mt-1.5 space-y-1.5">
+              <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
+                <p className="doc-plate-no">Versi materi</p>
+                <ul className="mt-1.5">
                   {detailData.files.map((f) => (
-                    <li key={f.id} className="flex items-center justify-between gap-2 text-xs">
+                    <li key={f.id} className="flex items-center justify-between gap-2 border-b border-[color:var(--rule-color)] py-1 text-xs last:border-b-0">
                       <span className="min-w-0">
-                        <span className="font-semibold text-slate-800 dark:text-slate-100">Versi {f.version}</span>
-                        <span className="ml-1.5 ui-text-muted">
+                        <span className="doc-num font-semibold text-slate-900">Versi {f.version}</span>
+                        <span className="doc-num ml-1.5 ui-text-muted">
                           {f.created_at ? new Date(f.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
                         </span>
                       </span>
@@ -876,7 +877,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                          * 20px ke tetangga terdekat; ini tautan kontrol berdiri
                          * sendiri di dalam baris daftar, bukan tautan inline di
                          * tengah kalimat, jadi pengecualian 2.5.8 tidak berlaku. */
-                        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-medium text-[color:var(--process)]"
                       >
                         <ExternalLink className="h-3 w-3" aria-hidden="true" />
                         Buka
@@ -887,21 +888,21 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               </div>
             )}
 
-            {/* Riwayat status (FR-031, FR-037) */}
+            {/* Riwayat status (FR-031, FR-037) - log tiket, satu baris per cap. */}
             {!detailLoading && detailData && detailData.history.length > 0 && (
-              <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
-                <p className="text-xs font-semibold ui-text-muted">Riwayat status</p>
-                <ol className="mt-1.5 space-y-2">
+              <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
+                <p className="doc-plate-no">Riwayat status</p>
+                <ol className="mt-1.5">
                   {detailData.history.map((h) => (
-                    <li key={h.id} className="text-xs">
-                      <p className="font-semibold text-slate-800 dark:text-slate-100">
+                    <li key={h.id} className="border-b border-[color:var(--rule-color)] py-1.5 text-xs last:border-b-0">
+                      <p className="font-semibold text-slate-900">
                         {STATUS_LABELS[h.to_status] ?? h.to_status}
-                        <span className="ml-1.5 font-normal ui-text-muted">
+                        <span className="doc-num ml-1.5 font-normal ui-text-muted">
                           {h.created_at ? new Date(h.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
                           {h.actor_type === 'admin' && h.actor_name ? ` · ${h.actor_name}` : ''}
                         </span>
                       </p>
-                      {h.comment && <p className="mt-0.5 leading-relaxed text-slate-600 dark:text-slate-300">{h.comment}</p>}
+                      {h.comment && <p className="mt-0.5 leading-relaxed text-slate-600">{h.comment}</p>}
                     </li>
                   ))}
                 </ol>
@@ -910,45 +911,47 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
             {/* Informasi pemasangan (FR-047) */}
             {!detailLoading && detailData?.installation && (
-              <div className="mt-4 border-t border-slate-100 pt-3 dark:border-slate-700">
-                <p className="text-xs font-semibold ui-text-muted">Informasi pemasangan</p>
-                <dl className="mt-1.5 space-y-1.5 text-xs">
-                  <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Lokasi</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.media_location}</dd></div>
+              <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
+                <p className="doc-plate-no">Informasi pemasangan</p>
+                <dl className="doc-rows mt-2">
+                  <div className="doc-row"><dt>Lokasi</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detailData.installation.media_location}</dd></div>
                   {(detailData.installation.start_date || detailData.installation.end_date) && (
-                    <div className="flex gap-2">
-                      <dt className="w-28 shrink-0 ui-text-muted">Periode</dt>
-                      <dd className="text-slate-900 dark:text-white">
+                    <div className="doc-row">
+                      <dt>Periode</dt>
+                      <span className="doc-leader" aria-hidden="true" />
+                      <dd>
                         {detailData.installation.start_date || '-'} s/d {detailData.installation.end_date || '-'}
                       </dd>
                     </div>
                   )}
-                  {detailData.installation.notes && <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Catatan</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.notes}</dd></div>}
+                  {detailData.installation.notes && <div className="doc-row items-start"><dt className="pt-0.5">Catatan</dt><span className="doc-leader mt-2.5" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detailData.installation.notes}</dd></div>}
                   {/* Bukti tayang dua kanal (tautan + berkas unggahan). Sebelumnya
                    * hanya `proof_url` yang dirender, sehingga staf yang baru saja
                    * mengunggah berkas tidak melihat buktinya di tempat yang sama. */}
                   {installationProofViews(detailData.installation).map((p) => (
-                    <div key={p.kind} className="flex gap-2">
-                      <dt className="w-28 shrink-0 ui-text-muted">{p.label}</dt>
-                      <dd className="min-w-0">
+                    <div key={p.kind} className="doc-row items-start">
+                      <dt className="pt-0.5">{p.label}</dt>
+                      <span className="doc-leader mt-2.5" aria-hidden="true" />
+                      <dd className="min-w-0 font-sans font-normal normal-case">
                         <a
                           href={p.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex min-h-11 items-center gap-1.5 break-all font-medium text-brand-primary-700 dark:text-brand-primary-300"
+                          className="doc-link inline-flex min-h-11 items-center gap-1.5 break-all font-medium"
                         >
                           <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                           {p.linkLabel}
                         </a>
                         {p.fileName && <p className="break-all text-xs ui-text-muted">{p.fileName}</p>}
                         {(p.meta || p.uploaded) && (
-                          <p className="text-xs ui-text-muted">
+                          <p className="doc-num text-xs ui-text-muted">
                             {[p.meta, p.uploaded].filter(Boolean).join(' · ')}
                           </p>
                         )}
                       </dd>
                     </div>
                   ))}
-                  {detailData.installation.installed_by && <div className="flex gap-2"><dt className="w-28 shrink-0 ui-text-muted">Dicatat oleh</dt><dd className="text-slate-900 dark:text-white">{detailData.installation.installed_by}</dd></div>}
+                  {detailData.installation.installed_by && <div className="doc-row"><dt>Dicatat oleh</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detailData.installation.installed_by}</dd></div>}
                 </dl>
               </div>
             )}
@@ -959,13 +962,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 Tombol buka materi HANYA muncul bila materinya memang ada:
                 pengajuan cetak ber-`source_type` 'none' tidak punya berkas,
                 dan dulu tombolnya menaut ke `href=""` (memuat ulang halaman). */}
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2 border-y border-[color:var(--rule-color)] py-3">
               {detail.source_type !== 'none' && (
                 <a
                   href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+                  className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition"
                 >
                   <ExternalLink className="h-4 w-4" aria-hidden="true" />
                   Buka tautan materi
@@ -988,7 +991,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     href={wa}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                    className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
                   >
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
                     Kirim pesan WA
@@ -1006,7 +1009,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                       : `Tautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`
                   }`,
                 ); }}
-                className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
               >
                 <Copy className="h-4 w-4" aria-hidden="true" />
                 Salin tautan
@@ -1014,21 +1017,21 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             </div>
 
             {canManage ? (
-              <div className="mt-5 border-t border-slate-100 pt-4 dark:border-slate-700">
+              <div className="mt-4 border-t-2 border-[color:var(--rule-ink)] pt-4">
                 <fieldset>
-                  <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  <legend className="doc-plate-no mb-2 text-slate-900">
                     Ubah status
                   </legend>
                   {/* Hanya transisi yang sah dari status saat ini (PRD §8) -
                       server tetap memvalidasi ulang. */}
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5">
                     {allowedStatuses.map((s) => (
                       <label
                         key={s}
-                        className={`cursor-pointer rounded-md border px-3.5 py-2 text-sm font-semibold transition ${
+                        className={`cursor-pointer border px-3 py-2 text-sm font-semibold transition ${
                           newStatus === s
-                            ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
-                            : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
+                            ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process-strong)]'
+                            : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                         }`}
                       >
                         <input
@@ -1040,10 +1043,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           className="sr-only"
                         />
                         {STATUS_LABELS[s] ?? s}
-                        {/* `text-slate-600` (bukan ui-text-muted): di atas
-                         * `bg-brand-primary-50` (label terpilih), muted hanya
-                         * 4.31:1 - gagal AA untuk teks 12px. slate-600 = 6.86:1. */}
-                        {s === detail.status && <span className="ml-1 text-xs font-normal text-slate-600 dark:text-slate-300">(sekarang)</span>}
+                        {s === detail.status && <span className="ml-1 text-xs font-normal text-slate-600">(sekarang)</span>}
                       </label>
                     ))}
                   </div>
@@ -1054,8 +1054,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   )}
                 </fieldset>
 
-                <label htmlFor="review-notes" className="mb-1.5 mt-4 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                  Catatan Review <span className="text-xs font-normal ui-text-muted">
+                <label htmlFor="review-notes" className="mb-1.5 mt-4 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Catatan Review <span className="text-[11px] font-normal normal-case tracking-normal ui-text-muted">
                     (wajib untuk Perlu Revisi dan Ditolak)
                   </span>
                 </label>
@@ -1065,20 +1065,20 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   maxLength={2000}
                   value={reviewNotes}
                   onChange={(e) => setReviewNotes(e.target.value)}
-                  className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2.5 text-sm text-slate-900"
                   aria-invalid={catatanWajibKosong ? true : undefined}
                   aria-describedby={catatanWajibKosong ? 'err-review-notes' : undefined}
                 />
                 {catatanWajibKosong && (
-                  <p id="err-review-notes" role="alert" className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400">
+                  <p id="err-review-notes" role="alert" className="mt-1.5 text-xs font-medium text-red-600">
                     {PESAN_CATATAN_WAJIB[newStatus]}
                   </p>
                 )}
 
                 {/* Catat pemasangan - hanya bila materi boleh dipasang (FR-040). */}
                 {isInstallableStatus(detail.status) && (
-                  <fieldset className="mt-4 border-t border-slate-100 pt-4 dark:border-slate-700">
-                    <legend className="mb-2 text-sm font-semibold text-slate-800 dark:text-slate-100">
+                  <fieldset className="mt-4 border-t border-[color:var(--rule-color)] pt-4">
+                    <legend className="doc-plate-no mb-2 text-slate-900">
                       Catat pemasangan
                     </legend>
                     {/* Peringatan materi belum diterima - HANYA informasi, bukan
@@ -1092,11 +1092,11 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                      * dikhususkan untuk galat. */}
                     {detail.source_type === 'none' && (
                       <div
-                        className="mb-3 flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950/30"
+                        className="mb-3 flex items-start gap-2 rounded-[var(--radius-card)] border border-amber-300 bg-amber-50 p-3"
                         role="status"
                       >
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700 dark:text-amber-400" aria-hidden="true" />
-                        <p className="text-xs text-amber-800 dark:text-amber-300">
+                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-700" aria-hidden="true" />
+                        <p className="text-xs text-amber-800">
                           Materi belum pernah diterima untuk pengajuan ini. Pengajuan cetak memang tidak
                           melampirkan materi saat diajukan, materinya menyusul lewat revisi. Menyimpan pemasangan
                           akan menetapkan status materi menjadi Sudah Dipasang. Pastikan materinya sudah
@@ -1106,8 +1106,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="sm:col-span-2">
-                        <label htmlFor="install-location" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                          Media / lokasi pemasangan <span className="text-red-500">*</span>
+                        <label htmlFor="install-location" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Media / lokasi pemasangan <span className="text-red-600">*</span>
                         </label>
                         <input
                           id="install-location"
@@ -1116,53 +1116,53 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                           maxLength={200}
                           placeholder={detail.media_target || 'Contoh: Atrium 1'}
                           onChange={(e) => setInstallLocation(e.target.value)}
-                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
                         />
                       </div>
                       <div>
-                        <label htmlFor="install-start" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal mulai</label>
+                        <label htmlFor="install-start" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Tanggal mulai</label>
                         <input
                           id="install-start"
                           type="date"
                           value={installStart}
                           onChange={(e) => setInstallStart(e.target.value)}
-                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                         />
                       </div>
                       <div>
-                        <label htmlFor="install-end" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Tanggal berakhir</label>
+                        <label htmlFor="install-end" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Tanggal berakhir</label>
                         <input
                           id="install-end"
                           type="date"
                           value={installEnd}
                           onChange={(e) => setInstallEnd(e.target.value)}
-                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label htmlFor="install-notes" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Catatan pemasangan</label>
+                        <label htmlFor="install-notes" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Catatan pemasangan</label>
                         <input
                           id="install-notes"
                           type="text"
                           value={installNotes}
                           maxLength={1000}
                           onChange={(e) => setInstallNotes(e.target.value)}
-                          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                          className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <span className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                          Bukti pemasangan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
+                        <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Bukti pemasangan <span className="text-[11px] font-normal normal-case tracking-normal ui-text-muted">(opsional)</span>
                         </span>
-                        <div className="flex gap-2" role="group" aria-label="Cara memberi bukti pemasangan">
+                        <div className="flex gap-1.5" role="group" aria-label="Cara memberi bukti pemasangan">
                           <button
                             type="button"
                             aria-pressed={proofKind === 'link'}
                             onClick={() => setProofKind('link')}
-                            className={`min-h-11 flex-1 rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                            className={`min-h-11 flex-1 border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition ${
                               proofKind === 'link'
-                                ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
-                                : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
+                                ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process-strong)]'
+                                : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                             }`}
                           >
                             Tautan
@@ -1171,10 +1171,10 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                             type="button"
                             aria-pressed={proofKind === 'upload'}
                             onClick={() => setProofKind('upload')}
-                            className={`min-h-11 flex-1 rounded-md border px-3 py-2 text-xs font-semibold transition ${
+                            className={`min-h-11 flex-1 border px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] transition ${
                               proofKind === 'upload'
-                                ? 'border-brand-primary-500 bg-brand-primary-50 text-brand-primary-800 dark:border-brand-primary-400 dark:bg-brand-primary-950/40 dark:text-brand-primary-200'
-                                : 'border-slate-200 text-slate-600 dark:border-slate-700 dark:text-slate-300'
+                                ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process-strong)]'
+                                : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                             }`}
                           >
                             Unggah Foto
@@ -1184,7 +1184,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
                       {proofKind === 'link' ? (
                         <div className="sm:col-span-2">
-                          <label htmlFor="install-proof" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          <label htmlFor="install-proof" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Tautan bukti pemasangan
                           </label>
                           <input
@@ -1195,19 +1195,19 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                             maxLength={500}
                             placeholder="https://drive.google.com/…"
                             onChange={(e) => setInstallProof(e.target.value)}
-                            className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 dark:bg-slate-800 dark:text-slate-100"
+                            className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400"
                           />
                         </div>
                       ) : (
                         <div className="sm:col-span-2">
-                          <label htmlFor="install-proof-file" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                          <label htmlFor="install-proof-file" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                             Berkas bukti (JPEG, PNG, PDF, atau MP4; maks 50MB)
                           </label>
                           <label
                             htmlFor="install-proof-file"
-                            className="flex cursor-pointer items-center justify-center gap-2 rounded-md border-2 border-dashed border-brand-primary-300 bg-brand-primary-50/40 p-4 text-xs font-medium text-slate-700 transition hover:border-brand-primary-400 dark:border-brand-primary-700 dark:bg-brand-primary-950/20 dark:text-slate-200"
+                            className="flex cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-[color:var(--rule-strong)] bg-[var(--surface-offset)] p-4 text-xs font-medium text-slate-700 transition hover:border-[color:var(--process)]"
                           >
-                            <Upload className="h-4 w-4 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
+                            <Upload className="h-4 w-4 text-[color:var(--process)]" aria-hidden="true" />
                             {proofFile ? proofFile.name : 'Klik untuk memilih berkas bukti'}
                             <input
                               id="install-proof-file"
@@ -1233,16 +1233,16 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   </fieldset>
                 )}
 
-                {saveError && <p className="mt-2 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{saveError}</p>}
+                {saveError && <p className="mt-2 text-xs font-medium text-red-600" role="alert">{saveError}</p>}
 
-                <div className="mt-4 flex flex-wrap justify-end gap-2">
-                  <button type="button" onClick={() => setDetail(null)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
+                <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-[color:var(--rule-color)] pt-3">
+                  <button type="button" onClick={() => setDetail(null)} className="ui-btn-secondary inline-flex min-h-11 items-center px-4 py-2.5 text-sm font-semibold transition">Batal</button>
                   {isInstallableStatus(detail.status) && (
                     <button
                       type="button"
                       onClick={() => void saveInstallation()}
                       disabled={saving || !installLocation.trim()}
-                      className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-brand-primary-700 disabled:opacity-50 dark:text-slate-200"
+                      className="ui-btn-secondary inline-flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50"
                     >
                       <Wrench className="h-4 w-4" aria-hidden="true" />
                       Catat Pemasangan
@@ -1253,7 +1253,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     onClick={() => void saveStatus()}
                     disabled={saving || catatanWajibKosong}
                     title={catatanWajibKosong ? PESAN_CATATAN_WAJIB[newStatus] : undefined}
-                    className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+                    className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-semibold transition"
                   >
                     {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                     Simpan Status
@@ -1261,7 +1261,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 </div>
               </div>
             ) : (
-              <p className="mt-4 rounded-md bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
+              <p className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-3 text-xs ui-text-muted">
                 Akun Tenant Relations hanya dapat melihat dan mengunduh. Perubahan status dilakukan Admin.
               </p>
             )}
@@ -1439,36 +1439,41 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
 
   return (
     <div>
-      {canManage && (
-        <div className="mb-4 flex justify-end">
+      {/* Kepala seksi dokumen: nomor plate, jumlah baris, dan aksi utama. */}
+      <div className="mb-4 flex flex-wrap items-center gap-3 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-900">
+          Katalog Media
+        </h2>
+        <span className="doc-plate-no ml-auto">{rows.length} media</span>
+        {canManage && (
           <button
             type="button"
             onClick={() => { setForm({ ...EMPTY_CATALOG_FORM }); setFormError(''); }}
-            className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+            className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition"
           >
             <Plus className="h-4 w-4" aria-hidden="true" />
             Tambah Media
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {error && (
         <div className="ui-alert-panel mb-4 flex items-start gap-2 p-3" role="alert">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />
+          <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
       {loading && (
         <div className="flex items-center justify-center gap-3 py-10" role="status">
-          <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
+          <Loader2 className="h-5 w-5 animate-spin text-slate-500" aria-hidden="true" />
           <span className="text-sm ui-text-muted">Memuat katalog…</span>
         </div>
       )}
 
       {!loading && rows.length === 0 && (
         <div className="ui-empty-panel px-6 py-10" role="status">
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada media di katalog.</p>
+          <p className="text-sm font-semibold text-slate-700">Belum ada media di katalog.</p>
           <p className="mt-1 text-xs ui-text-muted">
             {canManage
               ? 'Tambahkan media pertama dengan tombol "Tambah Media" di atas.'
@@ -1477,63 +1482,94 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
         </div>
       )}
 
+      {/* Daftar katalog sebagai tabel dokumen: satu baris per media, dipisah
+       * garis 1px. Nomor plate di kiri adalah posisi media di deck 2026. */}
       {!loading && rows.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {rows.map((m) => (
-            <div key={m.id ?? m.slug} className="ui-admin-card p-4">
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-bold text-slate-900 dark:text-white">{m.name}</p>
-                  <p className="text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category} · {CHANNEL_LABELS[m.media_channel ?? 'digital']} · /{m.slug}</p>
-                </div>
-                {/* State nonaktif dibawa badge "Nonaktif", bukan opacity-70:
-                 * opacity menurunkan kontras SEMUA teks di dalam kartu
-                 * (ui-text-muted 4.76 -> 2.75:1, gagal AA). Badge pakai
-                 * slate-600 di slate-200 = 6.15:1, lulus AA. */}
-                <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-bold ${m.is_active === false ? 'bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-300' : 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300'}`}>
-                  {m.is_active === false ? 'Nonaktif' : 'Aktif'}
-                </span>
-              </div>
-              <p className="mt-2 line-clamp-2 text-xs ui-text-muted">{m.size_spec || '-'} {m.price_note ? `· ${m.price_note}` : ''}</p>
-              {canManage && (
-                <div className="mt-3 flex gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForm({
-                        id: m.id || '', slug: m.slug, category: m.category, name: m.name,
-                        size_spec: m.size_spec, material_spec: m.material_spec,
-                        accepted_formats: m.accepted_formats, price_note: m.price_note,
-                        location_note: m.location_note, rules: m.rules,
-                        media_channel: m.media_channel === 'cetak' ? 'cetak' : 'digital',
-                        price_amount: m.price_amount ?? 0,
-                        price_unit: m.price_unit ?? '',
-                        ppn_included: Boolean(m.ppn_included),
-                        image_path: m.image_path || '',
-                        is_active: m.is_active !== false, sort_order: m.sort_order,
-                      });
-                      setFormError('');
-                    }}
-                    className="ui-control inline-flex min-h-11 flex-1 items-center justify-center rounded-md px-3 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleDelete(m)}
-                    aria-label={`Hapus ${m.name}`}
-                    className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[760px] text-left text-sm">
+            <thead>
+              <tr className="border-b-2 border-[color:var(--rule-ink)]">
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Plate</th>
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Media</th>
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Kategori</th>
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</th>
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
+                <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Ukuran / tarif</th>
+                <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((m) => (
+                <tr key={m.id ?? m.slug} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
+                  <td className="doc-num px-3 py-3 text-xs ui-text-muted">
+                    {String(m.sort_order ?? 0).padStart(2, '0')}
+                  </td>
+                  <td className="px-3 py-3">
+                    <p className="truncate font-semibold text-slate-900">{m.name}</p>
+                    <p className="doc-num text-xs ui-text-muted">/{m.slug}</p>
+                  </td>
+                  <td className="px-3 py-3 text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category}</td>
+                  <td className="px-3 py-3">
+                    <span className="doc-tag" data-tone={m.media_channel === 'cetak' ? 'process' : 'none'}>
+                      {CHANNEL_LABELS[m.media_channel ?? 'digital']}
+                    </span>
+                  </td>
+                  {/* State nonaktif dibawa lencana "Nonaktif", bukan opacity-70:
+                   * opacity menurunkan kontras SEMUA teks di dalam baris. */}
+                  <td className="px-3 py-3">
+                    <span className="doc-tag" data-tone={m.is_active === false ? 'none' : 'process'}>
+                      {m.is_active === false ? 'Nonaktif' : 'Aktif'}
+                    </span>
+                  </td>
+                  <td className="px-3 py-3 text-right">
+                    <p className="doc-num text-xs text-slate-800">{m.size_spec || '-'}</p>
+                    {m.price_note && (
+                      <p className="doc-num mt-0.5 whitespace-pre-line text-xs ui-text-muted">{m.price_note}</p>
+                    )}
+                  </td>
+                  <td className="px-3 py-3">
+                    {canManage && (
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm({
+                              id: m.id || '', slug: m.slug, category: m.category, name: m.name,
+                              size_spec: m.size_spec, material_spec: m.material_spec,
+                              accepted_formats: m.accepted_formats, price_note: m.price_note,
+                              location_note: m.location_note, rules: m.rules,
+                              media_channel: m.media_channel === 'cetak' ? 'cetak' : 'digital',
+                              price_amount: m.price_amount ?? 0,
+                              price_unit: m.price_unit ?? '',
+                              ppn_included: Boolean(m.ppn_included),
+                              image_path: m.image_path || '',
+                              is_active: m.is_active !== false, sort_order: m.sort_order,
+                            });
+                            setFormError('');
+                          }}
+                          className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(m)}
+                          aria-label={`Hapus ${m.name}`}
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
 
-      {/* Form create/edit */}
+      {/* Form create/edit - lembar spesifikasi media. */}
       <Sheet
         open={form !== null}
         onClose={() => setForm(null)}
@@ -1546,12 +1582,12 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {textInput('Slug (unik, huruf kecil)', 'slug', 'spanduk')}
               {textInput('Nama', 'name', 'Spanduk')}
               <div>
-                <label htmlFor="cf-category" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Kategori</label>
+                <label htmlFor="cf-category" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Kategori</label>
                 <select
                   id="cf-category"
                   value={form.category}
                   onChange={(e) => setForm((f) => (f ? { ...f, category: e.target.value } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                 >
                   <option value="outdoor">Outdoor</option>
                   <option value="indoor">Indoor</option>
@@ -1559,12 +1595,12 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                 </select>
               </div>
               <div>
-                <label htmlFor="cf-channel" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Kanal</label>
+                <label htmlFor="cf-channel" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</label>
                 <select
                   id="cf-channel"
                   value={form.media_channel}
                   onChange={(e) => setForm((f) => (f ? { ...f, media_channel: e.target.value as 'cetak' | 'digital' } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                 >
                   <option value="cetak">Media Promosi Cetak</option>
                   <option value="digital">Media Promosi Digital</option>
@@ -1580,7 +1616,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                * pengingat periode berakhir. Seed hanya mengisinya sekali, jadi
                * staf harus bisa mengoreksi tanpa menyentuh DB. */}
               <div>
-                <label htmlFor="cf-price-amount" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <label htmlFor="cf-price-amount" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Harga numerik (Rp)
                 </label>
                 <input
@@ -1590,18 +1626,18 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                   step="0.01"
                   value={form.price_amount}
                   onChange={(e) => setForm((f) => (f ? { ...f, price_amount: Number(e.target.value) || 0 } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-right text-sm text-slate-900"
                 />
-                <p className="mt-1 text-xs ui-text-muted">0 = media gratis. Dipakai untuk menghitung PPN.</p>
+                <p className="doc-num mt-1 text-xs ui-text-muted">0 = media gratis. Dipakai untuk menghitung PPN.</p>
               </div>
               {textInput('Satuan harga', 'price_unit', 'hari')}
-              <label className="flex items-center gap-2 text-xs font-semibold text-slate-700 sm:col-span-2 dark:text-slate-200">
+              <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
                 <input
                   type="checkbox"
                   id="cf-ppn-included"
                   checked={form.ppn_included}
                   onChange={(e) => setForm((f) => (f ? { ...f, ppn_included: e.target.checked } : f))}
-                  className="h-4 w-4 accent-[var(--brand-tosca)]"
+                  className="h-4 w-4 accent-[var(--process)]"
                 />
                 Harga sudah termasuk PPN
               </label>
@@ -1609,14 +1645,14 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {/* Foto katalog - hanya untuk media yang sudah tersimpan, karena
                * unggahan butuh id. Media baru: simpan dulu, lalu ganti foto. */}
               <div>
-                <span className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Foto Katalog</span>
+                <span className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Foto Katalog</span>
                 {form.id ? (
-                  <div className="rounded-md border border-[var(--rule-color)] p-3 dark:border-slate-700">
+                  <div className="border border-[color:var(--rule-color)] p-3">
                     {form.image_path ? (
                       <img
                         src={form.image_path}
                         alt={`Pratinjau foto ${form.name || 'media'}`}
-                        className="mb-2.5 aspect-[4/3] w-full max-w-[220px] rounded-[var(--radius-control)] object-cover"
+                        className="mb-2.5 aspect-[4/3] w-full max-w-[220px] border border-[color:var(--rule-color)] object-cover"
                       />
                     ) : (
                       <p className="mb-2.5 text-xs ui-text-muted">Belum ada foto. Kartu katalog tampil tanpa gambar.</p>
@@ -1624,7 +1660,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                     <div className="flex flex-wrap items-center gap-2">
                       <label
                         htmlFor="cf-image"
-                        className={`ui-control inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 ${unggahGambar ? 'pointer-events-none opacity-50' : ''}`}
+                        className={`ui-control inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-xs font-semibold text-slate-700 ${unggahGambar ? 'pointer-events-none opacity-50' : ''}`}
                       >
                         <ImageIcon className="h-3.5 w-3.5" aria-hidden="true" />
                         {form.image_path ? 'Ganti Foto' : 'Unggah Foto'}
@@ -1646,16 +1682,16 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                           type="button"
                           onClick={() => void handleHapusGambar()}
                           disabled={unggahGambar}
-                          className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition disabled:opacity-50 dark:text-slate-200"
+                          className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-xs font-semibold text-slate-700 transition disabled:opacity-50"
                         >
                           <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                           Hapus Foto
                         </button>
                       )}
-                      {unggahGambar && <Loader2 className="h-4 w-4 animate-spin text-brand-primary-600" aria-hidden="true" />}
+                      {unggahGambar && <Loader2 className="h-4 w-4 animate-spin text-slate-500" aria-hidden="true" />}
                     </div>
                     <p className="mt-1.5 text-xs ui-text-muted">JPEG, PNG, atau WebP, maks 4MB. Disarankan lanskap 4:3.</p>
-                    {galatGambar && <p className="mt-1 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{galatGambar}</p>}
+                    {galatGambar && <p className="mt-1 text-xs font-medium text-red-600" role="alert">{galatGambar}</p>}
                   </div>
                 ) : (
                   <p className="text-xs ui-text-muted">Simpan media terlebih dahulu untuk mengunggah foto.</p>
@@ -1663,26 +1699,26 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               </div>
 
               <div>
-                <label htmlFor="cf-sort" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Urutan</label>
+                <label htmlFor="cf-sort" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Urutan</label>
                 <input
                   id="cf-sort"
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setForm((f) => (f ? { ...f, sort_order: parseInt(e.target.value, 10) || 0 } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-right text-sm text-slate-900"
                 />
               </div>
             </div>
 
             <div className="mt-3">
-              <label htmlFor="cf-rules" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Ketentuan (satu per baris)</label>
+              <label htmlFor="cf-rules" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Ketentuan (satu per baris)</label>
               <textarea
                 id="cf-rules"
                 rows={5}
                 value={form.rules}
                 onChange={(e) => setForm((f) => (f ? { ...f, rules: e.target.value } : f))}
                 aria-describedby="cf-rules-hint"
-                className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
               />
               {/* Isi kolom ini bukan sekadar catatan internal: tenant membacanya
                * di katalog publik, dan sistem mem-parse kalimat batas waktu di
@@ -1694,21 +1730,21 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               </p>
             </div>
 
-            <label className="mt-3 flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+            <label className="mt-3 flex items-center gap-2 text-sm text-slate-700">
               <input
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) => setForm((f) => (f ? { ...f, is_active: e.target.checked } : f))}
-                className="h-4 w-4 accent-[var(--brand-tosca)]"
+                className="h-4 w-4 accent-[var(--process)]"
               />
               Aktif (tampil di halaman publik)
             </label>
 
-            {formError && <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{formError}</p>}
+            {formError && <p className="mt-3 text-xs font-medium text-red-600" role="alert">{formError}</p>}
 
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setForm(null)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
-              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
+            <div className="mt-5 flex justify-end gap-2 border-t border-[color:var(--rule-color)] pt-3">
+              <button type="button" onClick={() => setForm(null)} className="ui-btn-secondary inline-flex min-h-11 items-center px-4 py-2.5 text-sm font-semibold transition">Batal</button>
+              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-semibold transition">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                 Simpan
               </button>
@@ -1719,6 +1755,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
     </div>
   );
 }
+
 
 // ══════════ Tab: Pengguna (superadmin) ══════════
 
@@ -1792,11 +1829,16 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
 
   return (
     <div>
-      <div className="mb-4 flex justify-end">
+      {/* Kepala seksi dokumen: jumlah akun + aksi utama. */}
+      <div className="mb-4 flex flex-wrap items-center gap-3 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+        <h2 className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-900">
+          Akun Staf
+        </h2>
+        <span className="doc-plate-no ml-auto">{rows.length} akun</span>
         <button
           type="button"
           onClick={() => { setForm({ id: '', email: '', display_name: '', role: 'admin', password: '', is_active: true }); setFormError(''); }}
-          className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 rounded-md px-4 py-2.5 text-sm font-semibold transition"
+          className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           Tambah User
@@ -1805,21 +1847,21 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
 
       {error && (
         <div className="ui-alert-panel mb-4 flex items-start gap-2 p-3" role="alert">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600 dark:text-red-400" aria-hidden="true" />
-          <p className="text-sm text-red-800 dark:text-red-200">{error}</p>
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />
+          <p className="text-sm text-red-800">{error}</p>
         </div>
       )}
 
       {loading && (
         <div className="flex items-center justify-center gap-3 py-10" role="status">
-          <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
+          <Loader2 className="h-5 w-5 animate-spin text-slate-500" aria-hidden="true" />
           <span className="text-sm ui-text-muted">Memuat pengguna…</span>
         </div>
       )}
 
       {!loading && rows.length === 0 && (
         <div className="ui-empty-panel px-6 py-10" role="status">
-          <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada akun staf.</p>
+          <p className="text-sm font-semibold text-slate-700">Belum ada akun staf.</p>
           <p className="mt-1 text-xs ui-text-muted">
             Tambahkan akun pertama dengan tombol "Tambah User" di atas.
           </p>
@@ -1830,35 +1872,33 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[640px] text-left text-sm">
             <thead>
-              <tr className="border-b border-slate-200 text-xs uppercase tracking-wide text-slate-500 dark:border-slate-700 dark:text-slate-400">
-                <th className="px-3 py-2.5 font-semibold">Nama</th>
-                <th className="px-3 py-2.5 font-semibold">Email</th>
-                <th className="px-3 py-2.5 font-semibold">Role</th>
-                <th className="px-3 py-2.5 font-semibold">Status</th>
-                <th className="px-3 py-2.5 font-semibold">Aksi</th>
+              <tr className="border-b-2 border-[color:var(--rule-ink)]">
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Nama</th>
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Email</th>
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Role</th>
+                <th className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
+                <th className="px-3 py-2 text-right text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((u) => (
-                <tr key={u.id} className="border-b border-slate-100 dark:border-slate-800">
-                  <td className="px-3 py-3 font-semibold text-slate-900 dark:text-white">{u.display_name}</td>
-                  <td className="px-3 py-3 text-slate-700 dark:text-slate-300">{u.email}</td>
+                <tr key={u.id} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
+                  <td className="px-3 py-3 font-semibold text-slate-900">{u.display_name}</td>
+                  <td className="px-3 py-3 text-slate-700">{u.email}</td>
                   <td className="px-3 py-3">
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-bold text-slate-700 dark:bg-slate-800 dark:text-slate-300">
-                      {u.role}
-                    </span>
+                    <span className="doc-tag">{u.role}</span>
                   </td>
                   <td className="px-3 py-3">
-                    <span className={`text-xs font-semibold ${u.is_active ? 'text-green-700 dark:text-green-400' : 'text-slate-500 dark:text-slate-400'}`}>
+                    <span className="doc-tag" data-tone={u.is_active ? 'process' : 'none'}>
                       {u.is_active ? 'Aktif' : 'Nonaktif'}
                     </span>
                   </td>
                   <td className="px-3 py-3">
-                    <div className="flex gap-1.5">
+                    <div className="flex justify-end gap-1.5">
                       <button
                         type="button"
                         onClick={() => { setForm({ id: u.id, email: u.email, display_name: u.display_name, role: u.role, password: '', is_active: u.is_active }); setFormError(''); }}
-                        className="ui-control inline-flex min-h-11 items-center rounded-md px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-brand-primary-700 dark:text-slate-200"
+                        className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
                       >
                         Edit
                       </button>
@@ -1866,7 +1906,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                         type="button"
                         onClick={() => void handleDelete(u)}
                         aria-label={`Hapus user ${u.email}`}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50 dark:border-red-800/60 dark:text-red-400 dark:hover:bg-red-900/20"
+                        className="inline-flex min-h-11 min-w-11 items-center justify-center border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                       </button>
@@ -1890,41 +1930,41 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
             <div className="space-y-3">
               {!form.id && (
                 <div>
-                  <label htmlFor="uf-email" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Email</label>
+                  <label htmlFor="uf-email" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Email</label>
                   <input
                     id="uf-email"
                     type="email"
                     required
                     value={form.email}
                     onChange={(e) => setForm((f) => (f ? { ...f, email: e.target.value } : f))}
-                    className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                    className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                   />
                 </div>
               )}
               <div>
-                <label htmlFor="uf-name" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Nama</label>
+                <label htmlFor="uf-name" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Nama</label>
                 <input
                   id="uf-name"
                   type="text"
                   required
                   value={form.display_name}
                   onChange={(e) => setForm((f) => (f ? { ...f, display_name: e.target.value } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                 />
               </div>
               <div>
-                <label htmlFor="uf-role" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">Role</label>
+                <label htmlFor="uf-role" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">Role</label>
                 <select
                   id="uf-role"
                   value={form.role}
                   onChange={(e) => setForm((f) => (f ? { ...f, role: e.target.value } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                 >
                   {ROLE_OPTIONS.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div>
-                <label htmlFor="uf-password" className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
+                <label htmlFor="uf-password" className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-500">
                   {form.id ? 'Password baru (kosongkan bila tetap)' : 'Password (min. 8 karakter)'}
                 </label>
                 <input
@@ -1934,27 +1974,27 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                   minLength={form.password ? 8 : undefined}
                   value={form.password}
                   onChange={(e) => setForm((f) => (f ? { ...f, password: e.target.value } : f))}
-                  className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                 />
               </div>
               {form.id && (
-                <label className="flex items-center gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
                   <input
                     type="checkbox"
                     checked={form.is_active}
                     onChange={(e) => setForm((f) => (f ? { ...f, is_active: e.target.checked } : f))}
-                    className="h-4 w-4 accent-[var(--brand-tosca)]"
+                    className="h-4 w-4 accent-[var(--process)]"
                   />
                   Aktif (boleh login)
                 </label>
               )}
             </div>
 
-            {formError && <p className="mt-3 text-xs font-medium text-red-600 dark:text-red-400" role="alert">{formError}</p>}
+            {formError && <p className="mt-3 text-xs font-medium text-red-600" role="alert">{formError}</p>}
 
-            <div className="mt-5 flex justify-end gap-2">
-              <button type="button" onClick={() => setForm(null)} className="inline-flex min-h-11 items-center rounded-md border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700">Batal</button>
-              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2.5 text-sm font-semibold transition">
+            <div className="mt-5 flex justify-end gap-2 border-t border-[color:var(--rule-color)] pt-3">
+              <button type="button" onClick={() => setForm(null)} className="ui-btn-secondary inline-flex min-h-11 items-center px-4 py-2.5 text-sm font-semibold transition">Batal</button>
+              <button type="submit" disabled={saving} className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2.5 text-sm font-semibold transition">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Save className="h-4 w-4" aria-hidden="true" />}
                 Simpan
               </button>
@@ -1965,6 +2005,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
     </div>
   );
 }
+
 
 // ══════════ Dashboard shell ══════════
 

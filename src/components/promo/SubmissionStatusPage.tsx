@@ -52,14 +52,14 @@ export default function SubmissionStatusPage() {
     <AppShell title="Status Pengajuan" back backTo="/">
       <div className="mx-auto max-w-2xl px-4 py-5">
         {loading && (
-          <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
+          <div className="doc-sheet flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
             <span className="text-sm ui-text-muted">Memuat status pengajuan…</span>
           </div>
         )}
 
         {!loading && loadError && (
-          <div className="ui-alert p-5" role="alert">
+          <div className="doc-alert p-5" role="alert">
             <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat status pengajuan.</p>
             <p className="mt-1 text-xs text-red-700 dark:text-red-300">
               Pengajuan Anda tidak hilang. Sambungan ke server sedang bermasalah. Coba lagi sebentar lagi.
@@ -68,11 +68,11 @@ export default function SubmissionStatusPage() {
               <button
                 type="button"
                 onClick={() => { void load(); }}
-                className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition"
+                className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold transition"
               >
                 Coba lagi
               </button>
-              <Link to="/lacak" className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <Link to="/lacak" className="ui-btn-secondary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold">
                 Lacak dengan Nomor Pengajuan
               </Link>
             </div>
@@ -80,16 +80,16 @@ export default function SubmissionStatusPage() {
         )}
 
         {!loading && notFound && (
-          <div className="ui-alert p-5" role="alert">
+          <div className="doc-alert p-5" role="alert">
             <p className="text-sm font-semibold text-red-800 dark:text-red-200">Pengajuan tidak ditemukan.</p>
             <p className="mt-1 text-xs text-red-700 dark:text-red-300">
               Periksa kembali tautan status Anda. Tautan ini hanya berlaku untuk satu pengajuan.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link to="/lacak" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold transition">
+              <Link to="/lacak" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold transition">
                 Lacak dengan Nomor Pengajuan
               </Link>
-              <Link to="/riwayat" className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+              <Link to="/riwayat" className="ui-btn-secondary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold">
                 Lihat Riwayat Perangkat
               </Link>
             </div>

@@ -13,7 +13,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import {
-  ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, FileText, Film,
+  AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, ChevronDown, FileText, Film,
   ImageIcon, Info, Link2, Loader2, ShieldCheck, Upload, X,
 } from 'lucide-react';
 import { fetchMediaTypes, uploadFile, submitPromo, errorsFromApiError, mapSubmitErrors } from '../../utils/promoApi';
@@ -101,9 +101,21 @@ function isValidLink(url: string): boolean {
 }
 
 function FileIcon({ mime }: { mime: string }) {
-  if (mime === 'video/mp4') return <Film className="h-8 w-8 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />;
-  if (mime === 'application/pdf') return <FileText className="h-8 w-8 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />;
-  return <ImageIcon className="h-8 w-8 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />;
+  if (mime === 'video/mp4') return <Film className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
+  if (mime === 'application/pdf') return <FileText className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
+  return <ImageIcon className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
+}
+
+/** Sudut tanda potong lembar: murni dekoratif, jadi tidak dibaca pembaca layar. */
+function CropMarks() {
+  return (
+    <>
+      <span className="doc-crop" data-corner="tl" aria-hidden="true" />
+      <span className="doc-crop" data-corner="tr" aria-hidden="true" />
+      <span className="doc-crop" data-corner="bl" aria-hidden="true" />
+      <span className="doc-crop" data-corner="br" aria-hidden="true" />
+    </>
+  );
 }
 
 export default function PromoUploadWizard() {
@@ -471,45 +483,65 @@ export default function PromoUploadWizard() {
     }
   }
 
-  // ─── Layar sukses ───
+  // ─── Layar sukses: tiket pekerjaan ───
   if (submitState === 'success') {
     return (
       <AppShell title="Pengajuan Terkirim" hideTabBar>
         <div className="mx-auto max-w-2xl px-4 py-8">
-          <div className="ui-card p-8 text-center">
-            <CheckCircle2 className="mx-auto h-14 w-14 text-green-600 dark:text-green-400" aria-hidden="true" />
-            <h2 className="ui-title-section mt-4 text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
-            <p className="ui-body ui-text-muted mt-2">
-              Materi <span className="font-semibold">{selectedMedia?.name}</span> dari tenant{' '}
-              <span className="font-semibold">{tenant?.name}</span> sudah kami terima.
-              Tim Tenant Relations akan meninjau pengajuan Anda.
-            </p>
-            <div className="ui-control mx-auto mt-5 inline-flex items-center gap-2 rounded-md px-4 py-2.5">
-              <span className="text-xs ui-text-muted">Nomor pengajuan</span>
-              <span className="font-mono text-sm font-bold tracking-widest text-brand-primary-700 dark:text-brand-primary-300">{ticketId}</span>
+          <div className="doc-sheet overflow-hidden">
+            <CropMarks />
+            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] px-6 pt-6 pb-2.5">
+              <span className="doc-plate-no">Tiket Pekerjaan</span>
+              <span className="doc-plate-no ml-auto shrink-0">Bagian 03 / Selesai</span>
             </div>
-            <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
-              Simpan nomor ini untuk memantau status kapan saja, tanpa perlu akun.
-            </p>
-            <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
-              Status juga dapat dipantau di halaman Riwayat dari perangkat ini.
-            </p>
-            <div className="mt-6 flex flex-wrap justify-center gap-3">
-              {statusToken && (
-                <Link to={`/status/${statusToken}`} className="ui-btn-primary inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold transition">
-                  Lihat Status Pengajuan
+
+            <div className="px-6 pt-6 pb-4 text-center">
+              <CheckCircle2 className="mx-auto h-12 w-12 text-[color:var(--stamp-ok)]" aria-hidden="true" />
+              <h2 className="mt-3 text-xl font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
+              <p className="ui-body ui-text-muted mt-2">
+                Materi <span className="font-semibold">{selectedMedia?.name}</span> dari tenant{' '}
+                <span className="font-semibold">{tenant?.name}</span> sudah kami terima.
+                Tim Tenant Relations akan meninjau pengajuan Anda.
+              </p>
+
+              {/* Nomor pengajuan = nomor job: data, jadi mono besar. Labelnya
+               * ditulis huruf kecil seperti semula: skrip verifikasi produksi
+               * mencocokkan /Nomor pengajuan\s*(MP-...)/ persis. */}
+              <div className="mt-5 border-y border-[color:var(--rule-color)] py-4">
+                <p className="doc-plate-no">Nomor pengajuan</p>
+                <p className="doc-num mt-1 text-2xl font-bold tracking-[0.1em] text-slate-900 dark:text-white">{ticketId}</p>
+              </div>
+
+              <p className="mt-4 text-xs ui-text-muted">
+                Simpan nomor ini untuk memantau status kapan saja, tanpa perlu akun.
+              </p>
+              <p className="mt-2 text-xs ui-text-muted">
+                Status juga dapat dipantau di halaman Riwayat dari perangkat ini.
+              </p>
+
+              <div className="mt-6 flex flex-wrap justify-center gap-3">
+                {statusToken && (
+                  <Link to={`/status/${statusToken}`} className="ui-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
+                    Lihat Status Pengajuan
+                  </Link>
+                )}
+                <Link to="/lacak" className="ui-btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
+                  Lacak dengan Nomor
                 </Link>
-              )}
-              <Link to="/lacak" className="ui-control inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Lacak dengan Nomor
-              </Link>
-              <Link to="/riwayat" className="ui-control inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Lihat Riwayat
-              </Link>
-              <Link to="/" className="ui-control inline-flex items-center gap-2 rounded-md px-5 py-2.5 text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Kembali ke Beranda
-              </Link>
+                <Link to="/riwayat" className="ui-btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
+                  Lihat Riwayat
+                </Link>
+                <Link to="/" className="ui-btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold">
+                  Kembali ke Beranda
+                </Link>
+              </div>
             </div>
+
+            {/* Tepi perforasi: batas yang bisa disobek, tanda tiket. */}
+            <div className="doc-perf mx-6" aria-hidden="true" />
+            <p className="doc-plate-no px-6 py-4 text-center">
+              Metropolitan Mall Bekasi · Kanal Materi Digital
+            </p>
           </div>
         </div>
       </AppShell>
@@ -524,16 +556,43 @@ export default function PromoUploadWizard() {
       hideTabBar
     >
       <div className="mx-auto max-w-2xl px-4 py-5">
-        {/* Progres langkah - indikator tipis khas aplikasi berlangkah */}
+        {/* Pip bagian dokumen: label langkah kapital ber-track + bilah segmen
+         * bergaris. Bukan pil membulat - ini lembar kerja, bukan aplikasi. */}
         <nav className="mb-6" aria-label="Langkah pengajuan">
-          <div className="flex items-baseline justify-between">
-            <p className="text-sm font-semibold text-slate-900 dark:text-white">
-              {STEPS[step - 1]?.label}
-            </p>
-            <p className="text-xs ui-text-muted tabular-nums">
-              Langkah {step} dari {STEPS.length}
-            </p>
-          </div>
+          <ol className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-color)]">
+            {STEPS.map((s, i) => {
+              const nomorLangkah = i + 1;
+              const aktif = nomorLangkah === step;
+              const selesai = nomorLangkah < step;
+              return (
+                <li key={s.label} className="flex items-baseline gap-2 pb-2">
+                  <span
+                    className={`doc-num text-[11px] font-bold ${
+                      aktif ? 'text-[color:var(--process)]' : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {String(nomorLangkah).padStart(2, '0')}
+                  </span>
+                  <span
+                    className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                      aktif
+                        ? 'text-[color:var(--process)]'
+                        : selesai
+                          ? 'text-slate-700 dark:text-slate-200'
+                          : 'text-slate-400 dark:text-slate-500'
+                    }`}
+                  >
+                    {s.label}
+                  </span>
+                </li>
+              );
+            })}
+            <li className="ml-auto pb-2">
+              <span className="doc-plate-no">
+                Langkah {step} dari {STEPS.length}
+              </span>
+            </li>
+          </ol>
           <div
             className="mt-2 flex gap-1.5"
             role="progressbar"
@@ -545,8 +604,10 @@ export default function PromoUploadWizard() {
             {STEPS.map((s, i) => (
               <span
                 key={s.label}
-                className={`h-1 flex-1 rounded-full transition-colors ${
-                  i < step ? 'bg-brand-primary-600' : 'bg-stone-200 dark:bg-slate-700'
+                className={`h-[6px] flex-1 border ${
+                  i < step
+                    ? 'border-[color:var(--process)] bg-[color:var(--process)]'
+                    : 'border-[color:var(--rule-strong)] bg-[var(--surface-offset)]'
                 }`}
               />
             ))}
@@ -554,112 +615,145 @@ export default function PromoUploadWizard() {
         </nav>
 
         {loading && (
-          <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
-            <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
+          <div className="doc-sheet flex items-center justify-center gap-3 p-10" role="status">
+            <Loader2 className="h-5 w-5 animate-spin text-[color:var(--process)]" aria-hidden="true" />
             <span className="text-sm ui-text-muted">Memuat katalog media…</span>
           </div>
         )}
         {loadError && (
-          <div className="ui-alert p-4" role="alert">
-            <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat katalog media.</p>
-            <p className="mt-1 text-xs text-red-700 dark:text-red-300">Muat ulang halaman atau coba lagi sebentar.</p>
+          <div className="ui-alert flex items-start gap-3 p-4" role="alert">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-[color:var(--stamp-no)]" aria-hidden="true" />
+            <div>
+              <p className="text-sm font-semibold text-[color:var(--stamp-no)]">Gagal memuat katalog media.</p>
+              <p className="mt-1 text-xs ui-text-muted">Muat ulang halaman atau coba lagi sebentar.</p>
+            </div>
           </div>
         )}
 
         {!loading && !loadError && (
-          <div className="ui-card overflow-hidden">
+          <div className="doc-sheet overflow-hidden">
+            <CropMarks />
             {/* ─── Langkah 1: Pilih media ─── */}
             {step === 1 && (
               <div className="p-5 sm:p-6">
-                <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section text-slate-900 focus:outline-none dark:text-white">Pilih Jenis Media Promosi</h2>
-                <p className="ui-body ui-text-muted mt-2">Pilih media tempat materi Anda akan dipasang.</p>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Pilih Jenis Media Promosi</h2>
+                  <span className="doc-plate-no ml-auto shrink-0">{mediaTypesNonCetak.length} media</span>
+                </div>
+                <p className="ui-body ui-text-muted mt-3">Pilih media tempat materi Anda akan dipasang.</p>
 
-                <div className="mt-5 space-y-2">
+                {/* Baris lembar spesifikasi: dipisah GARIS, bukan kartu per
+                 * baris (dunia ini tidak mengurung tiap butir dalam lembar). */}
+                <ul className="mt-5 border-t border-[color:var(--rule-color)]">
                   {mediaTypesNonCetak.map((m, i) => (
-                    <label
+                    <li
                       key={m.slug}
-                      className={`flex cursor-pointer items-start gap-3 rounded-md border p-3.5 transition ${
+                      className={`border-b border-[color:var(--rule-color)] py-3.5 pl-3 ${
                         selectedSlug === m.slug
-                          ? 'ring-2 ring-brand-primary-600 bg-white dark:ring-1 dark:ring-brand-soft dark:bg-slate-800'
-                          : 'border-slate-200 hover:border-stone-400 dark:border-slate-700 dark:hover:border-slate-500'
+                          ? 'bg-[var(--process-soft)]'
+                          : 'hover:bg-[var(--surface-hover)]'
                       }`}
                     >
-                      <input
-                        id={`media-${i}`}
-                        type="radio"
-                        name="media_type"
-                        value={m.slug}
-                        checked={selectedSlug === m.slug}
-                        onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
-                        aria-describedby={fieldErrors.media ? 'err-media' : undefined}
-                        className="mt-1 h-4 w-4 accent-[var(--brand-tosca)]"
-                      />
-                      {/* Foto contoh - dekoratif: nama media sudah ada di sebelahnya,
-                       * jadi sengaja alt="" agar pembaca layar tidak mengulang. */}
-                      {m.image_path && (
-                        <img
-                          src={m.image_path}
-                          alt=""
-                          width={800}
-                          height={600}
-                          loading="lazy"
-                          decoding="async"
-                          className="h-12 w-16 shrink-0 rounded-[var(--radius-control)] object-cover sm:h-14 sm:w-[74px]"
-                        />
-                      )}
-                      <span className="min-w-0 flex-1">
-                        <span className="flex flex-wrap items-center gap-2">
-                          {/* `min-w-0` + `overflow-wrap: anywhere`: nama media bisa
-                           * memuat kata majemuk tanpa titik putus (mis.
-                           * "Feed Instagram/Fanpage/TikTok"). Tanpa keduanya,
-                           * flex item ini menolak menyusut di bawah lebar
-                           * min-content kata terpanjang dan meluber keluar
-                           * kartu pada viewport 320px. */}
-                          <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
-                          {/* `text-slate-600` (bukan slate-500): di atas latar
-                           * `bg-slate-100`, slate-500 hanya 4.34:1 - gagal AA
-                           * untuk teks 12px. slate-600 = 6.92:1. */}
-                          <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:bg-slate-800 dark:text-slate-400">
-                            {CATEGORY_LABELS[m.category] ?? m.category}
-                          </span>
-                        </span>
-                        <span className="mt-1 block text-xs ui-text-muted">
-                          {[m.size_spec, m.material_spec].filter(Boolean).join(' · ') || 'Lihat ketentuan'}
-                        </span>
-                        {selectedSlug === m.slug && m.rules && (
-                          <span className="mt-2 block">
-                            <button
-                              type="button"
-                              onClick={(e) => { e.preventDefault(); setRulesOpen((v) => !v); }}
-                              aria-expanded={rulesOpen}
-                              className="inline-flex items-center gap-1 text-xs font-medium text-brand-primary-700 dark:text-brand-primary-300"
-                            >
-                              Ketentuan
-                              <ChevronDown className={`h-3.5 w-3.5 transition-transform ${rulesOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
-                            </button>
-                            {rulesOpen && (
-                              <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
-                                {m.rules.split('\n').filter(Boolean).map((line, i) => (
-                                  <li key={i}>• {line}</li>
-                                ))}
-                              </ul>
-                            )}
-                          </span>
+                      <div className="flex items-start gap-3">
+                        {/* Foto contoh - dekoratif: nama media sudah ada di sebelahnya,
+                         * jadi sengaja alt="" agar pembaca layar tidak mengulang. */}
+                        {m.image_path && (
+                          <img
+                            src={m.image_path}
+                            alt=""
+                            width={800}
+                            height={600}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-12 w-16 shrink-0 rounded-[var(--radius-control)] object-cover sm:h-14 sm:w-[74px]"
+                          />
                         )}
-                      </span>
-                    </label>
+                        <div className="min-w-0 flex-1">
+                          <label
+                            htmlFor={`media-${i}`}
+                            className="flex cursor-pointer flex-wrap items-center gap-x-2.5 gap-y-1"
+                          >
+                            <input
+                              id={`media-${i}`}
+                              type="radio"
+                              name="media_type"
+                              value={m.slug}
+                              checked={selectedSlug === m.slug}
+                              onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
+                              aria-describedby={fieldErrors.media ? 'err-media' : undefined}
+                              className="h-4 w-4 shrink-0 rounded-none accent-[var(--process)]"
+                            />
+                            {/* Nomor plate = urutan deck; urutannya sendiri informasi. */}
+                            <span className="doc-plate-no">
+                              Plate {String(m.sort_order ?? i + 1).padStart(2, '0')}
+                            </span>
+                            {/* `min-w-0` + `overflow-wrap: anywhere`: nama media bisa
+                             * memuat kata majemuk tanpa titik putus (mis.
+                             * "Feed Instagram/Fanpage/TikTok"). Tanpa keduanya,
+                             * flex item ini menolak menyusut di bawah lebar
+                             * min-content kata terpanjang dan meluber keluar
+                             * lembar pada viewport 320px. */}
+                            <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
+                            <span className="doc-tag" data-tone="none">
+                              {CATEGORY_LABELS[m.category] ?? m.category}
+                            </span>
+                          </label>
+
+                          {/* Ukuran & material sebagai tabel titik penghubung:
+                           * nilainya data, jadi rata kanan dan monospace. */}
+                          <dl className="doc-rows mt-2.5">
+                            <div className="doc-row">
+                              <dt>Ukuran</dt>
+                              <span className="doc-leader" aria-hidden="true" />
+                              <dd>{m.size_spec || '-'}</dd>
+                            </div>
+                            <div className="doc-row">
+                              <dt>Material</dt>
+                              <span className="doc-leader" aria-hidden="true" />
+                              <dd>{m.material_spec || '-'}</dd>
+                            </div>
+                          </dl>
+
+                          {selectedSlug === m.slug && m.rules && (
+                            <div className="mt-2">
+                              <button
+                                type="button"
+                                onClick={() => setRulesOpen((v) => !v)}
+                                aria-expanded={rulesOpen}
+                                className="inline-flex items-center gap-1 border-b border-[color:var(--rule-strong)] pb-0.5 text-xs font-semibold text-[color:var(--process)]"
+                              >
+                                Ketentuan
+                                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${rulesOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
+                              </button>
+                              {rulesOpen && (
+                                <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                  {m.rules.split('\n').filter(Boolean).map((line, idx) => (
+                                    <li key={idx} className="flex items-start gap-2">
+                                      <span aria-hidden="true" className="doc-num mt-0.5 text-[10px] font-bold text-slate-400">
+                                        {String(idx + 1).padStart(2, '0')}
+                                      </span>
+                                      <span>{line}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
 
                 <div className="ui-helper-slot mt-3">
-                  {fieldErrors.media && <p id="err-media" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media}</p>}
+                  {fieldErrors.media && <p id="err-media" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.media}</p>}
                 </div>
 
                 <button
                   type="button"
                   onClick={goStep2}
                   disabled={!selectedSlug}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
+                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
                 >
                   Lanjut ke Data Tenant
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -670,15 +764,18 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 2: Data tenant ─── */}
             {step === 2 && (
               <div className="p-5 sm:p-6">
-                <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section text-slate-900 focus:outline-none dark:text-white">Data Tenant &amp; PIC</h2>
-                <p className="ui-body ui-text-muted mt-2">
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Data Tenant &amp; PIC</h2>
+                  <span className="doc-plate-no ml-auto shrink-0">Bagian 02</span>
+                </div>
+                <p className="ui-body ui-text-muted mt-3">
                   Materi untuk <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedMedia?.name}</span>.
                 </p>
 
                 <div className="mt-5 space-y-4">
                   <div>
-                    <label htmlFor="tenant-search" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      Nama Tenant <span aria-hidden="true" className="text-red-500">*</span>
+                    <label htmlFor="tenant-search" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      Nama Tenant <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
                       {manualMode
@@ -696,8 +793,8 @@ export default function PromoUploadWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="pic-name" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Nama PIC <span aria-hidden="true" className="text-red-500">*</span>
+                      <label htmlFor="pic-name" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                        Nama PIC <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
                         id="pic-name"
@@ -706,17 +803,17 @@ export default function PromoUploadWizard() {
                         maxLength={100}
                         autoComplete="name"
                         onChange={(e) => { setPicName(e.target.value); setFieldErrors((er) => ({ ...er, pic_name: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full px-3 py-2.5 text-sm ${fieldErrors.pic_name ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                         aria-invalid={fieldErrors.pic_name ? true : undefined}
                         aria-describedby={fieldErrors.pic_name ? 'err-pic_name' : undefined}
                       />
                       <div className="ui-helper-slot mt-1">
-                        {fieldErrors.pic_name && <p id="err-pic_name" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_name}</p>}
+                        {fieldErrors.pic_name && <p id="err-pic_name" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.pic_name}</p>}
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="pic-phone" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Nomor Telepon PIC <span aria-hidden="true" className="text-red-500">*</span>
+                      <label htmlFor="pic-phone" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                        Nomor Telepon PIC <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
                         id="pic-phone"
@@ -727,18 +824,18 @@ export default function PromoUploadWizard() {
                         autoComplete="tel"
                         placeholder="08xx xxxx xxxx"
                         onChange={(e) => { setPicPhone(e.target.value); setFieldErrors((er) => ({ ...er, pic_phone: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.pic_phone ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full px-3 py-2.5 text-sm ${fieldErrors.pic_phone ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                         aria-invalid={fieldErrors.pic_phone ? true : undefined}
                         aria-describedby={fieldErrors.pic_phone ? 'err-pic_phone' : undefined}
                       />
                       <div className="ui-helper-slot mt-1">
-                        {fieldErrors.pic_phone && <p id="err-pic_phone" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.pic_phone}</p>}
+                        {fieldErrors.pic_phone && <p id="err-pic_phone" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.pic_phone}</p>}
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="installation-date" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    <label htmlFor="installation-date" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Tanggal Pemasangan yang Diharapkan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <input
@@ -747,7 +844,7 @@ export default function PromoUploadWizard() {
                       value={installationDate}
                       min={leadInfo.earliest || undefined}
                       onChange={(e) => { setInstallationDate(e.target.value); setFieldErrors((er) => ({ ...er, installation_date: '' })); }}
-                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
+                      className="ui-control w-full px-3 py-2.5 text-sm sm:max-w-xs"
                       aria-invalid={fieldErrors.installation_date ? true : undefined}
                       aria-describedby={fieldErrors.installation_date ? 'err-installation_date' : undefined}
                     />
@@ -755,18 +852,18 @@ export default function PromoUploadWizard() {
                       Permintaan tanggal bersifat harapan. Jadwal final ditentukan Mall (lihat ketentuan media).
                     </p>
                     {leadInfo.lead && (
-                      <p className="mt-1 text-xs font-medium text-brand-primary-700 dark:text-brand-primary-300">
+                      <p className="mt-1 text-xs font-medium text-[color:var(--process)]">
                         Materi harus diterima paling lambat {leadInfo.label}, tanggal paling awal {leadInfo.earliest}.
                       </p>
                     )}
                     <div className="ui-helper-slot mt-1">
-                      {fieldErrors.installation_date && <p id="err-installation_date" className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.installation_date}</p>}
+                      {fieldErrors.installation_date && <p id="err-installation_date" className="text-xs font-medium text-[color:var(--stamp-no)]" role="alert">{fieldErrors.installation_date}</p>}
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="campaign-name" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      Nama Campaign <span aria-hidden="true" className="text-red-500">*</span>
+                    <label htmlFor="campaign-name" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      Nama Campaign <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <input
                       id="campaign-name"
@@ -775,18 +872,18 @@ export default function PromoUploadWizard() {
                       maxLength={150}
                       placeholder="Contoh: Promo Akhir Tahun"
                       onChange={(e) => { setCampaignName(e.target.value); setFieldErrors((er) => ({ ...er, campaign_name: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.campaign_name ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full px-3 py-2.5 text-sm ${fieldErrors.campaign_name ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                       aria-invalid={fieldErrors.campaign_name ? true : undefined}
                       aria-describedby={fieldErrors.campaign_name ? 'err-campaign_name' : undefined}
                     />
                     <div className="ui-helper-slot mt-1">
-                      {fieldErrors.campaign_name && <p id="err-campaign_name" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.campaign_name}</p>}
+                      {fieldErrors.campaign_name && <p id="err-campaign_name" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.campaign_name}</p>}
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="material-title" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      Judul Materi <span aria-hidden="true" className="text-red-500">*</span>
+                    <label htmlFor="material-title" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      Judul Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <input
                       id="material-title"
@@ -795,18 +892,18 @@ export default function PromoUploadWizard() {
                       maxLength={200}
                       placeholder="Contoh: Spanduk Diskon 50%"
                       onChange={(e) => { setMaterialTitle(e.target.value); setFieldErrors((er) => ({ ...er, material_title: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_title ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full px-3 py-2.5 text-sm ${fieldErrors.material_title ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                       aria-invalid={fieldErrors.material_title ? true : undefined}
                       aria-describedby={fieldErrors.material_title ? 'err-material_title' : undefined}
                     />
                     <div className="ui-helper-slot mt-1">
-                      {fieldErrors.material_title && <p id="err-material_title" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_title}</p>}
+                      {fieldErrors.material_title && <p id="err-material_title" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.material_title}</p>}
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="material-description" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      Deskripsi Materi <span aria-hidden="true" className="text-red-500">*</span>
+                    <label htmlFor="material-description" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      Deskripsi Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <textarea
                       id="material-description"
@@ -815,25 +912,25 @@ export default function PromoUploadWizard() {
                       rows={3}
                       placeholder="Penjelasan singkat isi materi promosi Anda."
                       onChange={(e) => { setMaterialDescription(e.target.value); setFieldErrors((er) => ({ ...er, material_description: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_description ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full px-3 py-2.5 text-sm ${fieldErrors.material_description ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                       aria-invalid={fieldErrors.material_description ? true : undefined}
                       aria-describedby={fieldErrors.material_description ? 'err-material_description' : undefined}
                     />
                     <div className="ui-helper-slot mt-1">
-                      {fieldErrors.material_description && <p id="err-material_description" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_description}</p>}
+                      {fieldErrors.material_description && <p id="err-material_description" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.material_description}</p>}
                     </div>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="material-type" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Jenis Materi <span aria-hidden="true" className="text-red-500">*</span>
+                      <label htmlFor="material-type" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                        Jenis Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <select
                         id="material-type"
                         value={materialType}
                         onChange={(e) => { setMaterialType(e.target.value); setFieldErrors((er) => ({ ...er, material_type: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.material_type ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full px-3 py-2.5 text-sm ${fieldErrors.material_type ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                         aria-invalid={fieldErrors.material_type ? true : undefined}
                         aria-describedby={fieldErrors.material_type ? 'err-material_type' : undefined}
                       >
@@ -841,12 +938,12 @@ export default function PromoUploadWizard() {
                         {MATERIAL_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
                       </select>
                       <div className="ui-helper-slot mt-1">
-                        {fieldErrors.material_type && <p id="err-material_type" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.material_type}</p>}
+                        {fieldErrors.material_type && <p id="err-material_type" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.material_type}</p>}
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="media-target" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                        Media / Lokasi Pemasangan <span aria-hidden="true" className="text-red-500">*</span>
+                      <label htmlFor="media-target" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                        Media / Lokasi Pemasangan <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
                         id="media-target"
@@ -855,19 +952,19 @@ export default function PromoUploadWizard() {
                         maxLength={200}
                         placeholder={selectedMedia?.location_note || 'Contoh: Atrium 1'}
                         onChange={(e) => { setMediaTarget(e.target.value); setFieldErrors((er) => ({ ...er, media_target: '' })); }}
-                        className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${fieldErrors.media_target ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        className={`ui-control w-full px-3 py-2.5 text-sm ${fieldErrors.media_target ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                         aria-invalid={fieldErrors.media_target ? true : undefined}
                         aria-describedby={fieldErrors.media_target ? 'err-media_target' : undefined}
                       />
                       <div className="ui-helper-slot mt-1">
-                        {fieldErrors.media_target && <p id="err-media_target" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.media_target}</p>}
+                        {fieldErrors.media_target && <p id="err-media_target" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.media_target}</p>}
                       </div>
                     </div>
                   </div>
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="air-start-date" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      <label htmlFor="air-start-date" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Mulai Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                       </label>
                       <input
@@ -875,14 +972,14 @@ export default function PromoUploadWizard() {
                         type="date"
                         value={airStartDate}
                         onChange={(e) => { setAirStartDate(e.target.value); setFieldErrors((er) => ({ ...er, air_start_date: '', air_end_date: '' })); }}
-                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                        className="ui-control w-full px-3 py-2.5 text-sm"
                       />
                       <div className="ui-helper-slot mt-1">
-                        {fieldErrors.air_start_date && <p className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_start_date}</p>}
+                        {fieldErrors.air_start_date && <p className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.air_start_date}</p>}
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="air-end-date" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      <label htmlFor="air-end-date" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Berakhir Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                       </label>
                       <input
@@ -890,18 +987,18 @@ export default function PromoUploadWizard() {
                         type="date"
                         value={airEndDate}
                         onChange={(e) => { setAirEndDate(e.target.value); setFieldErrors((er) => ({ ...er, air_end_date: '' })); }}
-                        className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                        className="ui-control w-full px-3 py-2.5 text-sm"
                         aria-invalid={fieldErrors.air_end_date ? true : undefined}
                         aria-describedby={fieldErrors.air_end_date ? 'err-air_end_date' : undefined}
                       />
                       <div className="ui-helper-slot mt-1">
-                        {fieldErrors.air_end_date && <p id="err-air_end_date" role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors.air_end_date}</p>}
+                        {fieldErrors.air_end_date && <p id="err-air_end_date" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.air_end_date}</p>}
                       </div>
                     </div>
                   </div>
 
                   <div>
-                    <label htmlFor="notes" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                    <label htmlFor="notes" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Catatan untuk Tim Tenant Relations <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <textarea
@@ -911,7 +1008,7 @@ export default function PromoUploadWizard() {
                       rows={4}
                       placeholder={selectedMedia?.category === 'social' ? 'Tulis caption media sosial Anda di sini…' : 'Permintaan atau keterangan tambahan…'}
                       onChange={(e) => setNotes(e.target.value)}
-                      className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+                      className="ui-control w-full px-3 py-2.5 text-sm"
                     />
                     {selectedMedia?.category === 'social' && (
                       <p className="mt-1 text-xs ui-text-muted">Caption wajib menyebutkan lokasi lantai tenant Anda.</p>
@@ -922,14 +1019,14 @@ export default function PromoUploadWizard() {
                 <button
                   type="button"
                   onClick={goStep3}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
+                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
                 >
                   Lanjut ke Kirim Materi
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </button>
                 <div className="ui-helper-slot mt-3">
                   {submitError && (
-                    <p className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">{submitError}</p>
+                    <p className="text-xs font-medium text-[color:var(--stamp-no)]" role="alert">{submitError}</p>
                   )}
                 </div>
               </div>
@@ -938,42 +1035,54 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 3: Kirim materi (unggah / tautan) ─── */}
             {step === 3 && selectedMedia && (
               <div className="p-5 sm:p-6">
-                <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section text-slate-900 focus:outline-none dark:text-white">Kirim Materi</h2>
-                <p className="ui-body ui-text-muted mt-2">
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Kirim Materi</h2>
+                  <span className="doc-plate-no ml-auto shrink-0">Bagian 03</span>
+                </div>
+                <p className="ui-body ui-text-muted mt-3">
                   Kirim materi untuk <span className="font-semibold">{selectedMedia.name}</span>
                   {formatsLabel && <> (format {formatsLabel}{selectedMedia.size_spec ? ` · ukuran ${selectedMedia.size_spec}` : ''})</>}.
                   Pilih salah satu cara: unggah berkas ke penyimpanan Mall, atau kirim tautan milik Anda.
                 </p>
 
-                {/* Ringkasan */}
-                <dl className="ui-control mt-4 grid gap-x-6 gap-y-2 rounded-md p-4 text-xs sm:grid-cols-2">
-                  <div className="flex gap-2">
-                    <dt className="shrink-0 font-semibold ui-text-muted">Tenant:</dt>
-                    <dd className="text-slate-900 dark:text-white">{tenant?.name}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="shrink-0 font-semibold ui-text-muted">PIC:</dt>
-                    <dd className="text-slate-900 dark:text-white">{picName} · {picPhone}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="shrink-0 font-semibold ui-text-muted">Media:</dt>
-                    <dd className="text-slate-900 dark:text-white">{selectedMedia.name}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="shrink-0 font-semibold ui-text-muted">Campaign:</dt>
-                    <dd className="text-slate-900 dark:text-white">{campaignName}</dd>
-                  </div>
-                  <div className="flex gap-2">
-                    <dt className="shrink-0 font-semibold ui-text-muted">Lokasi:</dt>
-                    <dd className="text-slate-900 dark:text-white">{mediaTarget}</dd>
-                  </div>
-                  {installationDate && (
-                    <div className="flex gap-2">
-                      <dt className="shrink-0 font-semibold ui-text-muted">Tgl pasang:</dt>
-                      <dd className="text-slate-900 dark:text-white">{installationDate}</dd>
+                {/* Ringkasan sebagai tabel titik penghubung: nilainya data. */}
+                <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
+                  <p className="doc-plate-no">Ringkasan Lembar</p>
+                  <dl className="doc-rows mt-2.5">
+                    <div className="doc-row">
+                      <dt>Tenant</dt>
+                      <span className="doc-leader" aria-hidden="true" />
+                      <dd>{tenant?.name}</dd>
                     </div>
-                  )}
-                </dl>
+                    <div className="doc-row">
+                      <dt>PIC</dt>
+                      <span className="doc-leader" aria-hidden="true" />
+                      <dd>{picName} · {picPhone}</dd>
+                    </div>
+                    <div className="doc-row">
+                      <dt>Media</dt>
+                      <span className="doc-leader" aria-hidden="true" />
+                      <dd>{selectedMedia.name}</dd>
+                    </div>
+                    <div className="doc-row">
+                      <dt>Campaign</dt>
+                      <span className="doc-leader" aria-hidden="true" />
+                      <dd>{campaignName}</dd>
+                    </div>
+                    <div className="doc-row">
+                      <dt>Lokasi</dt>
+                      <span className="doc-leader" aria-hidden="true" />
+                      <dd>{mediaTarget}</dd>
+                    </div>
+                    {installationDate && (
+                      <div className="doc-row">
+                        <dt>Tgl pasang</dt>
+                        <span className="doc-leader" aria-hidden="true" />
+                        <dd>{installationDate}</dd>
+                      </div>
+                    )}
+                  </dl>
+                </div>
 
                 {/* Pemilih sumber materi - dua kanal resmi (tautan kanonis, unggah berkas).
                     Kanal unggah disembunyikan bila operator menonaktifkannya
@@ -984,10 +1093,10 @@ export default function PromoUploadWizard() {
                     type="button"
                     aria-pressed={sourceMode === 'link'}
                     onClick={() => { setSourceMode('link'); setFileError(''); }}
-                    className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`flex min-h-11 flex-1 items-center justify-center gap-2 border px-3 py-2.5 text-sm font-semibold ${
                       sourceMode === 'link'
-                        ? 'ring-2 ring-brand-primary-600 bg-white text-brand-primary-700 dark:ring-1 dark:ring-brand-soft dark:bg-slate-800 dark:text-brand-primary-400'
-                        : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
+                        ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process)]'
+                        : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300'
                     }`}
                   >
                     <Link2 className="h-4 w-4" aria-hidden="true" />
@@ -997,10 +1106,10 @@ export default function PromoUploadWizard() {
                     type="button"
                     aria-pressed={sourceMode === 'upload'}
                     onClick={() => { setSourceMode('upload'); setLinkError(''); }}
-                    className={`flex min-h-11 flex-1 items-center justify-center gap-2 rounded-md border px-3 py-2.5 text-sm font-semibold transition ${
+                    className={`flex min-h-11 flex-1 items-center justify-center gap-2 border px-3 py-2.5 text-sm font-semibold ${
                       sourceMode === 'upload'
-                        ? 'ring-2 ring-brand-primary-600 bg-white text-brand-primary-700 dark:ring-1 dark:ring-brand-soft dark:bg-slate-800 dark:text-brand-primary-400'
-                        : 'border-slate-200 text-slate-600 hover:border-stone-400 dark:border-slate-700 dark:text-slate-300'
+                        ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process)]'
+                        : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300'
                     }`}
                   >
                     <Upload className="h-4 w-4" aria-hidden="true" />
@@ -1008,7 +1117,7 @@ export default function PromoUploadWizard() {
                   </button>
                 </div>
                 ) : (
-                  <p className="mt-5 flex items-start gap-1.5 rounded-md bg-slate-50 p-3 text-xs ui-text-muted dark:bg-slate-800/60">
+                  <p className="mt-5 flex items-start gap-1.5 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-3 text-xs ui-text-muted">
                     <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                     Kanal unggah berkas sedang tidak diaktifkan pada instance ini. Silakan kirim
                     tautan materi Anda.
@@ -1018,8 +1127,8 @@ export default function PromoUploadWizard() {
                 {/* Tautan materi - untuk file besar / folder Drive */}
                 {sourceMode === 'link' && (
                   <div className="mt-4">
-                    <label htmlFor="link-input" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      Tautan Materi <span aria-hidden="true" className="text-red-500">*</span>
+                    <label htmlFor="link-input" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      Tautan Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
                       Tempel tautan Google Drive, Dropbox, atau WeTransfer. Buka menu <span className="font-medium">Share</span> →
@@ -1034,13 +1143,13 @@ export default function PromoUploadWizard() {
                       maxLength={500}
                       placeholder="https://drive.google.com/…"
                       onChange={(e) => { setLinkUrl(e.target.value); setLinkError(''); setFieldErrors((er) => ({ ...er, link_url: '' })); }}
-                      className={`ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${linkError || fieldErrors.link_url ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                      className={`ui-control w-full px-3 py-2.5 text-sm ${linkError || fieldErrors.link_url ? 'ring-1 ring-[color:var(--stamp-no)]' : ''}`}
                       aria-invalid={linkError || fieldErrors.link_url ? true : undefined}
                       aria-describedby={linkError || fieldErrors.link_url ? 'err-link_url' : undefined}
                     />
                     <div className="ui-helper-slot mt-2">
                       {(linkError || fieldErrors.link_url) && (
-                        <p id="err-link_url" className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                        <p id="err-link_url" className="flex items-center gap-1.5 text-xs font-medium text-[color:var(--stamp-no)]" role="alert">
                           <X className="h-3.5 w-3.5" aria-hidden="true" />
                           {linkError || fieldErrors.link_url}
                         </p>
@@ -1052,18 +1161,18 @@ export default function PromoUploadWizard() {
                 {/* File picker */}
                 {sourceMode === 'upload' && (
                 <div className="mt-5">
-                  <label htmlFor="file-input" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
-                    File Materi <span aria-hidden="true" className="text-red-500">*</span>
+                  <label htmlFor="file-input" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    File Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                   </label>
                   <label
                     htmlFor="file-input"
-                    className={`flex cursor-pointer flex-col items-center justify-center gap-3 rounded-md border-2 border-dashed p-8 text-center transition ${
+                    className={`flex cursor-pointer flex-col items-center justify-center gap-3 border-2 border-dashed p-8 text-center ${
                       fileError
-                        ? 'border-red-300 bg-red-50/50 dark:border-red-700 dark:bg-red-950/20'
-                        : ''
+                        ? 'border-[color:var(--stamp-no)] bg-[var(--stamp-no-soft)]'
+                        : 'border-[color:var(--rule-strong)] bg-[var(--surface-offset)] hover:bg-[var(--surface-hover)]'
                     }`}
                   >
-                    <Upload className="h-8 w-8 text-brand-primary-600 dark:text-brand-primary-400" aria-hidden="true" />
+                    <Upload className="h-8 w-8 text-[color:var(--process)]" aria-hidden="true" />
                     <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
                       {file ? 'Ganti file' : 'Klik untuk memilih file'}
                     </span>
@@ -1084,7 +1193,7 @@ export default function PromoUploadWizard() {
 
                   <div className="ui-helper-slot mt-2">
                     {fileError && (
-                      <p className="flex items-center gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                      <p className="flex items-center gap-1.5 text-xs font-medium text-[color:var(--stamp-no)]" role="alert">
                         <X className="h-3.5 w-3.5" aria-hidden="true" />
                         {fileError}
                       </p>
@@ -1092,11 +1201,11 @@ export default function PromoUploadWizard() {
                   </div>
 
                   {file && !fileError && (
-                    <div className="ui-control mt-3 flex items-center gap-3 rounded-md p-3">
+                    <div className="mt-3 flex items-center gap-3 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-3">
                       <FileIcon mime={file.type} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{file.name}</p>
-                        <p className="text-xs ui-text-muted">
+                        <p className="doc-num text-xs ui-text-muted">
                           {MIME_LABELS[file.type] ?? file.type} · {formatBytes(file.size)}
                         </p>
                       </div>
@@ -1104,7 +1213,7 @@ export default function PromoUploadWizard() {
                         type="button"
                         onClick={() => setFile(null)}
                         aria-label="Hapus file"
-                        className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
+                        className="inline-flex h-11 w-11 items-center justify-center text-slate-500 hover:bg-[var(--surface-hover)] hover:text-slate-700 dark:text-slate-400"
                       >
                         <X className="h-4 w-4" aria-hidden="true" />
                       </button>
@@ -1116,15 +1225,16 @@ export default function PromoUploadWizard() {
                 {/* Kanal email - deck mengarahkan materi social media ke email
                     marketing; tautan pengajuan tetap dipakai untuk verifikasi. */}
                 {materialEmail && (
-                  <div className="ui-control mt-4 rounded-md p-4">
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">
+                  <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
+                    <p className="doc-plate-no">Kanal Email</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
                       Materi social media juga dapat dikirim via email
                     </p>
                     <p className="mt-1 text-xs ui-text-muted">
                       Kirim berkas materi ke{' '}
                       <a
                         href={`mailto:${materialEmail}?subject=${encodeURIComponent(`Materi Promosi ${selectedMedia.name} - ${tenant?.name ?? ''}`)}`}
-                        className="font-medium text-brand-primary-700 underline dark:text-brand-primary-300"
+                        className="doc-link font-medium"
                       >
                         {materialEmail}
                       </a>
@@ -1134,9 +1244,9 @@ export default function PromoUploadWizard() {
                 )}
 
                 {submitState === 'error' && (
-                  <div className="ui-alert-panel mt-4 p-4" role="alert">
-                    <p className="text-sm font-semibold text-red-800 dark:text-red-200">Pengajuan gagal.</p>
-                    <p className="mt-1 text-xs text-red-700 dark:text-red-300">{submitError}</p>
+                  <div className="mt-4 border-2 border-[color:var(--stamp-no)] bg-[var(--stamp-no-soft)] p-4" role="alert">
+                    <p className="text-sm font-semibold text-[color:var(--stamp-no)]">Pengajuan gagal.</p>
+                    <p className="mt-1 text-xs text-[color:var(--stamp-no)]">{submitError}</p>
                   </div>
                 )}
 
@@ -1147,7 +1257,7 @@ export default function PromoUploadWizard() {
                     type="checkbox"
                     checked={termsAccepted}
                     onChange={(e) => { setTermsAccepted(e.target.checked); setFieldErrors((er) => ({ ...er, terms_accepted: '' })); }}
-                    className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--brand-tosca)]"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded-none accent-[var(--process)]"
                     aria-invalid={fieldErrors.terms_accepted ? true : undefined}
                     aria-describedby={fieldErrors.terms_accepted ? 'err-terms_accepted' : undefined}
                   />
@@ -1158,7 +1268,7 @@ export default function PromoUploadWizard() {
                 </label>
                 <div className="ui-helper-slot mt-1">
                   {fieldErrors.terms_accepted && (
-                    <p id="err-terms_accepted" className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">{fieldErrors.terms_accepted}</p>
+                    <p id="err-terms_accepted" className="text-xs font-medium text-[color:var(--stamp-no)]" role="alert">{fieldErrors.terms_accepted}</p>
                   )}
                 </div>
 
@@ -1166,7 +1276,7 @@ export default function PromoUploadWizard() {
                   type="button"
                   onClick={handleSubmit}
                   disabled={!materialReady || !termsAccepted || submitState === 'uploading'}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 rounded-md px-5 py-3 text-sm font-semibold transition"
+                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
                 >
                   {submitState === 'uploading' ? (
                     <>
