@@ -1,102 +1,189 @@
 /*
- * Design tokens: medprom-metmal (arah "App Produk").
- * Geist memimpin antarmuka; Fraunces jadi aksen display (judul besar + angka).
- * Tosca hemat sebagai aksen aksi, bukan permukaan.
+ * Design tokens: medprom-metmal (arah "Lembar Spesifikasi & Tiket Pekerjaan").
+ *
+ * Dunia: berkas pekerjaan percetakan. Kertas kerja, tinta, satu warna proses,
+ * stempel. Kedalaman dari GARIS dan KERTAS, bukan bayangan. Angka adalah data,
+ * jadi hidup di Spline Sans Mono; teks kerja di Archivo.
  */
 
 :root {
-  /* Typography */
-  --font-display: "Fraunces", Georgia, serif;
-  --font-body: "Geist", system-ui, -apple-system, "Segoe UI", sans-serif;
+  /* Typography — dua rupa: Archivo (kerja + display) & Spline Sans Mono (data) */
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
 
-  /* Skala teks per PERAN (bukan per angka)
-   * Terukur di peramban sebelum perubahan: h1 app bar 16px sementara isi 20px
-   * (hierarki terbalik), dan h2 seasal 30px vs 24px. Satu peran = satu ukuran,
-   * sehingga judul tidak bisa lagi lebih kecil daripada isinya.
-   * Diukur pada 390px; `sm:` menaikkan peran layar/judul di layar lebar. */
-  --text-meta: 0.75rem; /* 12px: label, cap; batas bawah (ui-ux-pro-max: jangan < 12px) */
-  --text-dense: 0.875rem; /* 14px: peran PADAT: baris data & lencana (impeccable mengizinkan
-                             * pengecualian peran padat dari lantai 1rem) */
-  --text-body: 1rem; /* 16px: dasar teks isi (impeccable: lantai 1rem) */
+  /* Skala teks per PERAN (bukan per angka): 12-14-16-18-20-24-32.
+   * Satu peran = satu ukuran, sehingga judul tidak bisa lebih kecil dari isi. */
+  --text-meta: 0.75rem;   /* 12px: label, cap; batas bawah */
+  --text-dense: 0.875rem; /* 14px: baris data & lencana */
+  --text-body: 1rem;      /* 16px: dasar teks isi */
   --text-title: 1.125rem; /* 18px: judul kartu/butir */
-  --text-section: 1.25rem; /* 20px: judul bagian (h2) */
-  --text-screen: 1.5rem; /* 24px: nama layar & judul halaman (h1) */
-  /* Skala modular 12-14-16-18-20-24; langkah >=2px, tidak ada seri. */
+  --text-section: 1.25rem;/* 20px: judul bagian (h2) */
+  --text-screen: 1.5rem;  /* 24px: nama layar & judul halaman (h1) */
+  --text-sheet: 2rem;     /* 32px: judul lembar di landing */
 
-  --leading-tight: 1.2;
+  --leading-tight: 1.15;
   --leading-body: 1.6;
 
-  /* Lebar baca nyaman: ~65 karakter. Terukur sebelum perubahan: paragraf
-   * riwayat 116ch dan status 100ch di desktop, jauh di atas ambang nyaman. */
-  --measure: 65ch;
+  /* Lebar baca nyaman: ~65 karakter. */
+  --measure: 68ch;
 
-  /* Surfaces (white / stone, bukan cream) */
-  --surface-page: #ffffff;
-  --surface-offset: #fafaf9;
-  --surface-card: #ffffff;
-  --surface-hover: #f5f5f4;
+  /* Permukaan: kertas kerja + lembar yang lebih terang di atasnya. */
+  --surface-page: #f2f2ef;   /* meja kerja */
+  --surface-offset: #ebebe7; /* blok tenang / baris bergantian */
+  --surface-card: #fbfbf9;   /* lembar */
+  --surface-hover: #f0f0ec;
+  --surface-ink: #101010;    /* blok tinta penuh (tiket, chrome staf) */
+  --surface-ink-2: #1c1c1a;  /* tinta terangkat di dalam blok tinta */
 
-  /* Ink */
-  --ink-primary: #11151a;
-  --ink-secondary: #334155; /* slate-700 */
-  --ink-muted: #64748b; /* slate-500 */
+  /* Tinta */
+  --ink-primary: #101010;
+  --ink-secondary: #4b4b48;
+  --ink-muted: #7a7a74;
+  --ink-invert: #fbfbf9;
+  --ink-invert-2: #b9b9b3;
 
-  /* Rules */
-  --rule-color: #e7e5e4; /* stone-200 */
+  /* Garis: pemisah utama dunia ini. */
+  --rule-color: #d3d3cc;
+  --rule-strong: #b4b4ac;
+  --rule-ink: #101010;
   --rule: 1px solid var(--rule-color);
+  --rule-2: 1px solid var(--rule-strong);
 
-  /* Brand tosca (Metmal: hemat, aksen saja) */
-  --brand-tosca: #00918e;
-  --brand-tosca-600: #007a78; /* solid CTA bg: AA 5.18:1 with white */
-  --brand-tosca-soft: #33a8a5;
+  /* Warna proses: satu aksi, bukan permukaan. */
+  --brand-tosca: #1440d6;
+  --brand-tosca-600: #1440d6; /* solid CTA bg: AA 6.4:1 with white */
+  --brand-tosca-soft: #4a6ee0;
+  --process: #1440d6;
+  --process-strong: #0f33ad;
+  --process-soft: #e7ebfb;
+
+  /* Stempel: keadaan pekerjaan, bukan dekorasi. */
+  --stamp-ok: #0d6b3f;
+  --stamp-ok-soft: #e3f1e9;
+  --stamp-rev: #a15c00;
+  --stamp-rev-soft: #f8eedd;
+  --stamp-no: #b3261e;
+  --stamp-no-soft: #fae7e5;
 
   /* Focus */
-  --focus-ring-color: var(--brand-tosca);
+  --focus-ring-color: var(--process);
 
-  /* Radius (app terasa lunak, bukan cetakan) */
-  --radius-card: 0.875rem;
-  --radius-control: 0.625rem;
-  --radius-chip: 9999px;
-  --radius-sheet: 1.25rem;
+  /* Radius: dokumen tajam, bukan aplikasi membulat. */
+  --radius-card: 3px;
+  --radius-control: 3px;
+  --radius-chip: 2px;
+  --radius-sheet: 6px;
 
-  /* Elevasi: HANYA untuk elemen mengapung (bar sticky, sheet, FAB).
-   * Kartu statis tetap dipisah hairline, bukan shadow. */
-  --elevation-bar: 0 1px 2px rgb(17 21 26 / 0.04), 0 4px 12px rgb(17 21 26 / 0.06);
-  --elevation-sheet: 0 -2px 8px rgb(17 21 26 / 0.06), 0 -12px 32px rgb(17 21 26 / 0.12);
-  --elevation-fab: 0 4px 12px rgb(0 122 120 / 0.28), 0 1px 3px rgb(17 21 26 / 0.12);
+  /* Elevasi: dunia ini tidak memakai bayangan. Kedalaman dari garis + kertas.
+   * Token dipertahankan agar pemanggil lama tidak pecah, tetapi bernilai
+   * garis, bukan blur: bar memakai garis bawah, sheet memakai garis tegas. */
+  --elevation-bar: none;
+  --elevation-sheet: none;
+  --elevation-fab: none;
 
   /* Metrik app shell */
   --app-bar-h: 3.5rem;
   --app-tabbar-h: 3.75rem;
-  --tap-min: 44px; /* target sentuh nyaman (di atas ambang AA 24px, WCAG 2.2 2.5.8) */
+  --tap-min: 44px;
 
-  /* Safe area (PWA standalone di perangkat berlekuk) */
+  /* Safe area (PWA standalone) */
   --safe-top: env(safe-area-inset-top, 0px);
   --safe-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @theme {
-  /* Brand primary: tosca Metmal (skala lengkap untuk Tailwind) */
-  --color-brand-primary: #00918e;
-  --color-brand-primary-50: #e6f7f6;
-  --color-brand-primary-100: #ccefef;
-  --color-brand-primary-200: #99dfde;
-  --color-brand-primary-300: #66cfcd;
-  --color-brand-primary-400: #33bfbc;
-  --color-brand-primary-500: #00918e;
-  --color-brand-primary-600: #007a78;
-  --color-brand-primary-700: #006260;
-  --color-brand-primary-800: #004a48;
-  --color-brand-primary-900: #003230;
-  --color-brand-primary-950: #001a18;
+  /* Warna proses (menggantikan skala tosca lama). */
+  --color-brand-primary: #1440d6;
+  --color-brand-primary-50: #eef1fd;
+  --color-brand-primary-100: #dfe4fb;
+  --color-brand-primary-200: #c0c9f7;
+  --color-brand-primary-300: #9aa9f0;
+  --color-brand-primary-400: #6d84e7;
+  --color-brand-primary-500: #1440d6;
+  --color-brand-primary-600: #1440d6;
+  --color-brand-primary-700: #0f33ad;
+  --color-brand-primary-800: #0b2683;
+  --color-brand-primary-900: #081a5c;
+  --color-brand-primary-950: #050f38;
+  --color-brand-soft: #4a6ee0;
 
-  /* Aksen tosca terang: dipadankan dengan --brand-tosca-soft. */
-  --color-brand-soft: #33a8a5;
+  /* Permukaan & tinta (nama lama dipertahankan; nilai mengikuti dunia baru). */
+  --color-surface-page: #f2f2ef;
+  --color-surface-offset: #ebebe7;
+  --color-surface-hover: #f0f0ec;
+  --color-rule: #d3d3cc;
+  --color-ink-primary: #101010;
 
-  /* Editorial surfaces */
-  --color-surface-page: #ffffff;
-  --color-surface-offset: #fafaf9;
-  --color-surface-hover: #f5f5f4;
-  --color-rule: #e7e5e4;
-  --color-ink-primary: #11151a;
+  /* Skala netral: MEMETAKAN ULANG slate/stone ke kertas-tinta dunia ini,
+   * sehingga seluruh utilitas lama (text-slate-900, bg-slate-800, ...)
+   * otomatis memakai palet baru tanpa menyentuh 14 berkas komponen. */
+  --color-slate-50: #f7f7f4;
+  --color-slate-100: #f0f0ec;
+  --color-slate-200: #e2e2db;
+  --color-slate-300: #c9c9c0;
+  --color-slate-400: #a3a39a;
+  --color-slate-500: #7a7a74;
+  --color-slate-600: #5f5f58;
+  --color-slate-700: #454540;
+  --color-slate-800: #2a2a26;
+  --color-slate-900: #101010;
+  --color-slate-950: #0a0a09;
+
+  --color-stone-50: #f7f7f4;
+  --color-stone-100: #f0f0ec;
+  --color-stone-200: #e2e2db;
+  --color-stone-300: #c9c9c0;
+  --color-stone-400: #a3a39a;
+  --color-stone-500: #7a7a74;
+  --color-stone-600: #5f5f58;
+  --color-stone-700: #454540;
+  --color-stone-800: #2a2a26;
+  --color-stone-900: #101010;
+
+  /* Font untuk utilitas Tailwind (font-sans / font-mono). */
+  --font-sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
+
+  /* Radius: MEMETAKAN ULANG skala Tailwind ke dokumen. Dunia ini siku
+   * (lembar kerja, bukan aplikasi membulat), jadi seluruh utilitas
+   * rounded-md/rounded-lg/rounded-2xl/rounded-3xl di komponen lama otomatis
+   * ikut tajam tanpa menyentuh satu berkas pun. */
+  --radius-md: 3px;
+  --radius-lg: 4px;
+  --radius-xl: 5px;
+  --radius-2xl: 6px;
+  --radius-3xl: 8px;
+}
+
+/* Mode gelap: "meja malam". Bukan inversi buta — kertas jadi arang, tinta jadi
+ * kapur, warna proses tetap. Aktif hanya bila kelas `.dark` dipasang. */
+.dark {
+  --surface-page: #131312;
+  --surface-offset: #1a1a18;
+  --surface-card: #1e1e1c;
+  --surface-hover: #262623;
+  --surface-ink: #f2f2ef;
+  --surface-ink-2: #e4e4df;
+
+  --ink-primary: #f2f2ef;
+  --ink-secondary: #b9b9b3;
+  --ink-muted: #8e8e88;
+  --ink-invert: #131312;
+  --ink-invert-2: #454540;
+
+  --rule-color: #333330;
+  --rule-strong: #4a4a45;
+  --rule-ink: #f2f2ef;
+
+  --brand-tosca-600: #4a6ee0;
+  --process-strong: #6d84e7;
+  --process-soft: #16204a;
+
+  --stamp-ok: #57b98a;
+  --stamp-ok-soft: #12291d;
+  --stamp-rev: #d79a3f;
+  --stamp-rev-soft: #2e2413;
+  --stamp-no: #e0706a;
+  --stamp-no-soft: #331413;
 }

@@ -62,7 +62,7 @@ body {
 
 .ui-empty {
   border-radius: var(--radius-card);
-  border: 1px dashed #d6d3d1;
+  border: 1px dashed var(--rule-strong);
   background: var(--surface-offset);
   text-align: center;
   color: var(--ink-muted);
@@ -70,21 +70,21 @@ body {
 
 .ui-alert {
   border-radius: var(--radius-card);
-  border: 1px solid #fecaca;
-  background: #fef2f2;
+  border: 1px solid color-mix(in srgb, var(--stamp-no) 40%, transparent);
+  background: var(--stamp-no-soft);
 }
 
 /* Panel galat: nama historis, dipakai wizard + dashboard (4 callsite). */
 .ui-alert-panel {
   border-radius: var(--radius-card);
-  border: 1px solid #fecaca;
-  background: #fef2f2;
+  border: 1px solid color-mix(in srgb, var(--stamp-no) 40%, transparent);
+  background: var(--stamp-no-soft);
 }
 
 /* Panel kosong: nama historis, dipakai halaman riwayat. */
 .ui-empty-panel {
   border-radius: var(--radius-card);
-  border: 1px dashed #d6d3d1;
+  border: 1px dashed var(--rule-strong);
   background: var(--surface-offset);
   text-align: center;
   color: var(--ink-muted);
@@ -126,7 +126,7 @@ textarea:disabled {
 }
 
 .ui-btn-primary:hover {
-  background: #00554c; /* brand-tosca-dark, lebih gelap: kontras naik, bukan turun */
+  background: var(--process-strong); /* lebih gelap: kontras naik, bukan turun */
 }
 
 .ui-btn-primary:focus-visible {
@@ -340,12 +340,14 @@ summary:focus-visible,
   border-top: var(--rule);
 }
 
-/* Number XL (statistical / step counters) */
-
+/* Number XL (statistical / step counters)
+ * Dunia ini membaca angka sebagai DATA, jadi monospace + tabular, bukan
+ * serif display. Tetap satu tempat untuk semua angka statistik. */
 .ui-number {
-  font-family: var(--font-display);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-weight: 700;
-  color: var(--brand-tosca);
+  color: var(--process);
 }
 
 /* Admin surfaces */
@@ -360,62 +362,63 @@ summary:focus-visible,
   background: var(--surface-card);
 }
 
-/* Dark mode (admin only: editorial landing tetap terang) */
+/* Mode gelap: "meja malam". Token gelap didefinisikan di theme.css; blok di
+ * sini hanya memetakan kelas ke token, tanpa hex mentah. */
 
 .dark .ui-admin-page {
-  background: #0f172a;
+  background: var(--surface-offset);
 }
 
 .dark .ui-admin-card {
-  border-color: #334155;
-  background: #1e293b;
+  border-color: var(--rule-color);
+  background: var(--surface-card);
 }
 
 .dark .ui-chrome {
-  border-color: #334155;
-  background: rgb(15 23 42 / 0.88);
+  border-color: var(--rule-color);
+  background: var(--surface-page);
 }
 
 .dark .ui-card {
-  border-color: #334155;
-  background: #1e293b;
+  border-color: var(--rule-color);
+  background: var(--surface-card);
 }
 
 .dark .ui-control {
-  border-color: #334155;
-  background: #1e293b;
+  border-color: var(--rule-strong);
+  background: var(--surface-card);
 }
 
 .dark .ui-empty {
-  border-color: #475569;
-  background: rgb(30 41 59 / 0.5);
-  color: #94a3b8;
+  border-color: var(--rule-strong);
+  background: var(--surface-offset);
+  color: var(--ink-muted);
 }
 
 .dark .ui-alert {
-  border-color: rgb(239 68 68 / 0.3);
-  background: rgb(239 68 68 / 0.1);
+  border-color: color-mix(in srgb, var(--stamp-no) 40%, transparent);
+  background: var(--stamp-no-soft);
 }
 
 .dark .ui-btn-secondary {
-  border-color: #334155;
-  color: #cbd5e1;
+  border-color: var(--rule-strong);
+  color: var(--ink-secondary);
 }
 
 .dark .ui-btn-secondary:hover {
-  background: #1e293b;
+  background: var(--surface-hover);
 }
 
 .dark .ui-text-muted {
-  color: #94a3b8;
+  color: var(--ink-muted);
 }
 
 .dark .ui-text-strong {
-  color: #f1f5f9;
+  color: var(--ink-primary);
 }
 
 .dark .ui-rule {
-  border-color: #334155;
+  border-color: var(--rule-color);
 }
 
 /* App shell: kerangka aplikasi (bar, tab bar, sheet, FAB) */
@@ -475,7 +478,9 @@ summary:focus-visible,
   padding-bottom: var(--safe-bottom);
 }
 
-/* Top app bar: sticky, buram, terangkat saat konten lewat di belakangnya. */
+/* Top app bar: sticky, permukaan penuh, dipisah GARIS (bukan blur/bayangan).
+ * Dunia ini tidak memakai bayangan: bar yang terangkat tetap dibaca dari
+ * garis bawah yang menguat, bukan dari blur. */
 .app-bar {
   position: sticky;
   top: 0;
@@ -487,13 +492,11 @@ summary:focus-visible,
   padding-top: var(--safe-top);
   padding-inline: 0.75rem;
   border-bottom: var(--rule);
-  background: color-mix(in srgb, var(--surface-page) 85%, transparent);
-  backdrop-filter: blur(12px) saturate(180%);
+  background: var(--surface-page);
 }
 
 .app-bar[data-elevated='true'] {
-  border-bottom-color: transparent;
-  box-shadow: var(--elevation-bar);
+  border-bottom-color: var(--rule-ink);
 }
 
 /* Bottom tab bar: navigasi utama di mobile. */
@@ -508,8 +511,7 @@ summary:focus-visible,
   height: calc(var(--app-tabbar-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
   border-top: var(--rule);
-  background: color-mix(in srgb, var(--surface-page) 92%, transparent);
-  backdrop-filter: blur(12px) saturate(180%);
+  background: var(--surface-page);
 }
 
 /* Tab bar bawah hanya untuk mobile. Aturan ini ada di CSS (bukan `sm:hidden`
@@ -528,14 +530,17 @@ summary:focus-visible,
   gap: 0.125rem;
   min-height: var(--tap-min);
   font-size: var(--text-meta);
-  font-weight: 500;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   color: var(--ink-muted);
+  border-top: 2px solid transparent;
   transition: color 150ms ease;
 }
 
 .app-tab[aria-current='page'] {
-  color: var(--brand-tosca-600);
-  font-weight: 600;
+  color: var(--ink-primary);
+  border-top-color: var(--process);
 }
 
 /* Navigasi utama versi desktop: di dalam app bar. Hanya ≥640px; di bawah itu
@@ -560,34 +565,38 @@ summary:focus-visible,
   gap: 0.375rem;
   min-height: var(--tap-min);
   padding-inline: 0.75rem;
-  border-radius: var(--radius-control);
-  font-size: var(--text-dense);
-  font-weight: 500;
+  border-radius: 0;
+  border-bottom: 2px solid transparent;
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
   color: var(--ink-muted);
-  transition: color 150ms ease, background-color 150ms ease;
+  transition: color 150ms ease, border-color 150ms ease;
 }
 
 .app-nav-link:hover {
-  background: var(--surface-hover);
-  color: var(--brand-tosca-600);
+  color: var(--ink-primary);
+  border-bottom-color: var(--rule-strong);
 }
 
 .app-nav-link[aria-current='page'] {
-  color: var(--brand-tosca-600);
-  font-weight: 600;
+  color: var(--ink-primary);
+  border-bottom-color: var(--process);
 }
 
 .dark .app-nav-link {
-  color: #94a3b8;
+  color: var(--ink-muted);
 }
 
 .dark .app-nav-link:hover {
-  background: rgb(51 65 85 / 0.5);
-  color: var(--brand-tosca-soft);
+  color: var(--ink-primary);
+  border-bottom-color: var(--rule-strong);
 }
 
 .dark .app-nav-link[aria-current='page'] {
-  color: var(--brand-tosca-soft);
+  color: var(--ink-primary);
+  border-bottom-color: var(--process-soft);
 }
 
 /* Umpan balik sentuh: pengganti :hover yang tidak ada di layar sentuh. */
@@ -643,8 +652,7 @@ summary:focus-visible,
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgb(17 21 26 / 0.45);
-  backdrop-filter: blur(2px);
+  background: color-mix(in srgb, var(--ink-primary) 48%, transparent);
 }
 
 .app-sheet {
@@ -656,9 +664,9 @@ summary:focus-visible,
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
+  border-top: 2px solid var(--rule-ink);
   padding-bottom: var(--safe-bottom);
   background: var(--surface-card);
-  box-shadow: var(--elevation-sheet);
 }
 
 /* Pegangan geser: penanda visual bahwa sheet bisa ditutup. */
@@ -666,8 +674,8 @@ summary:focus-visible,
   width: 2.25rem;
   height: 0.25rem;
   margin: 0.625rem auto 0;
-  border-radius: 9999px;
-  background: #d6d3d1;
+  border-radius: 0;
+  background: var(--rule-strong);
 }
 
 @media (min-width: 640px) {
@@ -685,32 +693,315 @@ summary:focus-visible,
   }
 }
 
-/* Dark mode app shell (konsol staf). */
+/* Mode gelap app shell (konsol staf). */
 .dark .app-shell {
-  background: #0f172a;
+  background: var(--surface-page);
 }
 
 .dark .app-bar,
 .dark .app-tabbar {
-  border-color: #334155;
-  background: rgb(15 23 42 / 0.9);
+  border-color: var(--rule-color);
+  background: var(--surface-page);
 }
 
 .dark .app-sheet {
-  background: #1e293b;
+  background: var(--surface-card);
 }
 
 .dark .app-sheet-grip {
-  background: #475569;
+  background: var(--rule-strong);
 }
 
 .dark .ui-alert-panel {
-  border-color: rgb(239 68 68 / 0.3);
-  background: rgb(239 68 68 / 0.1);
+  border-color: color-mix(in srgb, var(--stamp-no) 40%, transparent);
+  background: var(--stamp-no-soft);
 }
 
 .dark .ui-empty-panel {
-  border-color: #475569;
-  background: rgb(30 41 59 / 0.5);
-  color: #94a3b8;
+  border-color: var(--rule-strong);
+  background: var(--surface-offset);
+  color: var(--ink-muted);
+}
+
+/* ==========================================================================
+ * Perabot dunia "Lembar Spesifikasi & Tiket Pekerjaan"
+ *
+ * Ini yang membuat halaman dikenali tanpa membaca satu kata pun: tanda potong
+ * di sudut lembar, garis dimensi berpanah, tabel dengan titik penghubung,
+ * nomor job monospace, stempel status, tepi perforasi pada tiket.
+ * ========================================================================== */
+
+/* Lembar: permukaan kerja yang lebih terang di atas meja. */
+.doc-sheet {
+  position: relative;
+  background: var(--surface-card);
+  border: var(--rule-2);
+  border-radius: var(--radius-card);
+}
+
+/* Tanda potong: dua garis 1px menyilang di tiap sudut. Murni dekoratif,
+ * jadi tidak boleh ikut dibaca pembaca layar. */
+.doc-crop {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+}
+
+.doc-crop::before,
+.doc-crop::after {
+  content: "";
+  position: absolute;
+  background: var(--rule-strong);
+}
+
+.doc-crop::before {
+  width: 13px;
+  height: 1px;
+  top: 6px;
+  left: 0;
+}
+
+.doc-crop::after {
+  height: 13px;
+  width: 1px;
+  left: 6px;
+  top: 0;
+}
+
+.doc-crop[data-corner='tl'] { top: 10px; left: 10px; }
+.doc-crop[data-corner='tr'] { top: 10px; right: 10px; }
+.doc-crop[data-corner='bl'] { bottom: 10px; left: 10px; }
+.doc-crop[data-corner='br'] { bottom: 10px; right: 10px; }
+
+/* Nomor plate / nomor job: data, jadi monospace dan tabular. */
+.doc-plate-no {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+/* Garis dimensi: garis 1px dengan ujung tegak di kedua ujungnya. Dipakai
+ * untuk mengukur sesuatu yang nyata (jumlah media, ukuran, periode). */
+.doc-dim {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.doc-dim > .doc-dim-line {
+  position: relative;
+  flex: 1;
+  height: 1px;
+  background: var(--ink-primary);
+}
+
+.doc-dim > .doc-dim-line::before,
+.doc-dim > .doc-dim-line::after {
+  content: "";
+  position: absolute;
+  top: -4px;
+  width: 1px;
+  height: 9px;
+  background: var(--ink-primary);
+}
+
+.doc-dim > .doc-dim-line::before { left: 0; }
+.doc-dim > .doc-dim-line::after { right: 0; }
+
+.doc-dim > .doc-dim-val {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* Tabel spesifikasi: label kiri, nilai kanan, dihubungkan titik-titik. */
+.doc-rows {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.doc-rows > .doc-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.375rem;
+  min-width: 0;
+}
+
+.doc-row > dt {
+  color: var(--ink-muted);
+  font-size: var(--text-meta);
+  white-space: nowrap;
+}
+
+.doc-row > .doc-leader {
+  flex: 1;
+  min-width: 0.75rem;
+  border-bottom: 1px dotted var(--rule-strong);
+  transform: translateY(-3px);
+}
+
+.doc-row > dd {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-dense);
+  font-weight: 500;
+  text-align: right;
+}
+
+/* Tepi perforasi: batas yang bisa "disobek" pada tiket. */
+.doc-perf {
+  height: 0;
+  border-top: 1px dashed var(--rule-strong);
+}
+
+/* Stempel status: keadaan pekerjaan, dicap miring seperti stempel karet. */
+.doc-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border: 2px solid currentColor;
+  border-radius: 2px;
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  transform: rotate(-2.5deg);
+}
+
+.doc-stamp[data-tone='ok'] { color: var(--stamp-ok); }
+.doc-stamp[data-tone='rev'] { color: var(--stamp-rev); }
+.doc-stamp[data-tone='no'] { color: var(--stamp-no); }
+.doc-stamp[data-tone='wait'] { color: var(--ink-secondary); }
+
+/* Lencana kanal: tegas, siku, tanpa pil. */
+.doc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-chip);
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+
+.doc-tag[data-tone='process'] {
+  border-color: var(--process);
+  color: var(--process);
+}
+
+.doc-tag[data-tone='ink'] {
+  border-color: var(--rule-ink);
+  background: var(--rule-ink);
+  color: var(--ink-invert);
+}
+
+/* Semua angka yang dibaca sebagai data memakai tabular-nums. */
+.doc-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Blok perhitungan: subtotal / PPN / total pada satu bidang. */
+.doc-calc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.75rem;
+  align-items: flex-end;
+  padding: 1rem 1.125rem;
+  border: var(--rule-2);
+  border-left: 3px solid var(--process);
+  background: var(--surface-card);
+  border-radius: var(--radius-card);
+}
+
+.doc-calc .doc-calc-k {
+  font-family: var(--font-mono);
+  font-size: var(--text-meta);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.doc-calc .doc-calc-v {
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-section);
+  font-weight: 700;
+}
+
+.doc-calc .doc-calc-v[data-emphasis='true'] {
+  color: var(--process);
+  font-size: var(--text-screen);
+}
+
+/* Permukaan browser yang ikut desain: seleksi, caret, scrollbar, dan
+ * underline. Ini sinyal termurah bahwa halaman dibangun, bukan dirakit. */
+::selection {
+  background: color-mix(in srgb, var(--process) 24%, transparent);
+  color: var(--ink-primary);
+}
+
+html {
+  caret-color: var(--process);
+}
+
+/* Scrollbar: tipis, siku, dari palet kertas-tinta. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--rule-strong);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-muted);
+  background-clip: content-box;
+}
+
+/* Tautan dalam prosa: garis bawah yang tidak menempel di descender. */
+.ui-prose a,
+.doc-link {
+  color: var(--process);
+  text-decoration-line: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.ui-prose a:hover,
+.doc-link:hover {
+  text-decoration-thickness: 2px;
 }
