@@ -4,6 +4,16 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Operasional
+- **Deploy produksi 2026-09-24 (VPS + Vercel).** Produksi sebelumnya
+  menjalankan kode `f4effbe` di atas DB yang belum pernah di-migrate untuk
+  kolom alur cetak, sehingga fitur cetak hanya tampil di katalog tetapi
+  pengirimannya tidak berfungsi. Migrasi diuji lebih dulu di salinan DB
+  terbuang (menangkap perilaku constraint sebelum menyentuh data asli), lalu
+  dijalankan ke produksi dengan urutan stop API, migrate, seed, up API. Data
+  lama (2 pengajuan, 14 media, 3 user) utuh. Rincian dan query deteksi data
+  warisan ada di `docs/PLAN_2026-09-24_17-35.md`.
+
 ### Diperbaiki
 - **Pemasangan tanpa materi kini meminta konfirmasi eksplisit (opsi B).**
   Staf tetap boleh mencatat pemasangan untuk pengajuan cetak yang belum
