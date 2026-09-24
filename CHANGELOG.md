@@ -5,6 +5,28 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Janji "simpan nomor batch untuk memantau" di layar sukses wizard cetak
+  tidak bisa ditepati: `/lacak` hanya melacak nomor pengajuan, bukan nomor
+  batch.** Layar sukses `PromoCetakWizard.tsx` menampilkan nomor batch
+  `MPB-YYMMDD-XXXXXX` dan menyuruh tenant menyimpannya, tetapi halaman `/lacak`
+  (`TrackSubmissionPage.tsx`) hanya memanggil `fetchStatusByNumber` dan server
+  menolak format `MPB-` lewat `SUBMISSION_NUMBER_RE`, sehingga tenant yang
+  menyimpan NOMOR BATCH (bukan tautan/token) tidak punya jalan melacaknya.
+  Endpoint `GET /promo/batches/track?number=&captcha=` (`server/src/routes/promo.js`)
+  ternyata SUDAH menerima nomor batch, mengembalikan `batch_token`, dan
+  digerbangi captcha Turnstile `action='track-batch'`; jadi tidak ada endpoint
+  server baru maupun perubahan skema. `src/utils/promoApi.ts` menambah
+  `fetchBatchByNumber(number, captchaToken)` mengikuti pola `fetchStatusByNumber`
+  (termasuk token captcha), `BatchRow` (`src/types/promo.ts`) menambah
+  `batch_token?`, dan `TrackSubmissionPage.tsx` memilih jalur dari awalan input:
+  `MPB-` menuju pelacakan batch lalu diarahkan ke `/batch/<batch_token>` yang
+  sudah ada (bila `batch_token` tidak ada, pesan jelas ditampilkan alih-alih
+  navigate ke rute kosong), `MP-` tetap ke pelacakan pengajuan. Teks bantuan dan
+  placeholder kini menyebut KEDUA format, dan input di luar keduanya ditolak di
+  klien tanpa memanggil server. Dikunci test baru
+  `TrackSubmissionPageBatch.test.tsx` (5 test). Dua arah terbukti: pada kode
+  sebelum perbaikan 4 test merah (1 test penjaga perilaku lama hijau), sesudah
+  perbaikan 5 test hijau. Catatan `docs/PLAN_2026-09-24_09-48.md`.
 - **Tiga cacat tampilan sisi tenant: anchor materi mati, galat API disamakan
   dengan "tidak ditemukan", dan teks batch kontradiktif.** (1) Di
   `src/components/promo/SubmissionDetail.tsx`, blok materi dan blok riwayat

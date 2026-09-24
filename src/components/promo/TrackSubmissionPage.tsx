@@ -1,9 +1,12 @@
 /**
- * Halaman pelacakan pengajuan lewat nomor `MP-YYMMDD-XXXXXX` - publik.
+ * Halaman pelacakan nomor pengajuan dan batch - publik.
  *
- * Jalur kedua selain tautan ber-token: nomor pengajuan dibacakan ke PIC di
- * layar sukses (dan tampil di Riwayat), jadi tenant yang kehilangan tautan
- * tetap bisa memantau prosesnya tanpa akun. Untuk mencegah nomor dipanen
+ * Jalur kedua selain tautan ber-token: nomor pengajuan (`MP-YYMMDD-XXXXXX`)
+ * maupun nomor batch cetak (`MPB-YYMMDD-XXXXXX`) dibacakan ke PIC di layar
+ * sukses (dan tampil di Riwayat), jadi tenant yang kehilangan tautan tetap
+ * bisa memantau prosesnya tanpa akun. Jalur dipilih dari awalan input: `MPB-`
+ * menempuh pelacakan batch lalu diarahkan ke `/batch/<batch_token>`, `MP-`
+ * menempuh pelacakan pengajuan seperti semula. Untuk mencegah nomor dipanen
  * otomatis, pengiriman dijaga captcha Cloudflare Turnstile - token wajib
  * selesai sebelum tombol Lacak bisa ditekan, dan diverifikasi ulang di server.
  *
@@ -11,20 +14,28 @@
  * (komponen `SubmissionDetail`).
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Loader2, Search, X } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import SubmissionDetail from './SubmissionDetail';
 import TurnstileWidget from '../ui/Turnstile';
-import { fetchStatusByNumber } from '../../utils/promoApi';
+import { fetchBatchByNumber, fetchStatusByNumber } from '../../utils/promoApi';
 import type { StatusPageData } from '../../types/promo';
 
+/** Awalan nomor batch cetak - menandai jalur pelacakan batch. */
+const BATCH_PREFIX = 'MPB-';
+/** Awalan nomor pengajuan - menandai jalur pelacakan pengajuan. */
+const SUBMISSION_PREFIX = 'MP-';
+
 export default function TrackSubmissionPage() {
+  const navigate = useNavigate();
   const [number, setNumber] = useState('');
   const [captchaToken, setCaptchaToken] = useState('');
   const [data, setData] = useState<StatusPageData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // Pesan informatif non-galat (mis. batch ditemukan tetapi tanpa token).
+  const [info, setInfo] = useState('');
   // Nomor yang terakhir berhasil dilacak - dipakai saat memuat ulang setelah
   // revisi, agar isian yang sedang diketik tidak mengubah target.
   const [searched, setSearched] = useState('');
@@ -39,17 +50,45 @@ export default function TrackSubmissionPage() {
   ).trim();
 
   const search = useCallback(async (raw: string, token: string) => {
-    const q = raw.trim();
+    const q = raw.trim().toUpperCase();
     if (!q) {
       setError('Masukkan nomor pengajuan terlebih dahulu.');
       return;
     }
+    // Jalur dipilih dari awalan: `MPB-` = batch cetak, `MP-` = pengajuan.
+    // Format lain ditolak di klien supaya tidak ada permintaan yang pasti
+    // gagal ke server, dengan pesan yang menuntun ke kedua format.
+    const isBatch = q.startsWith(BATCH_PREFIX);
+    const isSubmission = q.startsWith(SUBMISSION_PREFIX);
+    if (!isBatch && !isSubmission) {
+      setData(null);
+      setInfo('');
+      setError('Format nomor tidak dikenal. Contoh: MP-260918-A7K2QX (pengajuan) atau MPB-260918-A7K2QX (batch cetak).');
+      return;
+    }
     setLoading(true);
     setError('');
+    setInfo('');
     // Token sekali pakai - buang setelah dipakai (berhasil maupun gagal) supaya
     // percobaan berikutnya memakai token baru, bukan token yang sudah terpakai.
     setCaptchaKey((k) => k + 1);
     try {
+      if (isBatch) {
+        const result = await fetchBatchByNumber(q, token);
+        const batchToken = result.batch?.batch_token;
+        // Tanpa token batch, `/batch/<token>` akan jadi rute kosong - tampilkan
+        // pesan jelas di halaman ini alih-alih mengarahkan ke sana.
+        if (!batchToken) {
+          setData(null);
+          setSearched('');
+          setInfo('Batch ditemukan, tetapi tautan statusnya tidak tersedia. Hubungi Tenant Relations untuk memantau batch ini.');
+          return;
+        }
+        setData(null);
+        setSearched(q);
+        navigate(`/batch/${batchToken}`);
+        return;
+      }
       const result = await fetchStatusByNumber(q, token);
       setData(result);
       setSearched(q);
@@ -61,7 +100,7 @@ export default function TrackSubmissionPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [navigate]);
 
   /**
    * Muat ulang detail setelah revisi. Token captcha bersifat sekali pakai, jadi
@@ -102,10 +141,12 @@ export default function TrackSubmissionPage() {
     <AppShell title="Lacak Pengajuan">
       <div className="mx-auto max-w-2xl px-4 py-5">
         <div className="ui-card p-5">
-          <h2 className="ui-title-card text-slate-900 dark:text-white">Lacak dengan Nomor Pengajuan</h2>
+          <h2 className="ui-title-card text-slate-900 dark:text-white">Lacak dengan Nomor Pengajuan atau Batch</h2>
           <p className="mt-2 text-xs ui-text-muted">
-            Masukkan nomor pengajuan yang Anda terima setelah mengirim materi. Formatnya seperti
-            <span className="font-mono font-semibold"> MP-260918-A7K2QX</span>. Tidak perlu akun.
+            Masukkan nomor yang Anda terima setelah mengirim materi. Formatnya seperti
+            <span className="font-mono font-semibold"> MP-260918-A7K2QX</span> untuk pengajuan satu media, atau
+            <span className="font-mono font-semibold"> MPB-260918-A7K2QX</span> untuk batch media cetak.
+            Tidak perlu akun.
           </p>
 
           <form
@@ -124,8 +165,8 @@ export default function TrackSubmissionPage() {
               spellCheck={false}
               maxLength={32}
               value={number}
-              placeholder="MP-260918-A7K2QX"
-              onChange={(e) => { setNumber(e.target.value.toUpperCase()); setError(''); }}
+              placeholder="MP-260918-A7K2QX atau MPB-260918-A7K2QX"
+              onChange={(e) => { setNumber(e.target.value.toUpperCase()); setError(''); setInfo(''); }}
               className="ui-control w-full rounded-md px-3 py-2.5 font-mono text-sm tracking-wide text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
             />
 
@@ -135,6 +176,12 @@ export default function TrackSubmissionPage() {
               <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
                 <X className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {error}
+              </p>
+            )}
+
+            {info && (
+              <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300" role="status">
+                {info}
               </p>
             )}
 

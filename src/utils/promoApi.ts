@@ -358,3 +358,19 @@ export interface BatchSubmitPayload {
 export async function fetchBatchByToken(token: string): Promise<BatchStatusData> {
   return apiGet<BatchStatusData>(`/promo/batches/status/${encodeURIComponent(token)}`);
 }
+
+/**
+ * Lacak batch cetak lewat nomor `MPB-YYMMDD-XXXXXX` (tanpa tautan token).
+ *
+ * Pasangan `fetchStatusByNumber` untuk batch: nomor batch juga dibacakan ke
+ * PIC di layar sukses wizard cetak, jadi gerbangnya sama, yaitu captcha
+ * Cloudflare Turnstile (token ikut dikirim dan diverifikasi server sebelum
+ * data dibaca). Endpoint `/promo/batches/track` mengembalikan bentuk yang
+ * sama dengan status batch ber-token, termasuk `batch.batch_token` sehingga
+ * pemanggil bisa mengarahkan ke `/batch/<batch_token>`.
+ */
+export async function fetchBatchByNumber(number: string, captchaToken: string): Promise<BatchStatusData> {
+  const params = new URLSearchParams({ number: number.trim() });
+  if (captchaToken) params.set('captcha', captchaToken);
+  return apiGet<BatchStatusData>(`/promo/batches/track?${params.toString()}`);
+}

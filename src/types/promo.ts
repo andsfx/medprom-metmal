@@ -291,6 +291,12 @@ export interface BatchSubmitResult {
 export interface BatchRow {
   id: string;
   batch_number: string;
+  /**
+   * Token batch - terisi pada respons pelacakan/status batch (dipakai
+   * mengarahkan ke `/batch/<batch_token>`), opsional bila jalur tidak
+   * mengirimkannya.
+   */
+  batch_token?: string;
   applicant_type: 'tenant' | 'non_tenant';
   applicant_name: string;
   unit_number: string;
