@@ -29,8 +29,7 @@ body {
 
 .ui-chrome {
   border-color: var(--rule-color);
-  background: color-mix(in srgb, var(--surface-page) 88%, transparent);
-  backdrop-filter: blur(12px);
+  background: var(--surface-page);
 }
 
 .ui-card {

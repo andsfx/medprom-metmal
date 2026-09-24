@@ -275,7 +275,9 @@ dalam prosa, dan cincin fokus 2px process blue dengan offset 2px.
    bagian Mode gelap.
 2. **`bg-white`** masih dipakai di beberapa keadaan terpilih (mis. opsi media
    aktif) alih-alih `var(--surface-card)`; bedanya 1 tingkat kecerahan.
-3. **Logo resmi format vektor belum ada**; wordmark tetap tipografis.
+3. **Logo resmi format vektor belum ada**; wordmark tetap tipografis. Ikon PWA
+   (`public/icon.svg` + PNG turunannya) adalah lambang sementara yang sudah
+   diselaraskan ke process blue, bukan logo resmi mall.
 
 ## Riwayat
 

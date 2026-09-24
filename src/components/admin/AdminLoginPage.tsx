@@ -45,7 +45,7 @@ export default function AdminLoginPage() {
           <span className="flex h-12 w-12 items-center justify-center rounded-[var(--radius-control)] bg-brand-primary-600">
             <Megaphone className="h-6 w-6 text-white" aria-hidden="true" />
           </span>
-          <h1 className="font-display mt-3 text-xl font-bold text-slate-900 dark:text-white">Login</h1>
+          <h1 className="ui-title-screen mt-3 text-slate-900 dark:text-white">Login</h1>
           <p className="mt-1 text-xs ui-text-muted">Media Promosi Metropolitan Mall Bekasi</p>
         </div>
 

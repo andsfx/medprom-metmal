@@ -18,6 +18,13 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   ikut berubah tanpa disentuh. Komponen baru `Stamp.tsx` menjadi satu sumber
   stempel status. Kontras `--ink-muted` dinaikkan agar lolos AA. Rincian dan
   bukti verifikasi ada di `docs/PLAN_2026-09-24_19-50.md`.
+- **Sisa dunia lama dibersihkan (ditemukan lewat pemeriksaan artefak build).**
+  `.ui-chrome` masih membawa `backdrop-filter: blur(12px)` - dibuang. Ikon PWA
+  (`icon.svg` + `icon-192/512`, `icon-maskable-512`, `apple-touch-icon`) dan
+  `theme_color`/`background_color` manifest masih memakai tosca lama
+  `#00918E` - diselaraskan ke process blue `#1440D6` dan kertas `#f2f2ef`;
+  ikon PNG digambar ulang dari geometri SVG baru dengan radius luar yang
+  ditajamkan. Judul halaman login diseragamkan ke kelas peran `.ui-title-screen`.
 
 ### Operasional
 - **Deploy produksi 2026-09-24 (VPS + Vercel).** Produksi sebelumnya
