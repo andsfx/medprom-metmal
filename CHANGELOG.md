@@ -5,6 +5,27 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Nomor batch dibuang UI di kolom "Nomor" tabel daftar pengajuan
+  dashboard admin, sehingga staf tidak bisa mengenali baris pengajuan cetak
+  (batch) dari daftar.** API daftar `GET /admin/submissions`
+  (`server/src/routes/admin.js` baris 143) sudah mengirim `b.batch_number`
+  lewat `LEFT JOIN promo_submission_batches`, dan tipe FE
+  `AdminSubmissionRow` (`src/types/promo.ts` baris 227) sudah menyediakan
+  `batch_number`, tetapi sel kolom "Nomor" di
+  `src/components/admin/AdminDashboardPage.tsx` hanya merender
+  `submission_number` sehingga data batch menjadi data mati (Sheet detail
+  justru sudah menampilkan "Nomor Batch"). Sel itu kini menambah baris kecil
+  `{r.batch_number && <p ...>{r.batch_number}</p>}` di bawah nomor pengajuan,
+  murni aditif: header kolom, lebar, urutan kolom, dan sel lain tidak diubah,
+  dan baris non-batch (`batch_number` null/undefined) tidak merender apa pun.
+  Dikunci test baru `src/components/admin/__tests__/AdminDashboardBatchNumber.test.tsx`
+  (2 test). Test dibuktikan bermakna lewat uji dua arah: pada kode sebelum
+  perubahan 1 test merah (nomor batch tidak dirender), setelah perubahan 2
+  test hijau. Perbaikan ini mewujudkan perilaku yang dimaksud asersi lama
+  `scripts/verify-admin-flow.mjs` baris 50 (`MPB-\d{6}-[0-9A-Z]{6}`) TANPA
+  menyentuh skrip; asersi itu sendiri adalah bawaan lama commit `c901935`
+  (2026-09-22) yang selalu gagal sejak lahir karena API saat itu belum
+  mengirim `batch_number`.
 - **Endpoint pengingat periode berakhir tidak pernah terjangkau sehingga kanal
   pengingat mati total.** Di `server/src/routes/admin.js`,
   `router.get('/submissions/:id', ...)` terdaftar lebih dulu daripada

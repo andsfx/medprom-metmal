@@ -533,6 +533,12 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   <span className="font-mono text-xs font-semibold text-brand-primary-700 dark:text-brand-primary-300">
                     {r.submission_number || '-'}
                   </span>
+                  {/* Nomor batch pengajuan cetak: satu kirim form cetak memuat
+                   * beberapa pengajuan, jadi nomor batch membantu staf mengenali
+                   * baris kiriman yang sama. Baris non-batch tidak menambah apa pun. */}
+                  {r.batch_number && (
+                    <p className="font-mono text-[10px] text-slate-500 dark:text-slate-400">{r.batch_number}</p>
+                  )}
                 </td>
                 <td className="px-3 py-3 text-xs ui-text-muted">
                   {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
