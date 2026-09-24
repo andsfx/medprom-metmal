@@ -23,10 +23,17 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   sudah ada (bila `batch_token` tidak ada, pesan jelas ditampilkan alih-alih
   navigate ke rute kosong), `MP-` tetap ke pelacakan pengajuan. Teks bantuan dan
   placeholder kini menyebut KEDUA format, dan input di luar keduanya ditolak di
-  klien tanpa memanggil server. Dikunci test baru
-  `TrackSubmissionPageBatch.test.tsx` (5 test). Dua arah terbukti: pada kode
-  sebelum perbaikan 4 test merah (1 test penjaga perilaku lama hijau), sesudah
-  perbaikan 5 test hijau. Catatan `docs/PLAN_2026-09-24_09-48.md`.
+  klien tanpa memanggil server. Putaran ini juga memperbaiki BLOCKER captcha:
+  widget Turnstile semula mengirim `action='track'` untuk kedua jalur, padahal
+  server memverifikasi `action='track-batch'` di `/batches/track` dan menolak
+  bila aksi tidak cocok (`turnstile.js`), sehingga pelacakan batch selalu gagal
+  saat captcha aktif. `TrackSubmissionPage.tsx` kini menurunkan
+  `turnstileAction` dari awalan input (`MPB-` menjadi `track-batch`, selain itu
+  `track`) dan mengopernya ke widget. Dikunci test baru
+  `TrackSubmissionPageBatch.test.tsx` (8 test, termasuk tiga test aksi captcha).
+  Dua arah terbukti: pada kode sebelum perbaikan 4 test merah untuk jalur batch
+  dan 1 test merah untuk aksi captcha, sesudah perbaikan 8 test hijau. Catatan
+  `docs/PLAN_2026-09-24_09-48.md`.
 - **Tiga cacat tampilan sisi tenant: anchor materi mati, galat API disamakan
   dengan "tidak ditemukan", dan teks batch kontradiktif.** (1) Di
   `src/components/promo/SubmissionDetail.tsx`, blok materi dan blok riwayat

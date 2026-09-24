@@ -27,6 +27,19 @@ vi.mock('../../../utils/promoApi', async (importOriginal) => {
 const mockedSubmission = vi.mocked(fetchStatusByNumber);
 const mockedBatch = vi.mocked(fetchBatchByNumber);
 
+/**
+ * Tangkap prop `action` yang diterima widget Turnstile. Server memverifikasi
+ * `action` per permukaan ('track' vs 'track-batch'), jadi prop ini adalah
+ * kontrak yang harus cocok - kalau salah, captcha aktif akan selalu ditolak.
+ */
+const { widgetActions } = vi.hoisted(() => ({ widgetActions: [] as string[] }));
+vi.mock('../../ui/Turnstile', () => ({
+  default: ({ action }: { action: string }) => {
+    widgetActions.push(action);
+    return null;
+  },
+}));
+
 const SUBMISSION: StatusPageData = {
   submission: {
     id: 'sub-1', submission_number: 'MP-260918-A7K2QX', media_type_slug: 'spanduk',
@@ -62,6 +75,7 @@ function HalamanBatch() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+  widgetActions.length = 0;
   vi.stubEnv('VITE_TURNSTILE_SITE_KEY', '');
 });
 
@@ -134,5 +148,27 @@ describe('TrackSubmissionPage - jalur batch', () => {
 
     expect(screen.getByText('MP-260918-A7K2QX')).toBeInTheDocument();
     expect(screen.getByText('MPB-260918-A7K2QX')).toBeInTheDocument();
+  });
+
+  it('input MPB- → widget Turnstile memakai action track-batch', () => {
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText(/Nomor Pengajuan/i), { target: { value: 'MPB-260918-A7K2QX' } });
+
+    expect(widgetActions.at(-1)).toBe('track-batch');
+  });
+
+  it('input MP- → widget Turnstile memakai action track', () => {
+    renderPage();
+
+    fireEvent.change(screen.getByLabelText(/Nomor Pengajuan/i), { target: { value: 'MP-260918-A7K2QX' } });
+
+    expect(widgetActions.at(-1)).toBe('track');
+  });
+
+  it('input kosong → widget Turnstile memakai action track', () => {
+    renderPage();
+
+    expect(widgetActions.at(-1)).toBe('track');
   });
 });
