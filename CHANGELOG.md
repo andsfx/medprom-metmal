@@ -403,6 +403,27 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   em-dash terencana di `scripts/`.
 
 ### Dirapikan
+- **Hasil audit field form cetak: semua field yang diminta pemilik sudah ada.**
+  Audit read-only memetakan tiap field permintaan pemilik (`docs/PLAN_2026-09-20_16-00.md:299-301`,
+  yaitu tanggal pengajuan, nama pemohon, nama tenant/non-tenant, telepon,
+  periode, tanggal pemasangan, lokasi) dari form
+  (`src/components/promo/PromoCetakWizard.tsx`) ke penyimpanan
+  (`server/src/routes/promo.js`, `POST /promo/submit-batch`) dan ke tampilan
+  (staf `AdminDashboardPage.tsx`, tenant `SubmissionDetail.tsx`, batch
+  `BatchStatusPage.tsx`); seluruh putusan **COCOK**, tidak ada field diminta
+  yang hilang. Satu temuan nyata **T5** menunggu keputusan pemilik: pada alur
+  cetak, checkbox `#cetak-terms` (`PromoCetakWizard.tsx:910`) tidak dikirim di
+  payload (`:389-410`) dan server menulis KONSTANTA `true`
+  (`server/src/routes/promo.js:897`), sehingga kolom `terms_accepted` tidak
+  membuktikan persetujuan dan API langsung bisa melewatinya; bandingkan alur
+  digital `POST /promo/submit` yang menegakkan di `promo.js:333` dan `:355`.
+  Perbaikannya terhalang aturan karena fixture lama
+  `__tests__/api/promo-batch.test.js:88-98` tidak memuat `terms_accepted`.
+  Putaran ini murni dokumentasi dan **TIDAK mengubah kode apa pun**; rincian di
+  `docs/PLAN_2026-09-24_10-56.md`. **Pilihan seksi:** diletakkan di
+  `### Dirapikan`, bukan `### Diperbaiki` maupun `### Ditambahkan`, karena
+  tidak ada perilaku runtime yang berubah dan tidak ada fitur baru; ini catatan
+  hasil audit dan satu temuan yang menunggu keputusan.
 - **Cakupan temuan zona waktu (C5) diperluas, menunggu keputusan pemilik.**
   Audit lanjutan menemukan ketergantungan pada "hari ini" bukan hanya pada
   `CURRENT_DATE` di query pengingat (`server/src/routes/admin.js:201` dan
