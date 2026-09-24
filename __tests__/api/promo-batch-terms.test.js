@@ -1,25 +1,22 @@
 /**
- * Test penyimpanan persetujuan ketentuan pada batch cetak (cacat T5).
+ * Test penyimpanan + penegakan persetujuan ketentuan pada batch cetak (cacat T5).
  *
  * Latar: handler `POST /promo/submit-batch` dahulu menuliskan nilai
  * KONSTANTA `true` ke kolom `terms_accepted` untuk setiap baris, tanpa pernah
  * membaca `body.terms_accepted`. Akibatnya kolom itu tidak membuktikan apa
- * pun. Perbaikan ini membuat server menyimpan isi body APA ADANYA.
+ * pun. Perbaikan ini membuat server menyimpan isi body APA ADANYA dan
+ * MENEGAKKANNYA seperti alur digital `POST /promo/submit`.
  *
  * Kontrak yang dikunci di sini:
- *  - `terms_accepted: true`  -> tersimpan boolean `true`;
- *  - `terms_accepted: false` -> tersimpan boolean `false`;
- *  - field dihilangkan       -> tersimpan boolean `false` (bukan lagi `true`
- *    hardcoded), karena `body.terms_accepted === true` bernilai false.
+ *  - `terms_accepted: true`  -> 201 dan kolom tersimpan boolean `true`;
+ *  - `terms_accepted: false` -> 400 'Persetujuan ketentuan wajib dicentang',
+ *    tanpa INSERT apa pun;
+ *  - field dihilangkan       -> 400 dengan pesan yang sama, tanpa INSERT;
+ *  - `terms_accepted: 'true'` (string, bukan boolean) -> 400, tanpa INSERT.
  *
- * CATATAN PENTING - penegakan server DITUNDA.
- * Alur digital `POST /promo/submit` menolak 400 saat `terms_accepted` bukan
- * `true` ('Persetujuan ketentuan wajib dicentang'). Penegakan yang sama
- * SENGAJA BELUM dipasang di `/submit-batch`: fixture batch lama
- * (`__tests__/api/promo-batch.test.js`, `__tests__/api/cetak-batch-limits.test.js`)
- * tidak mengirim field itu dan masih mengharapkan 201/429. Karena itu test ini
- * menuntut 201 (bukan 400) untuk semua kasus, dan menunggu keputusan pemilik
- * sebelum penolakan 400 ditambahkan.
+ * Penegakan memakai `body.terms_accepted === true`, jadi hanya boolean `true`
+ * yang lolos; string `'true'` ditolak. String pesan PERSIS sama dengan alur
+ * digital `POST /promo/submit`.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
@@ -160,7 +157,7 @@ beforeEach(() => {
   mockSukses();
 });
 
-describe('POST /promo/submit-batch - persetujuan ketentuan tersimpan apa adanya', () => {
+describe('POST /promo/submit-batch - persetujuan ketentuan ditegakkan', () => {
   it('terms_accepted: true -> 201 dan kolom tersimpan boolean true', async () => {
     const res = await call('/submit-batch', 'post', {
       body: { ...BASE, terms_accepted: true },
@@ -178,27 +175,44 @@ describe('POST /promo/submit-batch - persetujuan ketentuan tersimpan apa adanya'
     ).toBe(true);
   });
 
-  it('terms_accepted: false -> 201 dan kolom tersimpan boolean false', async () => {
+  it('terms_accepted: false -> 400 dan tidak ada INSERT apa pun', async () => {
     const res = await call('/submit-batch', 'post', {
       body: { ...BASE, terms_accepted: false },
     });
-    expect(res.statusCode).toBe(201);
-    expect(res.body.success).toBe(true);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.errors).toContain('Persetujuan ketentuan wajib dicentang');
 
-    const values = insertValues();
-    expect(typeof values[IDX_TERMS]).toBe('boolean');
-    expect(values[IDX_TERMS]).toBe(false);
+    // Tidak boleh menyentuh DB untuk menulis batch maupun submission.
+    const teks = mockedQuery.mock.calls.map((c) => String(c[0]));
+    expect(teks.some((s) => s.includes('INSERT INTO promo_submissions'))).toBe(false);
+    expect(teks.some((s) => s.includes('INSERT INTO promo_submission_batches'))).toBe(false);
   });
 
-  it('field dihilangkan -> 201 dan kolom tersimpan boolean false (bukan true hardcoded)', async () => {
+  it('field dihilangkan -> 400 dengan pesan yang sama dan tidak ada INSERT', async () => {
     // Regresi cacat T5: dahulu nilai selalu `true` meski klien tidak mengirim
-    // apa pun. Kini `body.terms_accepted === true` bernilai false.
+    // apa pun. Kini `body.terms_accepted === true` bernilai false -> ditolak.
     const res = await call('/submit-batch', 'post', { body: { ...BASE } });
-    expect(res.statusCode).toBe(201);
-    expect(res.body.success).toBe(true);
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.errors).toContain('Persetujuan ketentuan wajib dicentang');
 
-    const values = insertValues();
-    expect(typeof values[IDX_TERMS]).toBe('boolean');
-    expect(values[IDX_TERMS]).toBe(false);
+    const teks = mockedQuery.mock.calls.map((c) => String(c[0]));
+    expect(teks.some((s) => s.includes('INSERT INTO promo_submissions'))).toBe(false);
+    expect(teks.some((s) => s.includes('INSERT INTO promo_submission_batches'))).toBe(false);
+  });
+
+  it("terms_accepted: 'true' (string) -> 400 tanpa INSERT (penegakan === true)", async () => {
+    // String 'true' BUKAN boolean true, jadi harus ditolak oleh `=== true`.
+    const res = await call('/submit-batch', 'post', {
+      body: { ...BASE, terms_accepted: 'true' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.errors).toContain('Persetujuan ketentuan wajib dicentang');
+
+    const teks = mockedQuery.mock.calls.map((c) => String(c[0]));
+    expect(teks.some((s) => s.includes('INSERT INTO promo_submissions'))).toBe(false);
+    expect(teks.some((s) => s.includes('INSERT INTO promo_submission_batches'))).toBe(false);
   });
 });

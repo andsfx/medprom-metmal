@@ -759,8 +759,8 @@ router.post('/submit-batch', async (req, res, next) => {
   const submissionDate = sanitize(body.submission_date || '', 10);
   const notes = sanitize(body.notes || '', 1000);
   // Persetujuan ketentuan dibaca APA ADANYA dari body dan disimpan apa adanya
-  // (bukan lagi konstanta `true`). Penegakan 400 belum diaktifkan di sini agar
-  // tidak mengubah kontrak fixture batch lama; lihat catatan di blok validasi.
+  // (bukan lagi konstanta `true`); nilainya juga DITEGAKKAN di blok validasi
+  // seperti alur digital `POST /promo/submit`.
   const termsAccepted = body.terms_accepted === true;
   const fingerprint = sanitize(body.device_fingerprint || '', 100);
   const items = Array.isArray(body.items) ? body.items : [];
@@ -774,16 +774,12 @@ router.post('/submit-batch', async (req, res, next) => {
   else if (!PHONE_RE.test(picPhone)) errors.push('Format nomor telepon tidak valid');
   if (submissionDate && !DATE_RE.test(submissionDate)) errors.push('Tanggal pengajuan harus format YYYY-MM-DD');
   if (!fingerprint) errors.push('Fingerprint perangkat wajib diisi');
+  // Persetujuan ketentuan ditegakkan di sini, PERSIS seperti alur digital
+  // `POST /promo/submit`: `terms_accepted` harus PERSIS boolean `true`.
+  // String `'true'` atau field yang dihilangkan sama-sama ditolak.
+  if (!termsAccepted) errors.push('Persetujuan ketentuan wajib dicentang');
   if (items.length === 0) errors.push('Pilih minimal satu media promosi');
   if (items.length > MAX_BATCH_ITEMS) errors.push(`Maksimal ${MAX_BATCH_ITEMS} media dalam satu pengajuan`);
-  // CATATAN (cacat T5): alur digital `POST /promo/submit` menolak 400 saat
-  // `terms_accepted` bukan `true` (pesan 'Persetujuan ketentuan wajib
-  // dicentang'). Penegakan yang sama SENGAJA BELUM dipasang di sini karena
-  // fixture batch lama (`__tests__/api/promo-batch.test.js`,
-  // `__tests__/api/cetak-batch-limits.test.js`) tidak mengirim field itu dan
-  // masih mengharapkan 201/429. Perubahan ini hanya berhenti menuliskan nilai
-  // KONSTANTA `true`: kolom kini menyimpan isi body apa adanya, sehingga
-  // penegakan 400 bisa ditambahkan belakangan tanpa mengubah makna kolom.
 
   const normalized = items.map((raw) => ({
     media_type_slug: sanitize(raw?.media_type_slug || '', 60),

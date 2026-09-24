@@ -93,6 +93,7 @@ const BASE = {
   pic_phone: '081234567890',
   submission_date: '2026-09-20',
   notes: '',
+  terms_accepted: true,
   device_fingerprint: 'fp-batch-1',
   items: [ITEM_SPANDUK],
 };

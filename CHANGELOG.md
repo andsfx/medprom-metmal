@@ -5,6 +5,22 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Pengajuan cetak batch kini menolak 400 bila persetujuan ketentuan tidak
+  dicentang.** Handler `POST /promo/submit-batch`
+  (`server/src/routes/promo.js`) sebelumnya hanya menyimpan nilai
+  `terms_accepted` apa adanya. Kini ia menegakkan persis seperti alur digital
+  `POST /promo/submit`, dengan `if (!termsAccepted) errors.push('Persetujuan
+  ketentuan wajib dicentang')`, sehingga nilai selain boolean `true` (termasuk
+  string `'true'` atau field yang dihilangkan) ditolak 400 sebelum apa pun
+  ditulis. Dasar: izin pemilik untuk menyesuaikan dua fixture batch lama yang
+  tidak mengirim `terms_accepted` (`__tests__/api/promo-batch.test.js`,
+  `__tests__/api/cetak-batch-limits.test.js`). Keduanya HANYA ditambah satu
+  field `terms_accepted: true` pada `BASE`, tanpa mengubah assertion apa pun,
+  karena payload itu memang valid di bawah kontrak baru. Dikunci
+  `__tests__/api/promo-batch-terms.test.js` (4 test perilaku: true -> 201,
+  false -> 400, field dihilangkan -> 400, string `'true'` -> 400; tiga kasus
+  terakhir juga memastikan tidak ada INSERT). Catatan
+  `docs/PLAN_2026-09-24_14-44.md`.
 - **Lokasi pemasangan pada unggah bukti tayang kini diambil dari pengajuan,
   bukan dari `req.body` yang selalu kosong.** Handler
   `POST /admin/submissions/:id/installation/proof` (`server/src/routes/admin.js`)
