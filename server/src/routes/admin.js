@@ -462,6 +462,16 @@ router.post('/submissions/:id/installation/proof', requireRole(STAFF_ROLES), asy
     );
     const existing = rows[0] || null;
     if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
+    // Lokasi pemasangan diambil dari `media_target` pengajuan - BUKAN dari
+    // `req.body`: `readMultipartFile` (drive.js) sengaja mengabaikan field
+    // non-file, jadi `req.body.media_location` tidak pernah terisi. Query
+    // terpisah (bukan memperluas SELECT di atas) supaya bentuk SELECT di atas
+    // yang dikunci test lama tetap utuh; hasilnya sama.
+    const { rows: locRows } = await db.query(
+      'SELECT media_target FROM promo_submissions WHERE id = $1 LIMIT 1',
+      [id],
+    );
+    existing.media_target = locRows[0]?.media_target || '';
     if (!isInstallableStatus(existing.status) && existing.status !== 'sudah_dipasang') {
       return res.status(400).json({
         success: false,
@@ -508,14 +518,14 @@ router.post('/submissions/:id/installation/proof', requireRole(STAFF_ROLES), asy
       );
     } else {
       // Belum ada baris pemasangan - buat baris ringkas dengan lokasi dari
-      // pengajuan agar bukti tidak menggantung tanpa induk.
+      // `media_target` pengajuan agar bukti tidak menggantung tanpa induk.
       await db.query(
         `INSERT INTO promo_installations
           (submission_id, media_location, proof_kind, proof_file_id, proof_file_url,
            proof_file_name, proof_mime, proof_size_bytes, proof_uploaded_by,
            proof_uploaded_at, installed_by, installed_by_id)
          VALUES ($1, $2, 'upload', $3, $4, $5, $6, $7, $8, now(), $9, $10)`,
-        [id, sanitize(req.body?.media_location || '', 200) || 'Belum ditentukan',
+        [id, sanitize(existing.media_target || '', 200) || 'Belum ditentukan',
           uploaded.id, uploaded.webViewLink, sanitize(file.originalName || '', 200), mime,
           file.length, req.auth.user.display_name, req.auth.user.display_name, req.auth.user.id],
       );

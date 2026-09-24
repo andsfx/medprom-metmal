@@ -5,6 +5,46 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Lokasi pemasangan pada unggah bukti tayang kini diambil dari pengajuan,
+  bukan dari `req.body` yang selalu kosong.** Handler
+  `POST /admin/submissions/:id/installation/proof` (`server/src/routes/admin.js`)
+  pada cabang `else` (saat `promo_installations` belum punya baris) mengisi
+  `media_location` dari `sanitize(req.body?.media_location || '', 200) ||
+  'Belum ditentukan'`. Padahal `readMultipartFile` (`server/src/drive.js`)
+  adalah parser multipart streaming yang SENGAJA mengabaikan field non-file,
+  dan FE (`src/utils/adminApi.ts: uploadInstallationProof`) hanya mengirim field
+  `file`; jadi `media_location` SELALU jatuh ke literal `'Belum ditentukan'`
+  meski komentar kode menyatakan "lokasi dari pengajuan". Lokasi kini dibaca
+  dari `media_target` pengajuan (query `SELECT media_target FROM
+  promo_submissions WHERE id = $1 LIMIT 1`, hasilnya disimpan pada
+  `existing.media_target`), dan `$2` menjadi
+  `sanitize(existing.media_target || '', 200) || 'Belum ditentukan'`; fallback
+  `'Belum ditentukan'` dipertahankan sebagai jaring terakhir bila `media_target`
+  kosong. Catatan implementasi: instruksi meminta memperluas SELECT awal
+  (`SELECT id, status FROM promo_submissions ...`), tetapi bentuk SELECT itu
+  dikunci test lama (`__tests__/api/admin-cetak.test.js`,
+  `__tests__/api/admin-flow.test.js`) yang menge-mock lewat substring SQL persis
+  - memperluasnya membuat mock jatuh ke `{ rows: [] }` dan handler membalas 404
+  (2 test lama pecah, terbukti empiris). Karena test lama tidak boleh disunting,
+  sumber lokasi diambil lewat query kedua yang setara; bentuk SELECT pertama
+  tetap utuh. **Test lama tidak tersentuh.** Dikunci
+  `__tests__/api/admin-installation-proof-location.test.js` (berkas baru,
+  4 test, handler sungguhan): `media_target` pengajuan tersimpan pada parameter
+  INSERT (bukan `'Belum ditentukan'`), `media_location` dari `req.body`
+  diabaikan, dan `media_target` kosong memakai fallback. Catatan
+  `docs/PLAN_2026-09-24_12-10.md`.
+- **Nama pelaku riwayat revisi tenant tidak lagi kosong.** Handler
+  `POST /promo/submissions/:id/revision` (`server/src/routes/promo.js`) memanggil
+  `insertHistory({ ..., actorType: 'tenant', actorName: '' })`, sehingga baris
+  `promo_submission_history` mencatat nama pelaku kosong, padahal jalur tenant
+  lain (`promo.js` sekitar baris 456 dan 947) memakai nama PIC (`actorName:
+  picName`). SELECT pengajuan di handler itu kini turut mengambil `pic_name`,
+  dan `insertHistory` memakai `actorName: submission.pic_name || ''`. Tidak ada
+  perilaku lain yang diubah. Dikunci
+  `__tests__/api/promo-revision-actor.test.js` (berkas baru, 3 test, handler
+  sungguhan): parameter INSERT `promo_submission_history` memuat nama PIC
+  pengajuan, bukan string kosong; `pic_name` kosong tetap aman. Catatan
+  `docs/PLAN_2026-09-24_12-10.md`.
 - **Persetujuan ketentuan pada pengajuan cetak batch tidak lagi dipalsukan.**
   Handler `POST /promo/submit-batch` (`server/src/routes/promo.js`) menuliskan
   nilai KONSTANTA `true` ke kolom `terms_accepted` tiap baris `promo_submissions`

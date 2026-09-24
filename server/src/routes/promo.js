@@ -649,7 +649,7 @@ router.post('/submissions/:id/revision', async (req, res, next) => {
   try {
     // Kepemilikan ditegakkan lewat fingerprint perangkat pengirim (AC 11.3).
     const { rows } = await db.query(
-      `SELECT id, status, status_token, device_fingerprint, source_type
+      `SELECT id, status, status_token, device_fingerprint, source_type, pic_name
        FROM promo_submissions WHERE id = $1 LIMIT 1`,
       [id],
     );
@@ -699,7 +699,7 @@ router.post('/submissions/:id/revision', async (req, res, next) => {
       toStatus: INITIAL_STATUS,
       comment: revisionNotes || 'Materi revisi dikirim tenant',
       actorType: 'tenant',
-      actorName: '',
+      actorName: submission.pic_name || '',
     });
 
     return res.json({
