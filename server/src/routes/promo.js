@@ -503,7 +503,23 @@ router.get('/submissions/mine', async (req, res, next) => {
   if (!fingerprint) {
     return res.status(400).json({ success: false, error: 'Fingerprint perangkat wajib diisi.' });
   }
+  // Paginasi ADITIF: `?offset=<n>` memuat halaman berikutnya. Tanpa `offset`
+  // nilainya 0, jadi bentuk query dan parameter TETAP SAMA seperti sebelum
+  // paginasi ada (pemanggil lama dan test lama tidak berubah). Nilai cacat
+  // (negatif/bukan angka) mundur ke 0, dan karena sudah dipaksa integer ia
+  // ditulis sebagai literal angka, bukan parameter bind.
+  const offset = Math.max(0, parseInt(String(req.query?.offset ?? '0'), 10) || 0);
   try {
+    // `total` = jumlah SELURUH pengajuan perangkat ini, sehingga klien tahu
+    // apakah masih ada sisa tanpa menebak dari panjang halaman. Dijalankan
+    // SEBELUM query daftar supaya SQL daftar tetap menjadi panggilan terakhir
+    // (kontrak yang dibaca `__tests__/api/promo-mine-batch.test.js`).
+    const { rows: countRows } = await db.query(
+      `SELECT count(*)::int AS n FROM promo_submissions WHERE device_fingerprint = $1`,
+      [fingerprint],
+    );
+    const total = countRows[0]?.n || 0;
+
     // Kolom batch diambil SATU PER SATU, tidak lewat `b.*`: tabel batch
     // bertabrakan nama dengan `promo_submissions` pada 13 kolom (id, tenant_id,
     // unit_number, pic_name, pic_phone, submission_date, notes,
@@ -512,10 +528,10 @@ router.get('/submissions/mine', async (req, res, next) => {
     // batch pada kunci JSON yang sama. Alias `s` wajib: tanpa itu `created_at`
     // dan `id` di `SUBMISSION_PUBLIC_COLUMNS` menjadi ambigu begitu di-join.
     // `batch_item_count` = jumlah SELURUH baris batch, dihitung di server lewat
-    // subquery yang TIDAK ikut dibatasi `LIMIT 50`: LIMIT memotong daftar
-    // pengajuan per perangkat, bukan isi batch, sehingga tenant dengan lebih
-    // dari 50 pengajuan tetap melihat angka yang benar (klien dulu menghitung
-    // dari baris yang termuat saja, jadi bisa kurang dari kenyataan).
+    // subquery yang TIDAK ikut dibatasi `LIMIT`/`OFFSET`: keduanya memotong
+    // daftar pengajuan per perangkat, bukan isi batch, sehingga tenant dengan
+    // lebih dari 50 pengajuan tetap melihat angka yang benar (klien dulu
+    // menghitung dari baris yang termuat saja, jadi bisa kurang dari kenyataan).
     const { rows } = await db.query(
       `SELECT ${SUBMISSION_PUBLIC_COLUMNS_S}, s.status_token,
               b.batch_number, b.batch_token,
@@ -525,10 +541,12 @@ router.get('/submissions/mine', async (req, res, next) => {
        LEFT JOIN promo_submission_batches b ON b.id = s.batch_id
        WHERE s.device_fingerprint = $1
        ORDER BY s.created_at DESC
-       LIMIT 50`,
+       LIMIT 50 OFFSET ${offset}`,
       [fingerprint],
     );
-    return res.json({ success: true, data: rows });
+    // `total` + `offset` dikirim di samping `data` (envelope paginasi yang sama
+    // dengan `/admin/submissions`: `{ success, data, total, ... }`).
+    return res.json({ success: true, data: rows, total, offset });
   } catch (err) {
     return next(err);
   }

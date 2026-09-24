@@ -40,7 +40,16 @@ export default function SubmissionStatusPage() {
   useEffect(() => { void load(); }, [load]);
 
   return (
-    <AppShell title="Status Pengajuan" back backTo="/riwayat">
+    // Tujuan tombol kembali TIDAK bergantung pada riwayat perangkat: halaman
+    // ini dibuka lewat tautan/token yang bisa datang dari PERANGKAT LAIN, dan
+    // di perangkat itu `/riwayat` kosong ("Belum ada pengajuan dari perangkat
+    // ini"), sehingga tenant mengira pengajuannya hilang. Dipilih beranda
+    // (`/`) alih-alih kembali-satu-langkah browser karena tombol harus
+    // berperilaku SAMA di setiap cara masuk: kembali-satu-langkah tidak punya
+    // langkah untuk dimundurkan saat tautan dibuka LANGSUNG (kasus utama
+    // perangkat lain), sedangkan beranda selalu ada dan memberi jalan lanjut.
+    // Lihat `StatusPageTombolKembali.test.tsx`.
+    <AppShell title="Status Pengajuan" back backTo="/">
       <div className="mx-auto max-w-2xl px-4 py-5">
         {loading && (
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">

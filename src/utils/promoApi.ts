@@ -3,7 +3,7 @@
  * (ApiError → degradasi list kosong sesuai konteks; error diteruskan bila
  * UI butuh menampilkan pesan/tombol coba lagi).
  */
-import { apiGet, apiPost, apiUrl, ApiError } from '../lib/rest';
+import { apiGet, apiGetRaw, apiPost, apiUrl, ApiError } from '../lib/rest';
 import type {
   PromoMediaType, TenantOption, PromoSubmissionPayload, MySubmissionRow, StatusPageData,
   BatchStatusData, BatchSubmitResult,
@@ -212,10 +212,70 @@ export async function submitPromo(payload: PromoSubmissionPayload): Promise<{
  * sebagai `[]`, sehingga tenant melihat "Belum ada pengajuan dari perangkat
  * ini" padahal pengajuannya ada dan hanya gagal dimuat. Terverifikasi di
  * produksi: respons 503 → layar kosong, tanpa galat apa pun.
+ *
+ * Paginasi ADITIF: `offset` (bawaan 0) memuat halaman berikutnya tanpa
+ * mengubah perilaku pemanggil lama (tanpa `offset`, URL tetap persis seperti
+ * sebelumnya). `total` adalah jumlah SELURUH pengajuan perangkat dan bernilai
+ * `null` bila server versi lama tidak mengirimkannya, sehingga klien bisa
+ * jatuh ke heuristik "halaman penuh". Bentuk respons lama (array polos) tetap
+ * diterima: `rows` diisi array itu dan `total` menjadi `null`.
  */
-export async function fetchMySubmissions(fingerprint: string): Promise<MySubmissionRow[]> {
-  const data = await apiGet<unknown>(`/promo/submissions/mine?fingerprint=${encodeURIComponent(fingerprint)}`);
-  return Array.isArray(data) ? (data as MySubmissionRow[]) : [];
+export interface MySubmissionsResult {
+  rows: MySubmissionRow[];
+  total: number | null;
+}
+
+/** Bentuk mentah respons `/promo/submissions/mine` (envelope + total). */
+interface MineRaw {
+  success?: boolean;
+  error?: string;
+  data?: unknown;
+  total?: unknown;
+}
+
+/**
+ * Normalisasi hasil riwayat ke bentuk kanonis `{ rows, total }`.
+ *
+ * Paginasi ini bersifat ADITIF, jadi fungsi menerima DUA bentuk dan bersifat
+ * idempoten:
+ *  - bentuk MENTAH dari server: `{ success, data, total }`;
+ *  - bentuk LAMA: array polos tanpa `total`;
+ *  - bentuk yang SUDAH dinormalisasi: `{ rows, total }`.
+ * Dipakai `fetchMySubmissions` (jalur sungguhan) DAN `MySubmissionsPage` (tepi
+ * pemanggilan), supaya pemanggil lama yang masih mengembalikan array tidak
+ * membuat halaman riwayat gagal render. Tanpa `total`, hasilnya `null` sehingga
+ * halaman jatuh ke heuristik "halaman penuh".
+ */
+export function normalizeMySubmissions(raw: unknown): MySubmissionsResult {
+  if (Array.isArray(raw)) return { rows: raw as MySubmissionRow[], total: null };
+  const obj = raw as (MineRaw & { rows?: unknown }) | null | undefined;
+  const list = Array.isArray(obj?.rows)
+    ? obj.rows
+    : Array.isArray(obj?.data)
+      ? obj.data
+      : [];
+  const total = typeof obj?.total === 'number' ? obj.total : null;
+  return { rows: list as MySubmissionRow[], total };
+}
+
+export async function fetchMySubmissions(
+  fingerprint: string,
+  offset = 0,
+): Promise<MySubmissionsResult> {
+  const params = new URLSearchParams({ fingerprint });
+  if (offset > 0) params.set('offset', String(offset));
+
+  // `apiGetRaw` dipakai karena `total` hidup di SAMPING `data` (envelope
+  // paginasi, pola `/admin/submissions`). Gerbang `success:false` ditegakkan
+  // manual supaya galat aplikasi tidak diam-diam menjadi "belum ada pengajuan".
+  const body = await apiGetRaw<MineRaw | MySubmissionRow[]>(
+    `/promo/submissions/mine?${params.toString()}`,
+  );
+  if (!Array.isArray(body) && body?.success === false) {
+    throw new ApiError(body.error || 'Permintaan gagal', 'APP');
+  }
+
+  return normalizeMySubmissions(body);
 }
 
 // ─── Status via token (publik, FR-019..FR-022) ───────────────────

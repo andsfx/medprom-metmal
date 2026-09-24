@@ -56,7 +56,11 @@ export default function BatchStatusPage() {
   const labelPpn = adaTermasukPpn ? 'Termasuk PPN' : 'Total PPN';
 
   return (
-    <AppShell title="Status Pengajuan Cetak" back backTo="/riwayat">
+    // Tujuan tombol kembali TIDAK bergantung pada riwayat perangkat: lihat
+    // alasan pada `SubmissionStatusPage` - beranda (`/`) dipilih supaya
+    // perilakunya sama di setiap cara masuk, termasuk saat tautan dibuka
+    // langsung tanpa riwayat navigasi.
+    <AppShell title="Status Pengajuan Cetak" back backTo="/">
       <div className="mx-auto max-w-2xl px-4 py-5">
         {loading && (
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">

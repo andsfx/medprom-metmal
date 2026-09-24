@@ -14,9 +14,9 @@ import {
   CheckCircle2, Clock, ExternalLink, Info, Layers, XCircle, Loader2, Wrench,
 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
-import { fetchMySubmissions } from '../../utils/promoApi';
+import { fetchMySubmissions, normalizeMySubmissions } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
-import { STATUS_LABELS } from '../../constants/promo';
+import { STATUS_LABELS, MY_SUBMISSIONS_PAGE_SIZE } from '../../constants/promo';
 import type { MySubmissionRow } from '../../types/promo';
 
 function StatusBadge({ status }: { status: string }) {
@@ -41,20 +41,60 @@ function StatusBadge({ status }: { status: string }) {
 
 export default function MySubmissionsPage() {
   const [rows, setRows] = useState<MySubmissionRow[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
+  const [moreError, setMoreError] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     const fp = getDeviceFingerprint();
     fetchMySubmissions(fp)
-      .then((r) => { if (!cancelled) setRows(r); })
+      .then((r) => {
+        if (cancelled) return;
+        // Bentuk LAMA (array polos) tetap diterima - paginasi ini aditif.
+        const hasil = normalizeMySubmissions(r);
+        setRows(hasil.rows);
+        setTotal(hasil.total);
+      })
       // Gagal memuat ≠ tidak ada pengajuan: tanpa pembedaan ini tenant
       // mengira pengajuannya hilang (lihat komentar `fetchMySubmissions`).
       .catch(() => { if (!cancelled) setLoadError(true); })
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, []);
+
+  // Pemuatan halaman berikutnya MENAMBAH ke daftar, bukan menggantinya.
+  const loadMore = async () => {
+    if (loadingMore) return;
+    setLoadingMore(true);
+    setMoreError(false);
+    try {
+      const r = normalizeMySubmissions(
+        await fetchMySubmissions(getDeviceFingerprint(), rows.length),
+      );
+      // Dedup per id supaya baris baru tidak tampil dua kali bila server
+      // bergeser (pengajuan baru masuk di antara dua permintaan).
+      setRows((prev) => {
+        const ada = new Set(prev.map((x) => x.id));
+        return [...prev, ...r.rows.filter((x) => !ada.has(x.id))];
+      });
+      setTotal(r.total);
+    } catch {
+      setMoreError(true);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  // "Masih ada sisa" hanya bila kita punya bukti: `total` dari server, atau
+  // heuristik halaman penuh untuk server versi lama yang tidak mengirim
+  // `total`. Tanpa keduanya, tombol tidak ditampilkan (tidak menebak).
+  const totalTersedia = typeof total === 'number';
+  const adaSisa = totalTersedia
+    ? rows.length < total
+    : rows.length === MY_SUBMISSIONS_PAGE_SIZE;
 
   return (
     <AppShell title="Riwayat Pengajuan">
@@ -104,6 +144,14 @@ export default function MySubmissionsPage() {
             )}
 
             {!loading && rows.length > 0 && (
+              <>
+              {adaSisa && (
+                <p className="mb-3 text-xs ui-text-muted" role="status">
+                  {totalTersedia
+                    ? `Menampilkan ${rows.length} dari ${total} pengajuan terbaru.`
+                    : `Menampilkan ${rows.length} pengajuan terbaru.`}
+                </p>
+              )}
               <ul className="space-y-3">
                 {rows.map((r) => (
                   <li key={r.id} className="ui-card p-4">
@@ -175,6 +223,25 @@ export default function MySubmissionsPage() {
                   </li>
                 ))}
               </ul>
+              {adaSisa && (
+                <div className="mt-4 flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => { void loadMore(); }}
+                    disabled={loadingMore}
+                    className="ui-control inline-flex min-h-11 items-center gap-2 rounded-md px-4 py-2 text-sm font-semibold text-slate-700 transition disabled:opacity-50 dark:text-slate-200"
+                  >
+                    {loadingMore && <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />}
+                    {loadingMore ? 'Memuat…' : 'Muat lagi'}
+                  </button>
+                  {moreError && (
+                    <p className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                      Gagal memuat pengajuan berikutnya. Coba lagi sebentar.
+                    </p>
+                  )}
+                </div>
+              )}
+              </>
             )}
         </div>
       </div>

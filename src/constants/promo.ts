@@ -52,6 +52,19 @@ export const APPLICANT_TYPE_LABELS: Record<string, string> = {
 /** Batas jumlah media dalam satu pengajuan cetak - cermin server MAX_BATCH_ITEMS. */
 export const MAX_BATCH_ITEMS = 10;
 
+/**
+ * Jumlah baris riwayat per halaman - cermin `LIMIT 50` di
+ * `GET /promo/submissions/mine` (`server/src/routes/promo.js`).
+ *
+ * Dipakai `MySubmissionsPage` untuk heuristik "masih ada sisa" ketika server
+ * belum/tidak mengirim `total`: halaman yang terisi PENUH berarti mungkin
+ * masih ada sisa. Server TIDAK mengekspor konstantanya, jadi nilainya
+ * diduplikasi di sini dan dikunci test
+ * `__tests__/api/promo-mine-paginasi.test.js` (pola sama dengan
+ * `MAX_BATCH_ITEMS`).
+ */
+export const MY_SUBMISSIONS_PAGE_SIZE = 50;
+
 /** Jenis materi (field form PRD §9.3) - nilai disimpan apa adanya. */
 export const MATERIAL_TYPES: string[] = [
   'Promosi',

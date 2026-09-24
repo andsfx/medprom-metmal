@@ -5,6 +5,39 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Riwayat tenant terpotong 50 secara senyap, dan tombol kembali halaman
+  status bergantung pada riwayat perangkat.** (1) `GET /promo/submissions/mine`
+  (`server/src/routes/promo.js`) memakai `LIMIT 50` dan membalas `{ success,
+  data }` tanpa penanda apa pun, sementara `MySubmissionsPage.tsx` merender
+  daftar itu langsung, sehingga tenant dengan lebih dari 50 pengajuan tidak
+  bisa melihat pengajuan lamanya dan tidak diberi tahu; akibat lanjutan,
+  `status_token` pengajuan ke-51 dan seterusnya tidak terjangkau sehingga jalan
+  menuju form revisi hilang. Server kini mendukung paginasi ADITIF lewat
+  `?offset=<n>`: tanpa `offset` bentuk query dan parameter tetap sama seperti
+  sebelumnya (`LIMIT 50 OFFSET 0`, parameter hanya fingerprint), `offset` cacat
+  mundur ke 0, dan respons menambah `total` (jumlah seluruh pengajuan
+  perangkat) serta `offset` di samping `data`. Urutan query dijaga (hitungan
+  total lebih dulu) dan subquery `batch_item_count` tetap tidak terpotong
+  paginasi. `fetchMySubmissions` (`src/utils/promoApi.ts`) mengembalikan
+  `{ rows, total }` dan tetap menerima bentuk lama (array polos), jadi pemanggil
+  lama tidak berubah. `MySubmissionsPage.tsx` menampilkan penanda jujur
+  ("Menampilkan N dari M pengajuan terbaru") beserta tombol "Muat lagi" yang
+  memuat halaman berikutnya dan MENAMBAH baris (bukan menggantinya); tanpa
+  `total` dari server, halaman penuh (`MY_SUBMISSIONS_PAGE_SIZE`, cermin
+  `LIMIT 50`) dianggap mungkin masih ada sisa. (2) `SubmissionStatusPage.tsx`
+  dan `BatchStatusPage.tsx` memakai `backTo="/riwayat"`, padahal kedua halaman
+  bisa dibuka dari perangkat lain lewat tautan/token dan di perangkat itu
+  `/riwayat` kosong ("Belum ada pengajuan dari perangkat ini"), sehingga tenant
+  merasa pengajuannya hilang. Dipilih arahkan tombol kembali ke beranda (`/`)
+  supaya perilakunya SAMA di setiap cara masuk, termasuk saat tautan dibuka
+  langsung tanpa riwayat navigasi. Teks lain di kedua halaman tidak diubah.
+  Dikunci empat test baru: `__tests__/api/promo-mine-paginasi.test.js` (8
+  test), `src/utils/__tests__/promoApiMinePaginasi.test.ts` (6 test),
+  `src/components/promo/__tests__/MySubmissionsPagePaginasi.test.tsx` (5 test),
+  dan `src/components/promo/__tests__/StatusPageTombolKembali.test.tsx` (4
+  test). Dua arah terbukti: pada kode sebelum perbaikan 20 test merah (3 test
+  penjaga aditivitas tetap hijau), sesudah perbaikan 23 test hijau. Catatan
+  `docs/PLAN_2026-09-24_10-37.md`.
 - **Janji "simpan nomor batch untuk memantau" di layar sukses wizard cetak
   tidak bisa ditepati: `/lacak` hanya melacak nomor pengajuan, bukan nomor
   batch.** Layar sukses `PromoCetakWizard.tsx` menampilkan nomor batch
