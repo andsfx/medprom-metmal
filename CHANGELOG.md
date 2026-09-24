@@ -316,6 +316,25 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   em-dash terencana di `scripts/`.
 
 ### Dirapikan
+- **Cakupan temuan zona waktu (C5) diperluas, menunggu keputusan pemilik.**
+  Audit lanjutan menemukan ketergantungan pada "hari ini" bukan hanya pada
+  `CURRENT_DATE` di query pengingat (`server/src/routes/admin.js:201` dan
+  `:217`, C5 awal di `docs/PLAN_2026-09-23_21-34.md`), melainkan juga pada
+  cast `::date` filter tanggal daftar pengajuan (`admin.js:113` dan `:118`),
+  `toIsoDate()` lead time sisi server (`server/src/lib/leadTime.js:25`,
+  dipakai `server/src/routes/promo.js:393` dan `:800`), serta `toIsoDate()`
+  sisi FE (`src/utils/leadTime.ts:41`, dipakai
+  `src/components/promo/PromoCetakWizard.tsx:153`). Tidak ada `TZ`/`PGTZ`
+  di `server/src/db.js:42-47`, `deploy/vps/docker-compose.yml:25-28` dan
+  `:57-60`, maupun berkas `.env`. Putaran ini murni dokumentasi dan
+  **TIDAK mengubah kode**: usulan kombinasi (opsi pool
+  `-c timezone=Asia/Jakarta` untuk sisi database, `TZ=Asia/Jakarta` pada
+  proses Node untuk lead time server, catatan bahwa `PGTZ` tidak dibaca
+  node-postgres, dan penyelarasan FE) dicatat di
+  `docs/PLAN_2026-09-24_08-40.md` untuk diputuskan pemilik. **Pilihan
+  seksi:** diletakkan di `### Dirapikan`, bukan `### Diperbaiki` maupun
+  `### Ditambahkan`, karena tidak ada perilaku runtime yang berubah dan
+  tidak ada fitur baru; ini catatan cakupan temuan yang menunggu keputusan.
 - **Tabel cermin `AGENTS.md` tertinggal dari cermin yang sudah dikunci test.**
   Tabel "Cermin FE↔BE yang disengaja" di `AGENTS.md` belum memuat pasangan
   `MAX_BATCH_ITEMS`, padahal commit `414ae35` sudah menguncinya sebagai cermin
