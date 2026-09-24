@@ -84,16 +84,31 @@ describe('fetchStatusByNumber — pelacakan via nomor + captcha', () => {
     history: [], files: [], installation: null,
   };
 
-  it('mengirim nomor dan token captcha sebagai query', async () => {
+  it('mengirim nomor, token captcha, dan fingerprint sebagai query', async () => {
     const fetchSpy = vi.fn(async () => jsonResponse({ success: true, data: DATA }));
     global.fetch = fetchSpy as unknown as typeof fetch;
 
-    await expect(fetchStatusByNumber('MP-260918-A7K2QX', 'tok-cf')).resolves.toEqual(DATA);
+    // Bentuk hasil kini memuat `is_owner` (kepemilikan ditandai server dari
+    // fingerprint pemanggil). Nilai `undefined` dari server menjadi `false`.
+    await expect(fetchStatusByNumber('MP-260918-A7K2QX', 'tok-cf')).resolves.toEqual({
+      ...DATA,
+      is_owner: false,
+    });
 
     const [url] = fetchSpy.mock.calls[0] as [string];
     expect(url).toContain('/promo/submissions/track');
     expect(url).toContain('number=MP-260918-A7K2QX');
     expect(url).toContain('captcha=tok-cf');
+    // Fingerprint ikut dikirim supaya server bisa menandai kepemilikan.
+    expect(url).toContain('fingerprint=');
+  });
+
+  it('meneruskan is_owner true dari server apa adanya', async () => {
+    const fetchSpy = vi.fn(async () => jsonResponse({ success: true, data: { ...DATA, is_owner: true } }));
+    global.fetch = fetchSpy as unknown as typeof fetch;
+
+    const hasil = await fetchStatusByNumber('MP-260918-A7K2QX', 'tok-cf');
+    expect(hasil.is_owner).toBe(true);
   });
 
   it('tanpa token captcha → parameter captcha tidak dikirim', async () => {

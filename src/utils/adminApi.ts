@@ -71,6 +71,7 @@ export async function fetchAdminReminders(days = 14): Promise<RemindersData> {
     days: data?.days ?? days,
     overdue: data?.overdue ?? 0,
     due_soon: data?.due_soon ?? 0,
+    belum_terpasang: data?.belum_terpasang ?? 0,
     items: Array.isArray(data?.items) ? data.items : [],
   };
 }

@@ -1,23 +1,21 @@
 /**
  * Mount test peringatan "materi belum diterima" di fieldset "Catat pemasangan".
  *
- * Kontrak rapuh yang dikunci: celah integritas pemasangan tanpa materi SUDAH
- * tercatat sebagai keputusan terbuka di `docs/PLAN_2026-09-23_19-45.md`, dan
- * arahnya belum dipilih pemilik. Perubahan ini sengaja TIDAK memblokir apa
- * pun; yang dikunci adalah keadaan "materi belum diterima" terlihat tepat di
- * tempat staf mengambil keputusan, yaitu di dalam fieldset "Catat pemasangan".
+ * Kontrak rapuh yang dikunci: keadaan "materi belum diterima" harus terlihat
+ * tepat di tempat staf mengambil keputusan, yaitu di dalam fieldset "Catat
+ * pemasangan". Pemilik sudah memilih arah untuk celah ini
+ * (`docs/PLAN_2026-09-23_19-45.md`): opsi B, IZINKAN tetapi minta konfirmasi
+ * eksplisit. Karena itu staf tetap boleh menyimpan (materi bisa diterima di
+ * luar aplikasi), tetapi `saveInstallation` menampilkan dialog konfirmasi
+ * lebih dulu - lihat test di bagian bawah berkas ini.
  *
  *  (a) `source_type: 'none'` + status boleh dipasang -> peringatan tampil,
  *      DAN tombol "Catat Pemasangan" tetap ada serta TIDAK disabled.
  *  (b) `source_type: 'link'` -> peringatan tidak tampil.
  *  (c) `source_type: 'upload'` -> peringatan tidak tampil.
- *
- * Bila guard server kelak diambil pemilik (opsi A), peringatan ini tetap sah
- * sebagai penjelas; bila opsi B atau C yang dipilih, peringatan ini juga tetap
- * sah. Karena itu test ini tidak mengunci pemblokiran apa pun.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 import AdminDashboardPage from '../AdminDashboardPage';
@@ -25,6 +23,7 @@ import { useAuth } from '../../../hooks/useAuth';
 import {
   fetchAdminSubmissions, fetchAdminMediaTypes, fetchAdminSummary,
   fetchAdminSubmissionDetail, fetchAdminUsers, fetchAdminReminders,
+  recordInstallation,
 } from '../../../utils/adminApi';
 import type { AdminSubmissionRow } from '../../../types/promo';
 
@@ -194,5 +193,67 @@ describe('AdminDashboardPage - peringatan materi belum diterima saat catat pemas
       target: { value: 'Atrium 1' },
     });
     expect(tombol).not.toBeDisabled();
+  });
+});
+
+/**
+ * Opsi B (`docs/PLAN_2026-09-23_19-45.md`): pemasangan tanpa materi TETAP
+ * boleh dicatat, tetapi staf harus mengonfirmasi lebih dulu. Yang dikunci di
+ * sini adalah perilaku tombolnya: konfirmasi muncul, dan `recordInstallation`
+ * hanya terpanggil setelah dikonfirmasi.
+ */
+describe('AdminDashboardPage - konfirmasi materi belum diterima (opsi B)', () => {
+  const mockedRecord = vi.mocked(recordInstallation);
+
+  async function isiLokasiDanKlik() {
+    const fieldset = await bukaFieldsetPemasangan();
+    fireEvent.change(within(fieldset).getByLabelText(/Media \/ lokasi pemasangan/i), {
+      target: { value: 'Atrium 1' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /Catat Pemasangan/i }));
+  }
+
+  it('source_type none: konfirmasi muncul; batal = tidak menyimpan', async () => {
+    renderDashboard();
+    await isiLokasiDanKlik();
+
+    // Dialog konfirmasi tampil dengan penjelasan konsekuensinya.
+    expect(await screen.findByText(/Materi belum diterima/i)).toBeInTheDocument();
+    // Teks konsekuensi muncul (bisa juga ada di peringatan fieldset, jadi
+    // dicari sebagai himpunan).
+    expect(screen.getAllByText(/Sudah Dipasang/i).length).toBeGreaterThan(0);
+    expect(mockedRecord).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getAllByRole('button', { name: /^Batal$/i }).at(-1)!);
+    await waitFor(() => expect(mockedRecord).not.toHaveBeenCalled());
+  });
+
+  it('source_type none: setelah dikonfirmasi baru menyimpan', async () => {
+    mockedRecord.mockResolvedValue({ success: true });
+    renderDashboard();
+    await isiLokasiDanKlik();
+
+    await screen.findByText(/Materi belum diterima/i);
+    fireEvent.click(screen.getByRole('button', { name: /Tetap Catat/i }));
+
+    await waitFor(() => {
+      expect(mockedRecord).toHaveBeenCalledWith('sub-1', expect.objectContaining({
+        media_location: 'Atrium 1',
+      }));
+    });
+  });
+
+  it('source_type upload: TIDAK ada konfirmasi tambahan (materi sudah ada)', async () => {
+    siapkan(row({
+      source_type: 'upload', file_url: 'https://drive.google.com/file/d/file-1/view',
+      file_name: 'spanduk.jpg', mime_type: 'image/jpeg', file_size_bytes: 1024,
+    }));
+    mockedRecord.mockResolvedValue({ success: true });
+    renderDashboard();
+    await isiLokasiDanKlik();
+
+    // Langsung menyimpan tanpa dialog konfirmasi materi.
+    await waitFor(() => expect(mockedRecord).toHaveBeenCalledTimes(1));
+    expect(screen.queryByText(/Materi belum diterima/i)).toBeNull();
   });
 });

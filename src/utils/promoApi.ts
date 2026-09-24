@@ -4,6 +4,7 @@
  * UI butuh menampilkan pesan/tombol coba lagi).
  */
 import { apiGet, apiGetRaw, apiPost, apiUrl, ApiError } from '../lib/rest';
+import { getDeviceFingerprint } from './fingerprint';
 import type {
   PromoMediaType, TenantOption, PromoSubmissionPayload, MySubmissionRow, StatusPageData,
   BatchStatusData, BatchSubmitResult,
@@ -281,12 +282,19 @@ export async function fetchMySubmissions(
 // ─── Status via token (publik, FR-019..FR-022) ───────────────────
 
 export async function fetchStatusByToken(token: string): Promise<StatusPageData> {
-  const data = await apiGet<StatusPageData>(`/promo/submissions/status/${encodeURIComponent(token)}`);
+  // Fingerprint ikut dikirim HANYA agar server bisa menandai kepemilikan
+  // (`is_owner`); token tetap kredensial aksesnya, dan fingerprint mentah
+  // tidak pernah dikembalikan server.
+  const params = new URLSearchParams({ fingerprint: getDeviceFingerprint() });
+  const data = await apiGet<StatusPageData>(
+    `/promo/submissions/status/${encodeURIComponent(token)}?${params.toString()}`,
+  );
   return {
     submission: data.submission,
     history: Array.isArray(data.history) ? data.history : [],
     files: Array.isArray(data.files) ? data.files : [],
     installation: data.installation ?? null,
+    is_owner: data.is_owner === true,
   };
 }
 
@@ -303,7 +311,10 @@ export async function fetchStatusByToken(token: string): Promise<StatusPageData>
  * bisa menampilkan sebabnya, bukan pesan generik.
  */
 export async function fetchStatusByNumber(number: string, captchaToken: string): Promise<StatusPageData> {
-  const params = new URLSearchParams({ number: number.trim() });
+  const params = new URLSearchParams({
+    number: number.trim(),
+    fingerprint: getDeviceFingerprint(),
+  });
   if (captchaToken) params.set('captcha', captchaToken);
   const data = await apiGet<StatusPageData>(`/promo/submissions/track?${params.toString()}`);
   return {
@@ -311,6 +322,7 @@ export async function fetchStatusByNumber(number: string, captchaToken: string):
     history: Array.isArray(data.history) ? data.history : [],
     files: Array.isArray(data.files) ? data.files : [],
     installation: data.installation ?? null,
+    is_owner: data.is_owner === true,
   };
 }
 
@@ -417,7 +429,8 @@ export interface BatchSubmitPayload {
 
 /** Status satu batch via token (publik). */
 export async function fetchBatchByToken(token: string): Promise<BatchStatusData> {
-  return apiGet<BatchStatusData>(`/promo/batches/status/${encodeURIComponent(token)}`);
+  const params = new URLSearchParams({ fingerprint: getDeviceFingerprint() });
+  return apiGet<BatchStatusData>(`/promo/batches/status/${encodeURIComponent(token)}?${params.toString()}`);
 }
 
 /**
@@ -431,7 +444,10 @@ export async function fetchBatchByToken(token: string): Promise<BatchStatusData>
  * pemanggil bisa mengarahkan ke `/batch/<batch_token>`.
  */
 export async function fetchBatchByNumber(number: string, captchaToken: string): Promise<BatchStatusData> {
-  const params = new URLSearchParams({ number: number.trim() });
+  const params = new URLSearchParams({
+    number: number.trim(),
+    fingerprint: getDeviceFingerprint(),
+  });
   if (captchaToken) params.set('captcha', captchaToken);
   return apiGet<BatchStatusData>(`/promo/batches/track?${params.toString()}`);
 }

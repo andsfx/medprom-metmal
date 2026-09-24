@@ -75,9 +75,10 @@ describe('SubmissionStatusPage', () => {
     expect(await screen.findByText(/Pengajuan tidak ditemukan/i)).toBeInTheDocument();
   });
 
-  it('status Perlu Revisi → form kirim revisi muncul dan terkirim', async () => {
+  it('status Perlu Revisi di perangkat pengirim → form kirim revisi muncul dan terkirim', async () => {
     mockedFetchStatus.mockResolvedValue({
       ...BASE,
+      is_owner: true,
       submission: { ...BASE.submission, status: 'perlu_revisi', review_notes: 'Tolong perbaiki resolusi.' },
     });
     mockedSubmitRevision.mockResolvedValue({ version: 2, status: 'menunggu_review' });
@@ -98,6 +99,25 @@ describe('SubmissionStatusPage', () => {
         device_fingerprint: 'testfp123',
       }));
     });
+  });
+
+  it('status Perlu Revisi di perangkat LAIN → tanpa form, ada keterangan', async () => {
+    // `is_owner` dihitung server dari fingerprint perangkat. Perangkat lain
+    // tetap bisa MELIHAT catatan revisi, tetapi tidak diberi form yang pasti
+    // ditolak server.
+    mockedFetchStatus.mockResolvedValue({
+      ...BASE,
+      is_owner: false,
+      submission: { ...BASE.submission, status: 'perlu_revisi', review_notes: 'Tolong perbaiki resolusi.' },
+    });
+    renderPage();
+
+    expect(await screen.findByText('Materi Revisi')).toBeInTheDocument();
+    expect(screen.queryByText('Kirim Materi Revisi')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Kirim Revisi/i })).not.toBeInTheDocument();
+    // Catatan admin tetap terlihat.
+    expect(screen.getByText('Tolong perbaiki resolusi.')).toBeInTheDocument();
+    expect(screen.getByText(/hanya dapat dikirim dari perangkat yang mengirim pengajuan/i)).toBeInTheDocument();
   });
 
   it('status bukan Perlu Revisi → tanpa form revisi', async () => {

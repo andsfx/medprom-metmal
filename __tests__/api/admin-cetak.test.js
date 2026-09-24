@@ -103,12 +103,19 @@ describe('GET /admin/submissions/reminders', () => {
     expect(res.body.data.items).toHaveLength(3);
   });
 
-  it('hanya menyertakan media ber-pajak dan status sudah_dipasang', async () => {
+  it('hanya menyertakan media ber-pajak dan mencakup tiga status periode', async () => {
     await call('/submissions/reminders', 'get');
     const sql = String(mockedQuery.mock.calls[0][0]);
-    expect(sql).toContain("s.status = 'sudah_dipasang'");
-    // Kena pajak = PPN benar-benar terhitung positif.
-    expect(sql).toMatch(/AND s\.ppn_amount > 0/);
+    // Cakupan: yang sudah tercatat terpasang DAN yang belum (Disetujui /
+    // Siap Dipasang), supaya periode yang habis tanpa pernah dicatat
+    // pemasangannya tidak luput dari pengingat.
+    expect(sql).toContain("s.status IN ('sudah_dipasang','disetujui','siap_dipasang')");
+    // Kena pajak ditandai TARIF pajak yang terpasang, bukan hasil pembulatan
+    // `ppn_amount` (PPN yang membulat nol tidak boleh menghilangkan baris).
+    expect(sql).toMatch(/AND s\.ppn_rate > 0/);
+    expect(sql).not.toMatch(/AND s\.ppn_amount > 0/);
+    // Kategori dibedakan di server, bukan diserahkan ke klien.
+    expect(sql).toContain('AS category');
   });
 
   it('TIDAK memakai ppn_included sebagai penanda kena pajak', async () => {
@@ -125,10 +132,10 @@ describe('GET /admin/submissions/reminders', () => {
   });
 
   it('pengajuan tanpa PPN (ppn_amount = 0) tidak diteruskan sebagai pengingat', async () => {
-    // DB mengembalikan hanya baris ber-PPN (sesuai predikat); pastikan
+    // DB mengembalikan hanya baris ber-tarif-PPN (sesuai predikat); pastikan
     // handler tidak menambah baris sendiri.
     mockedQuery.mockResolvedValue({
-      rows: [{ id: 's1', submission_number: 'MP-1', days_left: 3, end_date: '2026-09-23', ppn_amount: 53900 }],
+      rows: [{ id: 's1', submission_number: 'MP-1', days_left: 3, end_date: '2026-09-23', ppn_amount: 53900, category: 'terpasang' }],
     });
     const res = await call('/submissions/reminders', 'get');
     expect(res.body.data.items).toHaveLength(1);
@@ -144,13 +151,46 @@ describe('GET /admin/submissions/reminders', () => {
     expect(sql).toContain('::date');
   });
 
-  it('days dari query dibatasi 1..365', async () => {
-    await call('/submissions/reminders', 'get', { query: { days: '9999' } });
-    expect(mockedQuery.mock.calls[0][1][0]).toBe(365);
+  it('menghitung dan mengirim jumlah item belum tercatat terpasang', async () => {
+    mockedQuery.mockResolvedValue({
+      rows: [
+        { id: 's1', submission_number: 'MP-1', days_left: 3, end_date: '2026-09-23', ppn_amount: 53900, category: 'terpasang' },
+        { id: 's2', submission_number: 'MP-2', days_left: 5, end_date: '2026-09-25', ppn_amount: 53900, category: 'belum_terpasang' },
+        { id: 's3', submission_number: 'MP-3', days_left: 6, end_date: '2026-09-26', ppn_amount: 53900, category: 'belum_terpasang' },
+      ],
+    });
+    const res = await call('/submissions/reminders', 'get');
+    expect(res.statusCode).toBe(200);
+    // Kategori dibedakan di server; jumlah item belum terpasang ikut dikirim
+    // supaya panel bisa meringkasnya tanpa menghitung ulang di klien.
+    expect(res.body.data.belum_terpasang).toBe(2);
+    expect(res.body.data.items.map((r) => r.category)).toEqual(['terpasang', 'belum_terpasang', 'belum_terpasang']);
+  });
+
+  it('days tak sah ditolak 400; days absen memakai default 14', async () => {
+    // Nilai di luar 1..365 ditolak, TIDAK diam-diam menjadi default.
+    for (const bad of ['9999', '0', '-3', 'abc', '1.5']) {
+      mockedQuery.mockClear();
+      mockedQuery.mockResolvedValue({ rows: [] });
+      const res = await call('/submissions/reminders', 'get', { query: { days: bad } });
+      expect(res.statusCode).toBe(400);
+      expect(res.body.error).toMatch(/1 sampai 365/);
+      // Tidak ada query yang dijalankan untuk input cacat.
+      expect(mockedQuery).not.toHaveBeenCalled();
+    }
+
+    // Absen (atau string kosong) = default REMINDER_DAYS.
     mockedQuery.mockClear();
     mockedQuery.mockResolvedValue({ rows: [] });
-    await call('/submissions/reminders', 'get', { query: { days: '0' } });
+    const res = await call('/submissions/reminders', 'get');
+    expect(res.statusCode).toBe(200);
     expect(mockedQuery.mock.calls[0][1][0]).toBe(14);
+
+    // Nilai sah diteruskan apa adanya.
+    mockedQuery.mockClear();
+    mockedQuery.mockResolvedValue({ rows: [] });
+    await call('/submissions/reminders', 'get', { query: { days: '30' } });
+    expect(mockedQuery.mock.calls[0][1][0]).toBe(30);
   });
 });
 

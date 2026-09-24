@@ -130,6 +130,14 @@ export interface StatusPageData {
   history: SubmissionHistoryRow[];
   files: SubmissionFileRow[];
   installation: InstallationRow | null;
+  /**
+   * Apakah perangkat pemanggil adalah perangkat yang mengirim pengajuan.
+   * Dihitung DI SERVER (boolean saja; `device_fingerprint` mentah tidak pernah
+   * dikirim ke klien). Dipakai halaman untuk menyembunyikan form revisi dari
+   * perangkat yang tidak berhak; penegakan sebenarnya tetap di server.
+   * `undefined` (pemanggil lama) diperlakukan sebagai "bukan pemilik".
+   */
+  is_owner?: boolean;
 }
 
 export interface MySubmissionRow {
@@ -324,6 +332,14 @@ export interface ReminderRow {
   air_end_date: string;
   end_date: string;
   days_left: number | null;
+  /**
+   * Kategori pengingat: 'terpasang' (sudah dicatat terpasang) atau
+   * 'belum_terpasang' (Disetujui / Siap Dipasang). Pengajuan berstatus belum
+   * terpasang yang periodenya habis tanpa pernah dicatat pemasangannya tetap
+   * perlu diingatkan. Opsional: pemanggil lama tanpa kolom ini diperlakukan
+   * sebagai 'terpasang'.
+   */
+  category?: 'terpasang' | 'belum_terpasang';
   ppn_amount: number;
   total_amount: number;
 }
@@ -332,5 +348,7 @@ export interface RemindersData {
   days: number;
   overdue: number;
   due_soon: number;
+  /** Jumlah item yang belum tercatat terpasang (kategori 'belum_terpasang'). */
+  belum_terpasang?: number;
   items: ReminderRow[];
 }

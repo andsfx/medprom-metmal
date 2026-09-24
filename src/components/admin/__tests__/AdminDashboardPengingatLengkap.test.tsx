@@ -197,4 +197,29 @@ describe('AdminDashboardPage — pengingat periode berakhir dapat dibuka lengkap
     expect(within(p).queryByRole('button', { name: /Tampilkan/i })).not.toBeInTheDocument();
     expect(within(p).queryByRole('button', { name: /Sembunyikan/i })).not.toBeInTheDocument();
   });
+
+  it('kategori belum tercatat terpasang: badge per baris + ringkasan jumlah', async () => {
+    // Cakupan pengingat diperluas ke status Disetujui/Siap Dipasang. Kategori
+    // dibedakan di server; panel menampilkan badge per baris dan jumlahnya di
+    // ringkasan supaya staf tahu mana yang periodenya habis tanpa pernah
+    // dicatat pemasangannya.
+    mockedFetchReminders.mockResolvedValue({
+      days: 14, overdue: 1, due_soon: 2, belum_terpasang: 2,
+      items: [
+        { ...reminder(1), category: 'terpasang', days_left: -2 },
+        { ...reminder(2), category: 'belum_terpasang' },
+        { ...reminder(3), category: 'belum_terpasang' },
+      ],
+    });
+    renderDashboard();
+
+    await screen.findByRole('heading', { name: /Pengingat periode berakhir/i });
+    const p = panel();
+
+    // Badge hanya pada dua baris kategori belum terpasang.
+    expect(within(p).getAllByText('belum tercatat terpasang')).toHaveLength(2);
+    // Ringkasan menyebut jumlahnya.
+    expect(within(p).getByText(/2 belum tercatat terpasang/i)).toBeInTheDocument();
+    expect(within(p).getByText(/1 sudah lewat/i)).toBeInTheDocument();
+  });
 });

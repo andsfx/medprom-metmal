@@ -113,6 +113,65 @@ describe('GET /promo/submissions/status/:token', () => {
     expect(res.body.success).toBe(false);
     expect(res.body.error).toMatch(/tidak ditemukan/i);
   });
+
+  it('fingerprint cocok → is_owner true', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM promo_submissions WHERE status_token')) {
+        return Promise.resolve({ rows: [SUBMISSION_ROW] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    const res = await call('/submissions/status/:token', 'get', {
+      params: { token: 'tok-abc' },
+      query: { fingerprint: 'fp123' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.is_owner).toBe(true);
+    // Jaminan tidak bocornya fingerprint ada di DAFTAR KOLOM, bukan di
+    // penyaringan hasil: SELECT jalur publik tidak pernah memuat
+    // `device_fingerprint` (dikunci juga di test pertama blok ini).
+    const selectSql = mockedQuery.mock.calls
+      .map((c) => String(c[0]))
+      .find((sql) => sql.includes('FROM promo_submissions WHERE status_token'));
+    expect(selectSql).not.toMatch(/device_fingerprint/);
+    expect(typeof res.body.data.is_owner).toBe('boolean');
+  });
+
+  it('fingerprint berbeda → is_owner false', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM promo_submissions WHERE status_token')) {
+        return Promise.resolve({ rows: [SUBMISSION_ROW] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    const res = await call('/submissions/status/:token', 'get', {
+      params: { token: 'tok-abc' },
+      query: { fingerprint: 'perangkat-lain' },
+    });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.is_owner).toBe(false);
+  });
+
+  it('tanpa fingerprint → is_owner false (bukan pemilik)', async () => {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('FROM promo_submissions WHERE status_token')) {
+        return Promise.resolve({ rows: [SUBMISSION_ROW] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+
+    const res = await call('/submissions/status/:token', 'get', { params: { token: 'tok-abc' } });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data.is_owner).toBe(false);
+  });
 });
 
 describe('POST /promo/submissions/:id/revision', () => {

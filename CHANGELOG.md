@@ -5,6 +5,42 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Pemasangan tanpa materi kini meminta konfirmasi eksplisit (opsi B).**
+  Staf tetap boleh mencatat pemasangan untuk pengajuan cetak yang belum
+  menerima materi (materi bisa diterima di luar aplikasi), tetapi lebih dulu
+  menjawab dialog "Materi belum diterima. Tetap catat pemasangan?" yang
+  menyebut konsekuensinya. Sebelumnya status Sudah Dipasang bisa ditetapkan
+  tanpa satu pun isyarat keputusan. Dikunci
+  `AdminDashboardPeringatanMateri.test.tsx`. Catatan
+  `docs/PLAN_2026-09-24_17-04.md`.
+- **Form revisi hanya tampil di perangkat pengirim.** Server kini menurunkan
+  `is_owner` (boolean) pada empat jalur publik (`status/:token`, `track`,
+  `batches/status/:token`, `batches/track`) dengan membandingkan fingerprint
+  pemanggil; `device_fingerprint` mentah tetap tidak pernah dikirim. Di
+  perangkat lain, status Perlu Revisi menampilkan keterangan alih-alih form
+  yang pasti ditolak server.
+- **Pengingat periode berakhir mencakup materi yang belum tercatat terpasang.**
+  Query kini menyertakan `disetujui` dan `siap_dipasang` sebagai kategori
+  terpisah ("belum tercatat terpasang"), sehingga periode yang habis tanpa
+  pernah dicatat pemasangannya tidak luput. Panel menampilkan jumlah dan badge
+  kategori.
+- **Pengingat tidak lagi kehilangan baris ber-pajak yang PPN-nya membulat
+  nol.** Penanda "kena pajak" berubah dari `ppn_amount > 0` (hasil pembulatan)
+  menjadi `ppn_rate > 0` (tarif yang benar-benar terpasang).
+- **Parameter `days` pada pengingat divalidasi.** Nilai di luar 1 sampai 365
+  kini dibalas `400`, bukan diam-diam dipangkas atau dijadikan default 14
+  (`days=0` sebelumnya menjadi 14 tanpa pemberitahuan).
+- **Integritas durasi dan kuantitas pengajuan cetak ditegakkan di skema.**
+  CHECK BERSYARAT `source_type <> 'none' OR duration_days >= 7` (baris cetak
+  wajib minimal 7 hari) dan `quantity >= 1`. Pembebasnya adalah KANAL, bukan
+  nilai durasinya: `duration_days` adalah kolom bersama alur digital yang sah
+  bernilai 0, dan bentuk `duration_days = 0 OR duration_days >= 7` akan selalu
+  benar sehingga CHECK-nya vakum. Perubahan skema ini memerlukan
+  `npm run db:migrate` saat deploy.
+- **Dokumen desain `docs/PLAN_2026-09-20_16-00.md` dikoreksi.** `PPN_RATE`
+  berada di `src/utils/pricing.ts` (bukan `src/constants/promo.ts`), dan rumus
+  PPN yang benar adalah `subtotal - subtotal / (1 + rate)` dengan pembulatan
+  half-up sejati.
 - **Tenant kini dapat melihat sisa hari periodenya.** Halaman status ber-token
   dan halaman pelacakan (`SubmissionDetail`) hanya menampilkan rentang tanggal
   statis. Baris "Periode" kini menambahkan sisa hari: "N hari lagi", "berakhir

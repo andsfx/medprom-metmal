@@ -193,3 +193,99 @@ describe('schema.sql — backfill versi materi melewati pengajuan tanpa materi',
     expect(tabel).not.toContain("'none'");
   });
 });
+
+/**
+ * Integritas harga & durasi pengajuan cetak (D2).
+ *
+ * Jebakannya: `duration_days` adalah kolom BERSAMA dengan alur digital, yang
+ * tidak pernah mengisinya sehingga baris digital sah bernilai 0. CHECK durasi
+ * TANPA syarat akan menolak baris digital yang sah dan `db:migrate` gagal di
+ * DB yang sudah berisi pengajuan digital - kegagalan yang hanya muncul di
+ * produksi, bukan di DB kosong.
+ */
+describe('schema.sql - CHECK durasi & kuantitas pengajuan cetak', () => {
+  function blokDurasi() {
+    const start = sql.indexOf('-- ── Integritas harga & durasi pengajuan cetak');
+    expect(start).toBeGreaterThan(-1);
+    const end = sql.indexOf('-- Versi materi (Data Model: Material File)', start);
+    expect(end).toBeGreaterThan(start);
+    return sql.slice(start, end);
+  }
+
+  /** Ekspresi CHECK durasi apa adanya dari skema. */
+  function ekspresiDurasi() {
+    const blok = blokDurasi();
+    const m = blok.match(/CHECK\s*\(([^)]*duration_days[^)]*)\)/);
+    expect(m, 'CHECK durasi tidak ditemukan di blok').not.toBeNull();
+    return m ? m[1] : '';
+  }
+
+  /**
+   * Evaluator predikat CHECK durasi yang dibaca dari SKEMA, bukan disalin.
+   *
+   * Mendukung `A OR B` dua suku dengan `source_type <> 'none'` dan
+   * `duration_days >= N`. Dipakai untuk membuktikan CHECK-nya benar-benar
+   * MENGIKAT baris cetak sekaligus MEMBEBASKAN baris digital - sifat yang
+   * tidak dapat dibuktikan oleh pencocokan teks biasa.
+   */
+  function evaluatorDurasi() {
+    const expr = ekspresiDurasi();
+    const bebasKanal = /source_type\s*<>\s*'none'/.test(expr);
+    const minMatch = expr.match(/duration_days\s*>=\s*(\d+)/);
+    expect(bebasKanal, 'pembebas harus lewat kanal (source_type <> none)').toBe(true);
+    expect(minMatch, 'ambang durasi minimal tidak ditemukan').not.toBeNull();
+    const min = minMatch ? Number(minMatch[1]) : 7;
+    return (sourceType, durationDays) => (bebasKanal && sourceType !== 'none' ? true : durationDays >= min);
+  }
+
+  it('durasi di bawah 7 hari ditolak untuk baris cetak', () => {
+    const blok = blokDurasi();
+    expect(blok).toContain('promo_submissions_duration_days_chk');
+    expect(blok).toMatch(/duration_days\s*>=\s*7/);
+  });
+
+  it('CHECK durasi TIDAK vakum: durasi cetak 1-6 hari harus GAGAL', () => {
+    // Jebakan nyata: `duration_days = 0 OR duration_days >= 7` selalu BENAR
+    // untuk setiap nilai, sehingga CHECK-nya tidak mengikat apa pun dan
+    // durasi cetak 3 hari ikut lolos. Bentuk yang benar membebaskan lewat
+    // KANAL (`source_type <> 'none'`), bukan lewat nilai durasinya.
+    const expr = ekspresiDurasi();
+    expect(expr).toMatch(/source_type\s*<>\s*'none'/);
+    expect(expr).not.toMatch(/duration_days\s*=\s*0/);
+  });
+
+  it('semantik predikat: cetak wajib >= 7 hari, digital (durasi 0) tetap lolos', () => {
+    const cek = evaluatorDurasi();
+    // Baris CETAK: durasi 1-6 ditolak, 0 ditolak, 7 ke atas diterima.
+    expect(cek('none', 0)).toBe(false);
+    expect(cek('none', 1)).toBe(false);
+    expect(cek('none', 3)).toBe(false);
+    expect(cek('none', 6)).toBe(false);
+    expect(cek('none', 7)).toBe(true);
+    expect(cek('none', 30)).toBe(true);
+    // Baris DIGITAL: `duration_days` memang tidak pernah diisi (0) dan wajib
+    // tetap lolos, termasuk nilai lain yang mungkin berasal dari data lama.
+    expect(cek('upload', 0)).toBe(true);
+    expect(cek('link', 0)).toBe(true);
+    expect(cek('upload', 3)).toBe(true);
+  });
+
+  it('CHECK durasi dipasang idempotent (dijaga pg_constraint)', () => {
+    const blok = blokDurasi();
+    expect(blok).toContain('pg_constraint');
+    expect(blok).toMatch(/contype\s*=\s*'c'/);
+    expect(blok).toContain('promo_submissions_duration_days_chk');
+  });
+
+  it('kuantitas minimal 1 ditegakkan', () => {
+    const blok = blokDurasi();
+    expect(blok).toContain('promo_submissions_quantity_chk');
+    expect(blok).toMatch(/quantity\s*>=\s*1/);
+  });
+
+  it('blok integritas ditulis SETELAH blok migrasi status (heuristik DO $$)', () => {
+    // `indexOf('DO $$')` milik test status harus tetap menunjuk blok status.
+    expect(sql.indexOf('-- ── Integritas harga & durasi pengajuan cetak'))
+      .toBeGreaterThan(sql.indexOf('SET status_token = md5('));
+  });
+});

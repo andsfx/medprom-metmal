@@ -184,13 +184,32 @@ router.get('/submissions/summary', requireRole(READ_ROLES), async (_req, res, ne
 
 // GET /admin/submissions/reminders - periode berakhir (turunan).
 // Notifikasi dashboard TURUNAN DATA (bukan cron/worker): menghitung materi
-// yang sudah dipasang dan periodenya berakhir dalam N hari. Hanya media
-// ber-pajak yang disertakan (`ppn_amount > 0` atau harga belum termasuk PPN).
-// `end_date` bertipe TEXT, jadi WAJIB dijaga regex sebelum di-cast - satu nilai
-// cacat akan menggagalkan seluruh query.
+// yang periodenya berakhir dalam N hari. Cakupannya DUA kategori: yang sudah
+// tercatat terpasang, dan yang belum (Disetujui / Siap Dipasang) supaya
+// pengajuan yang periodenya habis tanpa pernah dicatat pemasangannya tidak
+// luput dari perhatian. Hanya media ber-pajak yang disertakan, ditandai
+// `ppn_rate > 0` (BUKAN `ppn_amount > 0`: PPN yang membulat nol tidak boleh
+// menghilangkan baris dari pengingat). `end_date` bertipe TEXT, jadi WAJIB
+// dijaga regex sebelum di-cast - satu nilai cacat akan menggagalkan seluruh
+// query.
 router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, next) => {
   try {
-    const days = Math.min(365, Math.max(1, parseInt(String(req.query?.days || REMINDER_DAYS), 10) || REMINDER_DAYS));
+    // `days` yang tak sah DITOLAK, tidak diam-diam menjadi default: `0` adalah
+    // nilai falsy, sehingga pola `parseInt(...) || REMINDER_DAYS` yang lama
+    // mengubah `days=0` menjadi 14 tanpa memberi tahu pemanggil.
+    let days = REMINDER_DAYS;
+    const rawDays = req.query?.days;
+    if (rawDays !== undefined && String(rawDays).trim() !== '') {
+      const parsed = Number(String(rawDays).trim());
+      if (!Number.isInteger(parsed) || parsed < 1 || parsed > 365) {
+        return res.status(400).json({
+          success: false,
+          error: 'Parameter days harus bilangan bulat 1 sampai 365.',
+        });
+      }
+      days = parsed;
+    }
+
     const { rows } = await db.query(
       `SELECT s.id, s.submission_number, s.tenant_name, s.pic_phone, s.applicant_type,
               s.media_type_slug, s.status, s.air_end_date,
@@ -199,18 +218,20 @@ router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, n
                          ~ '^\\d{4}-\\d{2}-\\d{2}$'
                     THEN COALESCE(NULLIF(i.end_date, ''), s.air_end_date)::date
                END - CURRENT_DATE) AS days_left,
+              CASE WHEN s.status = 'sudah_dipasang' THEN 'terpasang' ELSE 'belum_terpasang' END AS category,
               s.ppn_amount::float8 AS ppn_amount,
               s.total_amount::float8 AS total_amount
          FROM promo_submissions s
          LEFT JOIN promo_installations i ON i.submission_id = s.id
-        WHERE s.status = 'sudah_dipasang'
+        WHERE s.status IN ('sudah_dipasang','disetujui','siap_dipasang')
           -- HANYA pengajuan yang benar-benar ber-PPN. Jangan menurunkan
           -- "kena pajak" dari kolom ppn_included: kolom itu ber-DEFAULT
           -- false, sehingga klausa OR ppn_included = false selalu benar dan
           -- menarik SETIAP baris warisan (media digital/gratis) ke pengingat.
-          -- Deck pun tidak seragam soal PPN, jadi satu-satunya tanda sah
-          -- adalah PPN yang terhitung positif.
-          AND s.ppn_amount > 0
+          -- Deck pun tidak seragam soal PPN. Penanda yang dipakai adalah
+          -- TARIF pajak yang benar-benar terpasang (s.ppn_rate > 0), bukan
+          -- hasil pembulatannya, supaya PPN yang membulat nol tetap ikut.
+          AND s.ppn_rate > 0
           AND (CASE WHEN COALESCE(NULLIF(i.end_date, ''), NULLIF(s.air_end_date, ''))
                          ~ '^\\d{4}-\\d{2}-\\d{2}$'
                     THEN COALESCE(NULLIF(i.end_date, ''), s.air_end_date)::date
@@ -222,9 +243,10 @@ router.get('/submissions/reminders', requireRole(READ_ROLES), async (req, res, n
 
     const overdue = rows.filter((r) => r.days_left !== null && r.days_left < 0).length;
     const dueSoon = rows.filter((r) => r.days_left !== null && r.days_left >= 0).length;
+    const belumTerpasang = rows.filter((r) => r.category === 'belum_terpasang').length;
     return res.json({
       success: true,
-      data: { days, overdue, due_soon: dueSoon, items: rows },
+      data: { days, overdue, due_soon: dueSoon, belum_terpasang: belumTerpasang, items: rows },
     });
   } catch (err) {
     return next(err);

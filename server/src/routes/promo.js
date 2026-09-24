@@ -126,9 +126,16 @@ function normalizeSubmissionNumber(raw) {
  * Dipakai bersama oleh halaman status ber-token dan pelacakan via nomor
  * pengajuan supaya kedua jalur publik menampilkan bentuk yang identik.
  *
+ * Bila `viewerFingerprint` diberikan, hasilnya juga memuat `is_owner`: apakah
+ * perangkat pemanggil adalah perangkat yang mengirim pengajuan. Sinyal ini
+ * DITURUNKAN DI SERVER dan hanya berupa BOOLEAN - `device_fingerprint` mentah
+ * TIDAK PERNAH dikirim ke klien, sehingga batas kepercayaan endpoint publik
+ * tetap utuh. Halaman memakainya untuk menyembunyikan form revisi dari
+ * perangkat yang tidak berhak; penegakan sebenarnya tetap di server.
+ *
  * @returns {Promise<object|null>} null bila pengajuan tidak ada.
  */
-async function loadSubmissionDetail(submission) {
+async function loadSubmissionDetail(submission, viewerFingerprint = '') {
   const [historyRes, filesRes, installRes] = await Promise.all([
     db.query(
       `SELECT id, submission_id, from_status, to_status, comment, actor_type,
@@ -155,11 +162,17 @@ async function loadSubmissionDetail(submission) {
     ),
   ]);
 
+  const viewer = String(viewerFingerprint || '');
+  const pemilik = String(submission.device_fingerprint || '');
+
   return {
     submission,
     history: historyRes.rows,
     files: filesRes.rows,
     installation: installRes.rows[0] || null,
+    // Boolean saja (bukan fingerprint). Kosong di kedua sisi = bukan pemilik,
+    // supaya baris tanpa fingerprint tidak dianggap milik semua orang.
+    is_owner: Boolean(viewer) && viewer === pemilik,
   };
 }
 
@@ -598,7 +611,8 @@ router.get('/submissions/track', async (req, res, next) => {
       return res.status(404).json({ success: false, error: NOT_FOUND_MESSAGE });
     }
 
-    return res.json({ success: true, data: await loadSubmissionDetail(submission) });
+    // `fingerprint` hanya dipakai untuk menandai kepemilikan (`is_owner`).
+    return res.json({ success: true, data: await loadSubmissionDetail(submission, req.query?.fingerprint) });
   } catch (err) {
     return next(err);
   }
@@ -625,7 +639,9 @@ router.get('/submissions/status/:token', async (req, res, next) => {
       return res.status(404).json({ success: false, error: NOT_FOUND_MESSAGE });
     }
 
-    return res.json({ success: true, data: await loadSubmissionDetail(submission) });
+    // `fingerprint` hanya dipakai untuk menandai kepemilikan (`is_owner`);
+    // fingerprint mentah tidak pernah ikut dikembalikan ke klien.
+    return res.json({ success: true, data: await loadSubmissionDetail(submission, req.query?.fingerprint) });
   } catch (err) {
     return next(err);
   }
@@ -1015,9 +1031,9 @@ router.post('/submit-batch', async (req, res, next) => {
 });
 
 /** Muat satu batch + seluruh submission-nya (bentuk publik). */
-async function loadBatchDetail(batch, submissions) {
+async function loadBatchDetail(batch, submissions, viewerFingerprint = '') {
   const detail = await Promise.all(
-    submissions.map((s) => loadSubmissionDetail(s)),
+    submissions.map((s) => loadSubmissionDetail(s, viewerFingerprint)),
   );
   return { batch, items: detail };
 }
@@ -1044,7 +1060,7 @@ router.get('/batches/status/:token', async (req, res, next) => {
          FROM promo_submissions WHERE batch_id = $1 ORDER BY created_at ASC`,
       [batch.id],
     );
-    return res.json({ success: true, data: await loadBatchDetail(batch, subs) });
+    return res.json({ success: true, data: await loadBatchDetail(batch, subs, req.query?.fingerprint) });
   } catch (err) {
     return next(err);
   }
@@ -1086,7 +1102,7 @@ router.get('/batches/track', async (req, res, next) => {
          FROM promo_submissions WHERE batch_id = $1 ORDER BY created_at ASC`,
       [batch.id],
     );
-    return res.json({ success: true, data: await loadBatchDetail(batch, subs) });
+    return res.json({ success: true, data: await loadBatchDetail(batch, subs, req.query?.fingerprint) });
   } catch (err) {
     return next(err);
   }

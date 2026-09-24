@@ -340,10 +340,55 @@ END $$;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_number ON promo_submission_batches (batch_number) WHERE batch_number != '';
 CREATE UNIQUE INDEX IF NOT EXISTS idx_psb_token  ON promo_submission_batches (batch_token)  WHERE batch_token  != '';
 CREATE INDEX IF NOT EXISTS idx_ps_batch ON promo_submissions (batch_id) WHERE batch_id IS NOT NULL;
--- Pengingat: cari periode berakhir pada materi yang sudah terpasang.
+-- Pengingat: cari periode berakhir pada materi yang statusnya sudah masuk
+-- cakupan pengingat (terpasang DAN belum tercatat terpasang).
 CREATE INDEX IF NOT EXISTS idx_ps_status_airend ON promo_submissions (status, air_end_date)
-  WHERE status = 'sudah_dipasang';
+  WHERE status IN ('sudah_dipasang','disetujui','siap_dipasang');
 CREATE INDEX IF NOT EXISTS idx_amt_channel ON promo_media_types (media_channel);
+
+-- ── Integritas harga & durasi pengajuan cetak (D2).
+--
+-- Route SUDAH menolak durasi kurang dari 7 hari sebelum menulis
+-- (`cekDurasiMinimal` di server/src/routes/promo.js), jadi blok ini hanya
+-- jaring pengaman untuk baris yang ditulis DI LUAR route - mis. perbaikan
+-- manual atau skrip impor.
+--
+-- Pembebasnya adalah KANAL, bukan nilai durasinya:
+--  - baris CETAK (`source_type = 'none'`) WAJIB berdurasi minimal 7 hari;
+--  - baris DIGITAL (`upload`/`link`) TIDAK PERNAH mengisi `duration_days`
+--    (`POST /promo/submit` tidak menyentuh kolom itu), jadi baris digital sah
+--    bernilai 0 dan HARUS tetap lolos.
+-- Karena itu bentuknya `source_type <> 'none' OR duration_days >= 7`.
+-- JANGAN menulis `duration_days = 0 OR duration_days >= 7`: klausa itu selalu
+-- benar untuk SETIAP nilai, sehingga durasi cetak 1-6 hari ikut lolos dan
+-- CHECK-nya menjadi vakum.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'promo_submissions'::regclass
+       AND contype = 'c'
+       AND conname = 'promo_submissions_duration_days_chk'
+  ) THEN
+    ALTER TABLE promo_submissions
+      ADD CONSTRAINT promo_submissions_duration_days_chk
+      CHECK (source_type <> 'none' OR duration_days >= 7);
+  END IF;
+END $$;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint
+     WHERE conrelid = 'promo_submissions'::regclass
+       AND contype = 'c'
+       AND conname = 'promo_submissions_quantity_chk'
+  ) THEN
+    ALTER TABLE promo_submissions
+      ADD CONSTRAINT promo_submissions_quantity_chk
+      CHECK (quantity >= 1);
+  END IF;
+END $$;
 
 -- Versi materi (Data Model: Material File). Satu baris per unggahan/revisi;
 -- versi terbaru juga dicerminkan pada kolom file_*/link_url promo_submissions.

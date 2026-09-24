@@ -295,8 +295,22 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
         </div>
       )}
 
-      {/* Form revisi - hanya saat status Perlu Revisi (FR-021) */}
-      {data.submission.status === 'perlu_revisi' && (
+      {/* Form revisi - hanya saat status Perlu Revisi (FR-021) DAN perangkat
+       * ini adalah pengirimnya. `is_owner` dihitung server dari fingerprint
+       * perangkat (boolean saja; fingerprint mentah tidak dikirim). Tanpa
+       * gerbang ini, form tampil di perangkat yang tidak berhak lalu kiriman
+       * ditolak server. Penegakan sebenarnya tetap di server. */}
+      {data.submission.status === 'perlu_revisi' && data.is_owner !== true && (
+        <div className="ui-card p-5">
+          <h2 className="ui-title-card text-slate-900 dark:text-white">Materi Revisi</h2>
+          <p className="mt-2 text-sm text-slate-700 dark:text-slate-300">
+            Materi ini perlu diperbaiki, tetapi revisi hanya dapat dikirim dari perangkat yang
+            mengirim pengajuan. Buka halaman ini di perangkat tersebut, atau hubungi Tim Tenant
+            Relations untuk bantuan.
+          </p>
+        </div>
+      )}
+      {data.submission.status === 'perlu_revisi' && data.is_owner === true && (
         <div className="ui-card p-5">
           <h2 className="ui-title-card text-slate-900 dark:text-white">Kirim Materi Revisi</h2>
           <p className="mt-2 text-xs ui-text-muted">

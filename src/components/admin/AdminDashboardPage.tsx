@@ -97,6 +97,9 @@ function FileIcon({ mime, source }: { mime: string; source?: string }) {
 // ══════════ Tab: Pengajuan ══════════
 
 function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; onConfirmDelete: (id: string, subject: string) => Promise<boolean> }) {
+  // Dialog konfirmasi generik (pola `schedule-event-v2`) untuk keputusan yang
+  // butuh penegasan staf, mis. mencatat pemasangan saat materi belum diterima.
+  const { confirm, dialog } = useConfirmDialog();
   const [rows, setRows] = useState<AdminSubmissionRow[]>([]);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -283,6 +286,25 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
   async function saveInstallation() {
     if (!detail) return;
+    // Opsi B (docs/PLAN_2026-09-23_19-45.md): pengajuan kanal cetak
+    // (`source_type === 'none'`) memang tidak melampirkan materi saat
+    // diajukan. Staf TETAP boleh mencatat pemasangan (materi bisa diterima di
+    // luar aplikasi), tetapi harus mengonfirmasi lebih dulu bahwa materinya
+    // sudah benar-benar diterima - supaya status Sudah Dipasang tidak
+    // ditetapkan tanpa kesadaran dan pengingat periode tidak menerima data
+    // yang keliru.
+    if (detail.source_type === 'none') {
+      const lanjut = await confirm({
+        title: 'Materi belum diterima. Tetap catat pemasangan?',
+        message: 'Pengajuan ini belum pernah menerima materi. Menyimpan pemasangan akan menetapkan '
+          + 'status materi menjadi Sudah Dipasang dan memasukkannya ke pengingat periode berakhir. '
+          + 'Lanjutkan hanya bila materinya sudah benar-benar diterima.',
+        subject: detail.submission_number,
+        confirmLabel: 'Tetap Catat',
+        cancelLabel: 'Batal',
+      });
+      if (!lanjut) return;
+    }
     setSaving(true);
     setSaveError('');
     try {
@@ -376,6 +398,12 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               {reminders.overdue > 0 && <span className="font-semibold text-red-600 dark:text-red-400">{reminders.overdue} sudah lewat</span>}
               {reminders.overdue > 0 && reminders.due_soon > 0 && ' · '}
               {reminders.due_soon > 0 && <span>{reminders.due_soon} dalam {reminders.days} hari</span>}
+              {(reminders.belum_terpasang ?? 0) > 0 && (
+                <>
+                  {(reminders.overdue > 0 || reminders.due_soon > 0) && ' · '}
+                  <span className="font-semibold text-sky-700 dark:text-sky-300">{reminders.belum_terpasang} belum tercatat terpasang</span>
+                </>
+              )}
             </p>
           </div>
           <ul
@@ -412,6 +440,11 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                       {r.submission_number}
                     </button>
                     <span className="ml-1.5 ui-text-muted">{r.tenant_name} · {r.media_type_slug}</span>
+                    {r.category === 'belum_terpasang' && (
+                      <span className="ml-1.5 shrink-0 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-semibold text-sky-800 dark:bg-sky-900/30 dark:text-sky-300">
+                        belum tercatat terpasang
+                      </span>
+                    )}
                   </span>
                   <span className={`shrink-0 font-semibold tabular-nums ${r.days_left !== null && r.days_left < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
                     {r.days_left === null ? r.end_date || '-' : r.days_left < 0 ? `lewat ${Math.abs(r.days_left)} hari` : `${r.days_left} hari lagi`}
@@ -1049,14 +1082,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                       Catat pemasangan
                     </legend>
                     {/* Peringatan materi belum diterima - HANYA informasi, bukan
-                     * penjaga. Pengajuan kanal cetak (`source_type` 'none')
-                     * memang tidak melampirkan materi saat diajukan; materinya
-                     * menyusul lewat revisi. Selama pemilik belum memilih arah
-                     * (tolak / izinkan dengan peringatan / jalur unggah staf),
-                     * keadaan itu cukup DITAMPILKAN di titik staf mengambil
-                     * keputusan: fieldset ini dan tombol "Catat Pemasangan"
-                     * tetap aktif tanpa konfirmasi tambahan. Warna memakai pola
-                     * peringatan `leadTimeRisk` (amber), bukan merah yang
+                     * penjaga di titik ini. Pengajuan kanal cetak
+                     * (`source_type` 'none') memang tidak melampirkan materi
+                     * saat diajukan; materinya menyusul lewat revisi. Staf
+                     * TETAP boleh mencatat pemasangan (opsi B di
+                     * `docs/PLAN_2026-09-23_19-45.md`), tetapi tombol simpan
+                     * meminta konfirmasi eksplisit lebih dulu. Warna memakai
+                     * pola peringatan `leadTimeRisk` (amber), bukan merah yang
                      * dikhususkan untuk galat. */}
                     {detail.source_type === 'none' && (
                       <div
@@ -1236,6 +1268,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           </>
         )}
       </Sheet>
+      {dialog}
     </div>
   );
 }
