@@ -524,6 +524,26 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   `### Dirapikan`, bukan `### Diperbaiki` maupun `### Ditambahkan`, karena
   tidak ada perilaku yang diperbaiki dan tidak ada fitur baru (preseden
   catatan non-fitur di seksi ini).
+- **Temuan uang dan alur tenant yang tersisa tercatat dan menunggu keputusan
+  pemilik.** Dua audit read-only (kebenaran uang/PPN dan alur sisi tenant)
+  menyisakan temuan yang **BELUM diperbaiki** karena butuh keputusan pemilik
+  atau terhalang aturan: D3 `quantity` dari klien tanpa batas
+  (`server/src/routes/promo.js:782`, dipakai `:843` dan disimpan `:901`,
+  sementara wizard selalu mengirim 1 di `PromoCetakWizard.tsx:405`), D2
+  `duration_days` bisa 0 tanpa CHECK DB (`src/utils/pricing.ts:70`,
+  `server/schema.sql:230`), D1 `round2` bukan half-up sejati
+  (`src/utils/pricing.ts:25`), D4 admin bisa mengisi harga bersen
+  (`server/src/routes/admin.js:77`, `AdminDashboardPage.tsx:1520`), D5
+  pengingat menyaring `ppn_amount > 0` (`server/src/routes/admin.js:213`), D6
+  dokumen desain usang (`docs/PLAN_2026-09-20_16-00.md:199` dan `:531`),
+  ditambah temuan alur tenant #3 (form revisi tampil tanpa cek kepemilikan),
+  #4 (alur revisi tidak atomik, terhalang mock test lama), dan #7 (wizard
+  cetak tanpa afordan lead time). Rincian beserta bukti berkas:baris
+  terverifikasi dan dua opsi perbaikan #4 ada di
+  `docs/PLAN_2026-09-24_10-50.md`. **Putaran ini TIDAK mengubah kode**;
+  temuan-temuan itu menunggu keputusan. **Pilihan seksi:** ditulis di
+  `### Dirapikan`, bukan `### Diperbaiki` maupun `### Ditambahkan`, karena
+  tidak ada perilaku yang diperbaiki dan tidak ada fitur baru.
 
 
 ### Ditambahkan
