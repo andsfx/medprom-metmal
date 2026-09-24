@@ -32,7 +32,7 @@ import {
   APPLICANT_TYPE_LABELS, CATEGORY_LABELS, CATEGORY_ORDER, MAX_BATCH_ITEMS,
 } from '../../constants/promo';
 import { cekDurasiMinimal, durationDays, hitungHarga, MIN_DURATION_DAYS, PPN_RATE } from '../../utils/pricing';
-import { toIsoDate } from '../../utils/leadTime';
+import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
 import type { PromoMediaType, TenantOption, BatchSubmitResult } from '../../types/promo';
 import { TenantSearchSelect } from './TenantSearchSelect';
 
@@ -369,6 +369,11 @@ export default function PromoCetakWizard() {
       if (!it.media_target.trim()) errs[`target_${key}`] = `${label}: lokasi pemasangan wajib diisi.`;
       const cek = cekDurasiMinimal(it.air_start_date, it.air_end_date);
       if (!cek.ok) errs[`periode_${key}`] = `${label}: ${cek.message}`;
+      // Lead time media: cegah tanggal pasang yang mustahil dipenuhi Mall,
+      // diturunkan dari teks `rules` media (bukan klaim klien).
+      const media = mediaBySlug[it.slug];
+      const lead = checkInstallationDate(it.installation_date, media?.rules || '', toIsoDate());
+      if (!lead.ok) errs[`lead_${key}`] = `${label}: ${lead.message}`;
     }
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
@@ -564,9 +569,18 @@ export default function PromoCetakWizard() {
                         id={`cetak-install-${basis}`}
                         type="date"
                         value={row.installation_date}
-                        onChange={(e) => updateItem(row.id, { installation_date: e.target.value })}
-                        className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs"
+                        min={checkInstallationDate('', m.rules || '', toIsoDate()).earliest || undefined}
+                        onChange={(e) => { updateItem(row.id, { installation_date: e.target.value }); bersihkanError(`lead_${basis}`); }}
+                        className={`ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 dark:bg-slate-800 dark:text-slate-100 sm:max-w-xs ${fieldErrors[`lead_${basis}`] ? 'ring-1 ring-red-300 dark:ring-red-700' : ''}`}
+                        aria-invalid={fieldErrors[`lead_${basis}`] ? true : undefined}
+                        aria-describedby={fieldErrors[`lead_${basis}`] ? `err-lead-${basis}` : undefined}
                       />
+                      <p className="mt-1 text-xs ui-text-muted">
+                        Tanggal paling awal menyesuaikan ketentuan media; jadwal final ditentukan Mall.
+                      </p>
+                      <div className="ui-helper-slot mt-1">
+                        {fieldErrors[`lead_${basis}`] && <p id={`err-lead-${basis}`} role="alert" className="text-xs font-medium text-red-600 dark:text-red-400">{fieldErrors[`lead_${basis}`]}</p>}
+                      </div>
                     </div>
                     {fieldErrors[`periode_${basis}`] && (
                       <p role="alert" className="text-xs font-medium text-red-600 sm:col-span-2 dark:text-red-400">{fieldErrors[`periode_${basis}`]}</p>

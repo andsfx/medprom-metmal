@@ -787,7 +787,12 @@ router.post('/submit-batch', async (req, res, next) => {
     installation_date: sanitize(raw?.installation_date || '', 10),
     air_start_date: sanitize(raw?.air_start_date || '', 10),
     air_end_date: sanitize(raw?.air_end_date || '', 10),
-    quantity: Math.max(1, Math.trunc(Number(raw?.quantity) || 1)),
+    // Kuantitas TIDAK boleh dikendalikan klien: wizard tidak punya input
+    // kuantitas dan selalu menampilkan 1x, sehingga pemanggil API langsung
+    // bisa ditagih kelipatan tanpa terlihat di layar. Nilai absen = 1.
+    quantity: raw?.quantity === undefined || raw?.quantity === null || raw?.quantity === ''
+      ? 1
+      : Math.trunc(Number(raw.quantity)),
     link_url: sanitize(raw?.link_url || '', 500),
     drive_file_id: sanitize(raw?.drive_file_id || '', 128),
     file_name: sanitize(raw?.file_name || '', 200),
@@ -806,6 +811,7 @@ router.post('/submit-batch', async (req, res, next) => {
     }
     const dur = cekDurasiMinimal(it.air_start_date, it.air_end_date);
     if (!dur.ok) errors.push(`${label}: ${dur.message}`);
+    if (it.quantity !== 1) errors.push(`${label}: kuantitas tidak didukung dan harus 1`);
   }
 
   if (errors.length > 0) return res.status(400).json({ success: false, errors });

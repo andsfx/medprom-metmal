@@ -18,11 +18,18 @@ export const MIN_DURATION_DAYS = 7;
 /** Ambang pengingat periode berakhir (hari). */
 export const REMINDER_DAYS = 14;
 
-/** Bulatkan ke 2 desimal seperti NUMERIC(14,2). */
+/**
+ * Bulatkan ke 2 desimal seperti NUMERIC(14,2) dengan half-up sejati.
+ *
+ * `n + Number.EPSILON` TIDAK cukup: nilai .xx5 yang representasi float-nya
+ * sedikit di bawah .5 (mis. 10.075) dibulatkan TURUN. Menambah 1e-9 pada
+ * skala sen (`n * 100`) menggeser tepat kasus batas itu ke atas tanpa
+ * menyentuh nilai lain, karena granularitas sen di skala itu adalah 1.
+ */
 export function round2(value: number): number {
   const n = Number(value);
   if (!Number.isFinite(n)) return 0;
-  return Math.round((n + Number.EPSILON) * 100) / 100;
+  return Math.round((n * 100) + 1e-9) / 100;
 }
 
 /** Jumlah hari sewa inklusif antara dua tanggal YYYY-MM-DD; 0 bila tidak valid. */

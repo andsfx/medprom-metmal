@@ -5,6 +5,56 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Pembulatan uang kini half-up sejati (cermin FE dan BE).** `round2` di
+  `src/utils/pricing.ts` dan `server/src/lib/pricing.js` memakai
+  `Math.round((n + Number.EPSILON) * 100) / 100`, yang bukan half-up sejati:
+  nilai `.xx5` yang representasi float-nya sedikit di bawah `.5` dibulatkan
+  TURUN, sehingga mall kurang 1 sen per baris ber-harga-sen (terbukti
+  `round2(10.075) = 10.07`, dan PPN atas subtotal 171,50 menjadi 18.86 bukan
+  18.87). Keduanya kini memakai `Math.round((n * 100) + 1e-9) / 100`. Dikunci
+  `__tests__/api/pricing-round-half-up.test.js`.
+- **Kuantitas pada pengajuan cetak batch tidak lagi dapat dikendalikan
+  klien.** `POST /promo/submit-batch` mengambil `quantity` apa adanya dari body,
+  padahal wizard tidak punya input kuantitas dan selalu menampilkan 1x, sehingga
+  pemanggil API langsung bisa ditagih kelipatan tanpa terlihat di layar. Nilai
+  selain 1 kini ditolak `400` (`Media ke-N: kuantitas tidak didukung dan harus
+  1`) sebelum apa pun ditulis; nilai absen tetap dianggap 1. Dikunci
+  `__tests__/api/promo-batch-quantity.test.js`.
+- **Hari kalender operasional kini WIB di sisi server.** Opsi `Pool`
+  (`server/src/db.js`) ditambah `options: '-c timezone=Asia/Jakarta'` sehingga
+  `CURRENT_DATE` dan cast `::date` (pengingat periode berakhir dan filter
+  tanggal daftar pengajuan) memakai hari WIB, bukan default UTC container.
+  `deploy/vps/docker-compose.yml` juga menyetel `TZ: Asia/Jakarta` pada layanan
+  `postgres` dan `api` (proses Node) agar validasi lead time memakai hari WIB.
+  Sisi FE (`src/utils/leadTime.ts`) sengaja belum diselaraskan: memaksa WIB di
+  sana membuat tanggal perangkat WITA/WIT bisa mundur sehari, jadi itu
+  keputusan pemilik.
+- **Wizard cetak kini punya afordan lead time.** `PromoCetakWizard` memvalidasi
+  tanggal pemasangan per media memakai `rules` katalog (bukan klaim klien),
+  menambahkan atribut `min`, pesan galat per baris, dan teks afordan, meniru
+  wizard unggah. Sebelumnya tanggal pasang yang mustahil baru ketahuan setelah
+  kirim (server menolak).
+- **Baris pengingat periode berakhir dapat diklik ke detail pengajuan.**
+  Sebelumnya baris hanya menampilkan nomor/tenant dan tautan WhatsApp, tanpa
+  jalan ke detail pengajuan terkait.
+- **Panel pengingat membedakan "gagal memuat" dari "kosong".** Sebelumnya
+  kegagalan pemuatan pengingat tidak terlihat (state-nya sama dengan "belum
+  dimuat"), sehingga staf bisa mengira tidak ada pengingat. Kini galat
+  ditampilkan eksplisit (`role="alert"`). Keadaan kosong sengaja TIDAK
+  ditambahkan karena desain "panel tersembunyi bila kosong" dikunci test lama
+  (`AdminDashboardPage.test.tsx`).
+- **Tiga skrip verifikasi produksi diselaraskan.** `scripts/verify-e2e.mjs`
+  mengklik `a:has-text("Ajukan Materi")` yang cocok dengan kartu cetak (kini
+  menuju `/ajukan-cetak`), sehingga timeout menunggu `input#pic-name`; kini
+  memilih tautan wizard digital secara eksplisit (`a[href^="/ajukan?"]`).
+  `scripts/verify-tenant-upload.mjs` membuka `?media=spanduk` yang kini
+  dialihkan ke `/ajukan-cetak`; kini memakai `?media=videotron` (kanal digital,
+  format menerima PNG) beserta asersi dan teks pendukung yang menyesuaikan.
+  `scripts/verify-cetak.mjs` mengisi tanggal pemasangan H+1, padahal ketiga
+  media cetak memuat aturan lead time "paling lambat 2 hari sebelum pemasangan"
+  yang SUDAH ditolak server dengan `400`; kini memakai H+2. Ketiga skrip tidak
+  dijalankan (menulis ke produksi); hanya diperiksa sintaksnya. Detail di
+  `docs/PLAN_2026-09-23_21-13.md` dan `docs/PLAN_2026-09-24_16-16.md`.
 - **Pengajuan cetak batch kini menolak 400 bila persetujuan ketentuan tidak
   dicentang.** Handler `POST /promo/submit-batch`
   (`server/src/routes/promo.js`) sebelumnya hanya menyimpan nilai

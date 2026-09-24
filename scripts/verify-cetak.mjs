@@ -66,13 +66,16 @@ try {
   check('dua media terpilih', slugs.length === 2, slugs.join(', '));
 
   // 4. Lokasi + periode (minimal 7 hari) + tanggal pemasangan per media.
+  // Lead time media cetak = "paling lambat 2 hari sebelum pemasangan" (aturan
+  // `rules` katalog), sehingga tanggal pasang minimal H+2; server MENOLAK H+1.
   const mulai = isoPlus(1);
   const selesai = isoPlus(8);
+  const pasang = isoPlus(2);
   for (const slug of slugs) {
     await page.fill(`input#cetak-target-${slug}`, 'Sisi Pintu Tol Bekasi Barat');
     await page.fill(`input#cetak-start-${slug}`, mulai);
     await page.fill(`input#cetak-end-${slug}`, selesai);
-    await page.fill(`input#cetak-install-${slug}`, mulai);
+    await page.fill(`input#cetak-install-${slug}`, pasang);
   }
   const step2 = await page.textContent('body');
   check('estimasi harga per media non-nol', /Subtotal/.test(step2) && /Rp\. [1-9]/.test(step2));

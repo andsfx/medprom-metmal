@@ -36,11 +36,13 @@ try {
   const cards = await page.locator('article h3').count();
   check('katalog tampil di landing', cards === 13, `${cards} kartu`);
 
-  // 2. Preselect ?media=spanduk → form langsung ke tahap Data Tenant.
-  await page.goto(`${BASE}/ajukan?media=spanduk`, { waitUntil: 'networkidle' });
+  // 2. Preselect ?media=videotron → form langsung ke tahap Data Tenant.
+  // (Media cetak seperti `spanduk` kini dialihkan ke wizard /ajukan-cetak,
+  // jadi pakai media digital agar tetap di wizard unggah materi.)
+  await page.goto(`${BASE}/ajukan?media=videotron`, { waitUntil: 'networkidle' });
   await page.waitForSelector('input#tenant-search', { timeout: 20000 });
   const header = await page.textContent('body');
-  check('media terpilih dari URL (?media=spanduk)', header.includes('Materi untuk Spanduk'));
+  check('media terpilih dari URL (?media=videotron)', header.includes('Materi untuk Videotron'));
 
   // 3. Gerai dari daftar MID nyata
   await page.fill('input#tenant-search', 'Optik');
@@ -53,7 +55,7 @@ try {
   await page.fill('input#pic-name', 'Andi Verifikasi');
   await page.fill('input#pic-phone', '081234567890');
   await page.fill('input#campaign-name', 'Verifikasi Produksi');
-  await page.fill('input#material-title', 'Spanduk Verifikasi');
+  await page.fill('input#material-title', 'Videotron Verifikasi');
   await page.fill('textarea#material-description', 'Uji alur tenant produksi.');
   await page.selectOption('select#material-type', 'Promosi');
   await page.fill('input#media-target', 'Sisi Pintu Tol Bekasi Barat');
@@ -108,7 +110,7 @@ try {
   // 10. Riwayat publik menampilkan pengajuan (by media slug, tanpa auth)
   await page.goto(`${BASE}/riwayat`, { waitUntil: 'networkidle' });
   const riwayatBody = await page.textContent('body');
-  check('halaman riwayat menampilkan pengajuan', riwayatBody.includes('spanduk') || riwayatBody.includes('Spanduk'));
+  check('halaman riwayat menampilkan pengajuan', riwayatBody.includes('videotron') || riwayatBody.includes('Videotron'));
 
   check('tanpa error runtime', errors.length === 0, errors.slice(0, 2).join(' | '));
 } catch (err) {

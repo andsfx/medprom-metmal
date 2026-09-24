@@ -44,6 +44,11 @@ function createPool() {
     idleTimeoutMillis: 300_000,
     connectionTimeoutMillis: 5_000,
     max: POOL_MAX,
+    // Zona sesi untuk seluruh query: `CURRENT_DATE` dan cast `::date` di
+    // server/src/routes/admin.js (pengingat, filter tanggal daftar) memakai
+    // hari kalender WIB, bukan default UTC container. `options` diteruskan
+    // ke server oleh node-postgres (bukan `PGTZ`, yang tidak dibaca pg).
+    options: '-c timezone=Asia/Jakarta',
   });
 
   // pg me-emit error untuk idle client yang mati - jangan crash server.

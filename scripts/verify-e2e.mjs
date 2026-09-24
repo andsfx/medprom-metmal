@@ -34,7 +34,9 @@ try {
   check('katalog kartu aktif = 13', cards === 13, `${cards} kartu`);
 
   // 2. Form pengajuan: preselect + validasi tenant
-  await page.click('a:has-text("Ajukan Materi")');
+  // Kartu media cetak juga berlabel "Ajukan Materi", jadi pilih tautan wizard
+  // DIGITAL secara eksplisit (href /ajukan?...), bukan kartu cetak (/ajukan-cetak).
+  await page.click('a[href^="/ajukan?"]');
   await page.waitForSelector('input#pic-name', { timeout: 15000 });
   await page.fill('input#pic-name', 'Andi Verify');
   await page.fill('input#pic-phone', '081234567890');

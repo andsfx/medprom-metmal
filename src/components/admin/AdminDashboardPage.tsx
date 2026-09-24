@@ -114,6 +114,9 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   const [summaryTotal, setSummaryTotal] = useState(0);
   // Pengingat periode berakhir (query turunan, bukan cron).
   const [reminders, setReminders] = useState<RemindersData | null>(null);
+  // `reminders === null` juga berarti "belum dimuat", jadi galat dilacak
+  // terpisah agar staf dapat membedakan "kosong" dari "gagal memuat".
+  const [remindersError, setRemindersError] = useState(false);
   // Panel ringkas 5 item; tombol "Tampilkan N lainnya" membuka daftar penuh.
   const [pengingatTerbuka, setPengingatTerbuka] = useState(false);
 
@@ -174,9 +177,12 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   const loadReminders = useCallback(async () => {
     try {
       setReminders(await fetchAdminReminders());
+      setRemindersError(false);
     } catch {
-      // Pengingat bersifat informatif - kegagalan tidak menghalangi daftar.
+      // Pengingat bersifat informatif - kegagalan tidak menghalangi daftar,
+      // tetapi harus TERLIHAT agar staf tidak mengira tidak ada pengingat.
       setReminders(null);
+      setRemindersError(true);
     }
   }, []);
 
@@ -346,6 +352,17 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       {/* Pengingat periode berakhir - query turunan (bukan cron/email).
        * Hanya media ber-pajak yang sudah dipasang; muncul bila ada yang
        * mendekati/melewati akhir periode. */}
+      {/* Keadaan galat eksplisit: tanpa ini staf mengira tidak ada pengingat.
+       * Keadaan KOSONG sengaja TIDAK dirender (panel tetap tersembunyi bila
+       * tidak ada item) karena desain itu dikunci test lama
+       * (`AdminDashboardPage.test.tsx` "tidak menampilkan panel bila tidak ada
+       * pengingat"). Yang ditambahkan hanya pembeda "gagal memuat". */}
+      {remindersError && (
+        <section className="ui-admin-card mb-4 border-l-4 border-red-400 p-3" role="alert">
+          <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat pengingat periode berakhir.</p>
+          <p className="mt-1 text-xs text-red-700 dark:text-red-300">Muat ulang halaman untuk mencoba lagi.</p>
+        </section>
+      )}
       {reminders && reminders.items.length > 0 && (
         <section
           className="ui-admin-card mb-4 border-l-4 border-amber-400 p-3"
@@ -370,10 +387,30 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 pic_phone: r.pic_phone, tenant_name: r.tenant_name,
                 media_type_slug: r.media_type_slug, status: r.status,
               });
+              // Pengingat adalah daftar aksi: staf harus bisa langsung membuka
+              // detail pengajuan yang diingatkan. Bila baris itu ada di daftar
+              // yang termuat, pakai `openDetail` (muat riwayat/versi materi);
+              // bila tidak (di luar 20 teratas), buka dari baris ringkas.
+              const barisDaftar = rows.find((x) => x.id === r.id);
               return (
                 <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 text-xs">
                   <span className="min-w-0">
-                    <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">{r.submission_number}</span>
+                    <button
+                      type="button"
+                      onClick={() => openDetail(barisDaftar ?? ({
+                        id: r.id,
+                        submission_number: r.submission_number,
+                        tenant_name: r.tenant_name,
+                        pic_name: '', pic_phone: r.pic_phone,
+                        media_type_slug: r.media_type_slug,
+                        status: r.status,
+                        air_end_date: r.air_end_date,
+                        created_at: '',
+                      } as AdminSubmissionRow))}
+                      className="min-h-11 font-mono font-semibold text-slate-700 underline-offset-2 transition hover:text-brand-primary-700 hover:underline dark:text-slate-200"
+                    >
+                      {r.submission_number}
+                    </button>
                     <span className="ml-1.5 ui-text-muted">{r.tenant_name} · {r.media_type_slug}</span>
                   </span>
                   <span className={`shrink-0 font-semibold tabular-nums ${r.days_left !== null && r.days_left < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
