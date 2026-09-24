@@ -218,13 +218,16 @@ async function resolveMaterial({ linkUrl, driveFileId, fileName, mimeType }) {
   };
 }
 
-/** Tulis satu baris versi materi; `version` = nomor versi baris ini. */
+/** Tulis satu baris versi materi; `version` = nomor versi baris ini.
+ *  Mengembalikan baris (id) agar pemanggil dapat mengompensasi bila langkah
+ *  lanjutan gagal. */
 async function insertFileVersion(client, submissionId, material, { version, uploadedBy, notes }) {
-  await client.query(
+  return client.query(
     `INSERT INTO promo_submission_files
       (submission_id, version, source_type, file_url, file_name, mime_type,
        file_size_bytes, link_url, drive_file_id, uploaded_by, notes)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+     RETURNING id`,
     [
       submissionId, version, material.sourceType, material.fileUrl, material.fileName,
       material.mimeType, material.size, material.linkUrl, material.driveFileId,
@@ -233,12 +236,13 @@ async function insertFileVersion(client, submissionId, material, { version, uplo
   );
 }
 
-/** Catat satu transisi status ke riwayat. */
+/** Catat satu transisi status ke riwayat; mengembalikan baris (id) untuk kompensasi. */
 async function insertHistory(client, { submissionId, fromStatus, toStatus, comment, actorType, actorName, actorId }) {
-  await client.query(
+  return client.query(
     `INSERT INTO promo_submission_history
       (submission_id, from_status, to_status, comment, actor_type, actor_name, actor_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+     VALUES ($1,$2,$3,$4,$5,$6,$7)
+     RETURNING id`,
     [submissionId, fromStatus, toStatus, comment, actorType, actorName, actorId || null],
   );
 }
@@ -680,27 +684,42 @@ router.post('/submissions/:id/revision', async (req, res, next) => {
     );
     const nextVersion = (verRows[0]?.v || 0) + 1;
 
-    await db.query(
-      `UPDATE promo_submissions
-       SET source_type = $1, file_url = $2, file_name = $3, mime_type = $4,
-           link_url = $5, file_size_bytes = $6, drive_file_id = $7,
-           status = $8, status_changed_at = now(), updated_at = now()
-       WHERE id = $9`,
-      [
-        material.sourceType, material.fileUrl, material.fileName, material.mimeType,
-        material.linkUrl, material.size, material.driveFileId,
-        INITIAL_STATUS, id,
-      ],
-    );
-    await insertFileVersion(db, id, material, { version: nextVersion, uploadedBy: 'tenant', notes: revisionNotes });
-    await insertHistory(db, {
-      submissionId: id,
-      fromStatus: 'perlu_revisi',
-      toStatus: INITIAL_STATUS,
-      comment: revisionNotes || 'Materi revisi dikirim tenant',
-      actorType: 'tenant',
-      actorName: submission.pic_name || '',
-    });
+    // Tiga tulis berurutan TANPA transaksi (`db` tidak menyediakan `connect()`).
+    // Untuk menutup jendela kegagalan sebagian, urutannya dibuat dapat
+    // dikompensasi: versi materi dan riwayat ditulis LEBIH DULU, lalu UPDATE
+    // status sebagai langkah TERAKHIR. Bila salah satu langkah gagal, baris yang
+    // telanjur masuk DIHAPUS sehingga status 'perlu_revisi' tetap utuh dan
+    // tenant dapat mengirim ulang. (Transaksi sejati tetap opsi yang lebih
+    // kuat; lihat docs/PLAN_2026-09-24_10-50.md catatan #4.)
+    let versiId = null;
+    let histId = null;
+    try {
+      versiId = (await insertFileVersion(db, id, material, { version: nextVersion, uploadedBy: 'tenant', notes: revisionNotes })).rows?.[0]?.id ?? null;
+      histId = (await insertHistory(db, {
+        submissionId: id,
+        fromStatus: 'perlu_revisi',
+        toStatus: INITIAL_STATUS,
+        comment: revisionNotes || 'Materi revisi dikirim tenant',
+        actorType: 'tenant',
+        actorName: submission.pic_name || '',
+      })).rows?.[0]?.id ?? null;
+      await db.query(
+        `UPDATE promo_submissions
+         SET source_type = $1, file_url = $2, file_name = $3, mime_type = $4,
+             link_url = $5, file_size_bytes = $6, drive_file_id = $7,
+             status = $8, status_changed_at = now(), updated_at = now()
+         WHERE id = $9`,
+        [
+          material.sourceType, material.fileUrl, material.fileName, material.mimeType,
+          material.linkUrl, material.size, material.driveFileId,
+          INITIAL_STATUS, id,
+        ],
+      );
+    } catch (writeErr) {
+      if (histId) await db.query('DELETE FROM promo_submission_history WHERE id = $1', [histId]).catch(() => {});
+      if (versiId) await db.query('DELETE FROM promo_submission_files WHERE id = $1', [versiId]).catch(() => {});
+      throw writeErr;
+    }
 
     return res.json({
       success: true,

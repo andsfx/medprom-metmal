@@ -5,6 +5,24 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Tenant kini dapat melihat sisa hari periodenya.** Halaman status ber-token
+  dan halaman pelacakan (`SubmissionDetail`) hanya menampilkan rentang tanggal
+  statis. Baris "Periode" kini menambahkan sisa hari: "N hari lagi", "berakhir
+  hari ini", atau "lewat N hari" (merah). Dihitung dari tanggal perangkat
+  (`daysUntil` + `toIsoDate`); angka otoritatif tetap milik server pada panel
+  staf. Dikunci `SubmissionDetailSisaHari.test.tsx`.
+- **Alur revisi materi tidak lagi meninggalkan keadaan setengah jadi.** Handler
+  `POST /promo/submissions/:id/revision` melakukan tiga tulis berurutan tanpa
+  transaksi dengan UPDATE status lebih dulu, sehingga kegagalan di tengah bisa
+  memindahkan status dan menimpa materi lama sementara versi/riwayat hilang.
+  Urutan kini dibalik agar dapat dikompensasi (versi + riwayat lebih dulu,
+  UPDATE status terakhir) dan baris yang telanjur masuk dihapus bila langkah
+  gagal, sehingga status `perlu_revisi` tetap utuh. `insertFileVersion` dan
+  `insertHistory` mengembalikan `RETURNING id` untuk kompensasi presisi. Ini
+  BUKAN transaksi sejati (jendela antar-statement masih ada); transaksi sejati
+  tetap butuh izin karena menyentuh `server/src/db.js` dan mock 17 test. Dikunci
+  `promo-revision-kompensasi.test.js`. Catatan
+  `docs/PLAN_2026-09-24_16-37.md`.
 - **Pembulatan uang kini half-up sejati (cermin FE dan BE).** `round2` di
   `src/utils/pricing.ts` dan `server/src/lib/pricing.js` memakai
   `Math.round((n + Number.EPSILON) * 100) / 100`, yang bukan half-up sejati:

@@ -15,6 +15,8 @@ import { submitRevision, uploadFile, errorsFromApiError } from '../../utils/prom
 import { getDeviceFingerprint } from '../../utils/fingerprint';
 import { installationProofViews } from '../../utils/proof';
 import { STATUS_LABELS } from '../../constants/promo';
+import { daysUntil } from '../../utils/pricing';
+import { toIsoDate } from '../../utils/leadTime';
 import type { StatusPageData } from '../../types/promo';
 
 const STATUS_TONE: Record<string, string> = {
@@ -69,6 +71,12 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
       ? data.submission.link_url
       : data.submission.file_url,
   ).trim();
+  // Sisa hari periode (tenant dapat melihat sendiri kapan periodenya berakhir).
+  // `null` bila tanggal berakhir kosong/tidak valid. Dihitung dari tanggal
+  // perangkat; angka otoritatif tetap milik server pada panel staf.
+  const sisaHari = data.submission.air_end_date
+    ? daysUntil(data.submission.air_end_date, toIsoDate())
+    : null;
   // Form revisi.
   const [revLink, setRevLink] = useState('');
   const [revFile, setRevFile] = useState<File | null>(null);
@@ -160,6 +168,11 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
               <dt className="shrink-0 font-semibold ui-text-muted">Periode</dt>
               <dd className="text-slate-900 dark:text-white">
                 {data.submission.air_start_date || '-'} s/d {data.submission.air_end_date || '-'}
+                {sisaHari !== null && (
+                  <span className={`ml-1.5 text-xs font-semibold ${sisaHari < 0 ? 'text-red-600 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                    ({sisaHari > 0 ? `${sisaHari} hari lagi` : sisaHari === 0 ? 'berakhir hari ini' : `lewat ${Math.abs(sisaHari)} hari`})
+                  </span>
+                )}
               </dd>
             </div>
           )}
