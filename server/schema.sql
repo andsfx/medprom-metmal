@@ -375,8 +375,15 @@ CREATE INDEX IF NOT EXISTS idx_amt_channel ON promo_media_types (media_channel);
 -- baris yang sudah ada, sehingga satu baris cetak warisan berdurasi < 7 hari
 -- akan MENGGAGALKAN `db:migrate` - kegagalan yang hanya muncul di DB produksi,
 -- bukan di DB kosong (kelas bug yang sama dengan backfill `source_type` di
--- migrasi sebelumnya). Dengan NOT VALID, constraint tetap MENGIKAT setiap
--- INSERT/UPDATE baru, tetapi baris lama tidak divalidasi ulang.
+-- migrasi sebelumnya).
+--
+-- BATAS NOT VALID, jangan disalahpahami: ia hanya melewati SCAN AWAL, bukan
+-- membebaskan baris itu selamanya. Constraint tetap mengikat setiap
+-- INSERT/UPDATE baru, dan UPDATE apa pun pada baris warisan yang melanggar
+-- akan DITOLAK Postgres (fail-loud). Jadi baris warisan yang tidak patuh akan
+-- menggigit saat staf berikutnya mengubahnya (mis. menaikkan status), bukan
+-- diam-diam lolos. Karena itu runbook memuat query deteksi di bawah untuk
+-- membersihkan data warisan SEBELUM deploy.
 DO $$
 BEGIN
   IF NOT EXISTS (
