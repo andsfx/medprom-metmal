@@ -109,7 +109,17 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
     `whitespace-nowrap` (tabel staf memang menggulir di dalam wadahnya). Sel
     email pengguna diberi `break-all` agar alamat panjang tidak melebarkan
     tabel `min-w-[640px]` melebihi wadah `overflow-x-auto`.
-  - **Gate baru `scripts/verify-mobile.mjs`** (91 pemeriksaan): menjalankan
+  - **Isyarat geser untuk tabel staf di ponsel.** Tabel pengajuan, katalog
+    media, dan pengguna lebih lebar dari layar ponsel, jadi kolom status/aksi
+    tersembunyi di luar pandangan tanpa petunjuk apa pun. Kini ada baris
+    "Geser tabel ke samping untuk melihat kolom lain." (`lg:hidden`, jadi
+    tidak muncul di desktop). Petunjuknya sengaja diletakkan DI LUAR wadah
+    `overflow-x-auto`: di dalam, ia ikut tergulir dan justru hilang saat paling
+    dibutuhkan. Dikunci `scripts/verify-mobile.mjs` yang mengukur luapan di
+    WADAH tabel (bukan di elemen `<table>`, yang `scrollWidth`-nya selalu sama
+    dengan `clientWidth`) dan memastikan petunjuk terlihat serta berada di luar
+    wadah gulir.
+  - **Gate baru `scripts/verify-mobile.mjs`** (93 pemeriksaan): menjalankan
     build produksi lewat preview server, lalu memastikan di 360x740 dan
     320x568 tidak ada gulir horizontal tingkat halaman, tidak ada teks < 12px,
     target sentuh >= 44px (kotak centang diukur dari label pembungkusnya;

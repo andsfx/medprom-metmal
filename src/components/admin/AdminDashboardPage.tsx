@@ -594,7 +594,12 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       )}
 
       {/* Tabel dokumen: baris dipisah garis 1px, tanpa kartu bersarang.
-       * Sel angka memakai `.doc-num` rata kanan agar kolom bisa dibandingkan. */}
+       * Sel angka memakai `.doc-num` rata kanan agar kolom bisa dibandingkan.
+       * Petunjuk geser diletakkan DI LUAR wadah bergulir: di dalam, ia ikut
+       * tergulir dan justru hilang saat paling dibutuhkan. */}
+      <p className="px-3 pb-1 text-xs ui-text-muted lg:hidden">
+        Geser tabel ke samping untuk melihat kolom lain.
+      </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead>
@@ -1588,88 +1593,93 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
       {/* Daftar katalog sebagai tabel dokumen: satu baris per media, dipisah
        * garis 1px. Nomor plate di kiri adalah posisi media di deck 2026. */}
       {!loading && rows.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead>
-              <tr className="border-b-2 border-[color:var(--rule-ink)]">
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Plate</th>
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Media</th>
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kategori</th>
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</th>
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ukuran / tarif</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((m) => (
-                <tr key={m.id ?? m.slug} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
-                  <td className="doc-num px-3 py-3 text-xs ui-text-muted">
-                    {String(m.sort_order ?? 0).padStart(2, '0')}
-                  </td>
-                  <td className="px-3 py-3">
-                    <p className="truncate font-semibold text-slate-900">{m.name}</p>
-                    <p className="doc-num text-xs ui-text-muted">/{m.slug}</p>
-                  </td>
-                  <td className="px-3 py-3 text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category}</td>
-                  <td className="px-3 py-3">
-                    <span className="doc-tag" data-tone={m.media_channel === 'cetak' ? 'process' : 'none'}>
-                      {CHANNEL_LABELS[m.media_channel ?? 'digital']}
-                    </span>
-                  </td>
-                  {/* State nonaktif dibawa lencana "Nonaktif", bukan opacity-70:
-                   * opacity menurunkan kontras SEMUA teks di dalam baris. */}
-                  <td className="px-3 py-3">
-                    <span className="doc-tag" data-tone={m.is_active === false ? 'none' : 'process'}>
-                      {m.is_active === false ? 'Nonaktif' : 'Aktif'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3 text-right">
-                    <p className="doc-num text-xs text-slate-800">{m.size_spec || '-'}</p>
-                    {m.price_note && (
-                      <p className="doc-num mt-0.5 whitespace-pre-line text-xs ui-text-muted">{m.price_note}</p>
-                    )}
-                  </td>
-                  <td className="px-3 py-3">
-                    {canManage && (
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setForm({
-                              id: m.id || '', slug: m.slug, category: m.category, name: m.name,
-                              size_spec: m.size_spec, material_spec: m.material_spec,
-                              accepted_formats: m.accepted_formats, price_note: m.price_note,
-                              location_note: m.location_note, rules: m.rules,
-                              media_channel: m.media_channel === 'cetak' ? 'cetak' : 'digital',
-                              price_amount: m.price_amount ?? 0,
-                              price_unit: m.price_unit ?? '',
-                              ppn_included: Boolean(m.ppn_included),
-                              image_path: m.image_path || '',
-                              is_active: m.is_active !== false, sort_order: m.sort_order,
-                            });
-                            setFormError('');
-                          }}
-                          className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleDelete(m)}
-                          aria-label={`Hapus ${m.name}`}
-                          className="inline-flex min-h-11 min-w-11 items-center justify-center border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        </button>
-                      </div>
-                    )}
-                  </td>
+        <>
+          <p className="px-3 pb-1 text-xs ui-text-muted lg:hidden">
+            Geser tabel ke samping untuk melihat kolom lain.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[760px] text-left text-sm">
+              <thead>
+                <tr className="border-b-2 border-[color:var(--rule-ink)]">
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Plate</th>
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Media</th>
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kategori</th>
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</th>
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ukuran / tarif</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((m) => (
+                  <tr key={m.id ?? m.slug} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
+                    <td className="doc-num px-3 py-3 text-xs ui-text-muted">
+                      {String(m.sort_order ?? 0).padStart(2, '0')}
+                    </td>
+                    <td className="px-3 py-3">
+                      <p className="truncate font-semibold text-slate-900">{m.name}</p>
+                      <p className="doc-num text-xs ui-text-muted">/{m.slug}</p>
+                    </td>
+                    <td className="px-3 py-3 text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category}</td>
+                    <td className="px-3 py-3">
+                      <span className="doc-tag" data-tone={m.media_channel === 'cetak' ? 'process' : 'none'}>
+                        {CHANNEL_LABELS[m.media_channel ?? 'digital']}
+                      </span>
+                    </td>
+                    {/* State nonaktif dibawa lencana "Nonaktif", bukan opacity-70:
+                     * opacity menurunkan kontras SEMUA teks di dalam baris. */}
+                    <td className="px-3 py-3">
+                      <span className="doc-tag" data-tone={m.is_active === false ? 'none' : 'process'}>
+                        {m.is_active === false ? 'Nonaktif' : 'Aktif'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3 text-right">
+                      <p className="doc-num text-xs text-slate-800">{m.size_spec || '-'}</p>
+                      {m.price_note && (
+                        <p className="doc-num mt-0.5 whitespace-pre-line text-xs ui-text-muted">{m.price_note}</p>
+                      )}
+                    </td>
+                    <td className="px-3 py-3">
+                      {canManage && (
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setForm({
+                                id: m.id || '', slug: m.slug, category: m.category, name: m.name,
+                                size_spec: m.size_spec, material_spec: m.material_spec,
+                                accepted_formats: m.accepted_formats, price_note: m.price_note,
+                                location_note: m.location_note, rules: m.rules,
+                                media_channel: m.media_channel === 'cetak' ? 'cetak' : 'digital',
+                                price_amount: m.price_amount ?? 0,
+                                price_unit: m.price_unit ?? '',
+                                ppn_included: Boolean(m.ppn_included),
+                                image_path: m.image_path || '',
+                                is_active: m.is_active !== false, sort_order: m.sort_order,
+                              });
+                              setFormError('');
+                            }}
+                            className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => void handleDelete(m)}
+                            aria-label={`Hapus ${m.name}`}
+                            className="inline-flex min-h-11 min-w-11 items-center justify-center border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
+                        </div>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       {/* Form create/edit - lembar spesifikasi media. */}
@@ -1972,54 +1982,59 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
       )}
 
       {!loading && rows.length > 0 && (
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[640px] text-left text-sm">
-            <thead>
-              <tr className="border-b-2 border-[color:var(--rule-ink)]">
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Nama</th>
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Email</th>
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Role</th>
-                <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
-                <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((u) => (
-                <tr key={u.id} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
-                  <td className="px-3 py-3 font-semibold text-slate-900">{u.display_name}</td>
-                  <td className="break-all px-3 py-3 text-slate-700">{u.email}</td>
-                  <td className="px-3 py-3">
-                    <span className="doc-tag">{u.role}</span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <span className="doc-tag" data-tone={u.is_active ? 'process' : 'none'}>
-                      {u.is_active ? 'Aktif' : 'Nonaktif'}
-                    </span>
-                  </td>
-                  <td className="px-3 py-3">
-                    <div className="flex justify-end gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => { setForm({ id: u.id, email: u.email, display_name: u.display_name, role: u.role, password: '', is_active: u.is_active }); setFormError(''); }}
-                        className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void handleDelete(u)}
-                        aria-label={`Hapus user ${u.email}`}
-                        className="inline-flex min-h-11 min-w-11 items-center justify-center border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
-                      >
-                        <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                      </button>
-                    </div>
-                  </td>
+        <>
+          <p className="px-3 pb-1 text-xs ui-text-muted lg:hidden">
+            Geser tabel ke samping untuk melihat kolom lain.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] text-left text-sm">
+              <thead>
+                <tr className="border-b-2 border-[color:var(--rule-ink)]">
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Nama</th>
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Email</th>
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Role</th>
+                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
+                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {rows.map((u) => (
+                  <tr key={u.id} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
+                    <td className="px-3 py-3 font-semibold text-slate-900">{u.display_name}</td>
+                    <td className="break-all px-3 py-3 text-slate-700">{u.email}</td>
+                    <td className="px-3 py-3">
+                      <span className="doc-tag">{u.role}</span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <span className="doc-tag" data-tone={u.is_active ? 'process' : 'none'}>
+                        {u.is_active ? 'Aktif' : 'Nonaktif'}
+                      </span>
+                    </td>
+                    <td className="px-3 py-3">
+                      <div className="flex justify-end gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => { setForm({ id: u.id, email: u.email, display_name: u.display_name, role: u.role, password: '', is_active: u.is_active }); setFormError(''); }}
+                          className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleDelete(u)}
+                          aria-label={`Hapus user ${u.email}`}
+                          className="inline-flex min-h-11 min-w-11 items-center justify-center border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
 
       <Sheet
