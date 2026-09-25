@@ -44,12 +44,13 @@ vi.mock('../../server/src/lib/turnstile.js', () => ({
 import promoRouter from '../../server/src/routes/promo.js';
 import adminRouter from '../../server/src/routes/admin.js';
 import { db } from '../../server/src/db.js';
-import { readMultipartFile, uploadToDrive } from '../../server/src/drive.js';
+import { readMultipartFile, uploadToDrive, deleteDriveFileOrThrow } from '../../server/src/drive.js';
 import { enforceRateLimit } from '../../server/src/lib/rateLimit.js';
 
 const mockedQuery = vi.mocked(db.query);
 const mockedRead = vi.mocked(readMultipartFile);
 const mockedUpload = vi.mocked(uploadToDrive);
+const mockedDeleteDrive = vi.mocked(deleteDriveFileOrThrow);
 const mockedRateLimit = vi.mocked(enforceRateLimit);
 
 /** Nilai saklar yang "tersimpan" - stateful supaya POST lalu GET konsisten. */
@@ -245,6 +246,46 @@ describe('POST /promo/submit-batch — bukti pajak', () => {
     const insert = mockedQuery.mock.calls.find((c) => String(c[0]).includes('INSERT INTO promo_submissions'));
     expect(insert[1]).not.toContain('drive-tax-1');
     expect(insert[1]).not.toContain('bukti.png');
+  });
+});
+
+// ─── Hapus pengajuan: berkas pajak tidak jadi yatim ──────────────
+
+describe('POST /admin/submissions/:id/delete — bukti pajak', () => {
+  /** Mock SELECT penghapusan dengan nilai berkas tertentu. */
+  function mockHapus({ taxProofFileId = '' }) {
+    mockedQuery.mockImplementation((sql) => {
+      const text = String(sql);
+      if (text.includes('SELECT id, source_type, drive_file_id, tax_proof_file_id')) {
+        return Promise.resolve({ rows: [{ id: 'sub-1', source_type: 'none', drive_file_id: '', tax_proof_file_id: taxProofFileId }] });
+      }
+      return Promise.resolve({ rows: [] });
+    });
+  }
+
+  it('menghapus berkas pajak dari Drive saat pengajuan dihapus', async () => {
+    mockHapus({ taxProofFileId: 'drive-tax-9' });
+    const res = await call(adminRouter, '/submissions/:id/delete', 'post', { params: { id: 'sub-1' } });
+
+    expect(res.statusCode).toBe(200);
+    expect(mockedDeleteDrive).toHaveBeenCalledWith('drive-tax-9');
+  });
+
+  it('tanpa bukti pajak: tidak ada panggilan hapus Drive', async () => {
+    mockHapus({ taxProofFileId: '' });
+    const res = await call(adminRouter, '/submissions/:id/delete', 'post', { params: { id: 'sub-1' } });
+
+    expect(res.statusCode).toBe(200);
+    expect(mockedDeleteDrive).not.toHaveBeenCalled();
+  });
+
+  it('kegagalan hapus berkas pajak TIDAK menahan penghapusan baris', async () => {
+    mockedDeleteDrive.mockRejectedValueOnce(new Error('drive down'));
+    mockHapus({ taxProofFileId: 'drive-tax-9' });
+    const res = await call(adminRouter, '/submissions/:id/delete', 'post', { params: { id: 'sub-1' } });
+
+    expect(res.statusCode).toBe(200);
+    expect(mockedQuery.mock.calls.some((c) => String(c[0]).includes('DELETE FROM promo_submissions'))).toBe(true);
   });
 });
 

@@ -636,7 +636,7 @@ router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res
     if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
 
     const { rows } = await db.query(
-      'SELECT id, source_type, drive_file_id FROM promo_submissions WHERE id = $1 LIMIT 1',
+      'SELECT id, source_type, drive_file_id, tax_proof_file_id FROM promo_submissions WHERE id = $1 LIMIT 1',
       [id],
     );
     const existing = rows[0] || null;
@@ -650,6 +650,18 @@ router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res
       } catch (delErr) {
         console.error('[admin/deleteSubmission] Drive delete failed:', existing.drive_file_id, delErr.message);
         return res.status(400).json({ success: false, error: 'Gagal menghapus file dari storage. Coba lagi.' });
+      }
+    }
+
+    // Bukti pembayaran pajak (bila ada) ikut dibersihkan supaya tidak menjadi
+    // berkas yatim di Drive. SENGAJA best-effort: bukti pajak bukan materi inti
+    // pengajuan, jadi kegagalan menghapusnya tidak boleh menahan penghapusan
+    // baris (berbeda dari materi, yang kegagalannya membatalkan seluruh aksi).
+    if (existing.tax_proof_file_id) {
+      try {
+        await deleteDriveFileOrThrow(existing.tax_proof_file_id);
+      } catch (delErr) {
+        console.warn('[admin/deleteSubmission] Drive pajak gagal dihapus (best-effort):', existing.tax_proof_file_id, delErr.message);
       }
     }
 

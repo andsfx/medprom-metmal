@@ -25,6 +25,9 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
     kredensial Drive).
   - **Halaman tenant.** Bukti pajak yang sudah ada ditampilkan di halaman
     status/pelacakan.
+  - **Penghapusan pengajuan membersihkan berkas pajak dari Drive** (best-effort,
+    tidak menahan penghapusan baris), supaya tidak meninggalkan berkas yatim -
+    sebelumnya hanya berkas materi yang dibersihkan.
   - **Kolom** `tax_proof_file_id/url/name/mime/size_bytes/uploaded_by/
     uploaded_at` ditambahkan aditif pada `promo_submissions` (pengajuan lama
     tetap sah). Saat saklar mati, server MENGABAIKAN field pajak dari klien
