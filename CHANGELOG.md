@@ -81,6 +81,42 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   warisan ada di `docs/PLAN_2026-09-24_17-35.md`.
 
 ### Diperbaiki
+- **UI mobile: lantai ukuran teks dan tabel titik penghubung yang rusak di
+  layar sempit.** Audit terukur di 360x740 dan 320x568 menemukan dua cacat:
+  - **86 tempat memakai teks di bawah 12px** (`text-[11px]` 84x, `text-[10px]`
+    2x) di konsol staf, kedua wizard, dan landing - melanggar aturan keras
+    DESIGN.md ("Tidak ada teks di bawah 12px"; `--text-meta` = 12px adalah
+    batas bawah). Semua dinaikkan ke `text-xs` (12px). Label kapital ber-track
+    adalah teks yang paling sulit dibaca di ponsel, jadi ini perbaikan
+    keterbacaan, bukan sekadar kepatuhan.
+  - **Tabel titik penghubung (`.doc-row`) rusak di bawah 640px.** Pola satu
+    baris (label - titik - nilai) hanya terbaca bila nilai muat satu baris; di
+    ponsel nilai seperti "4 x 8m Horizontal (Resolusi 1025 x 2000 Pixel)"
+    membungkus sampai tiga baris sementara titik penghubung menyusut jadi 12px,
+    sehingga terbaca "Material ..... Sticker di Impraboard". Terukur 17 dari 44
+    baris katalog membungkus di 320px. Di bawah 640px baris kini DITUMPUK
+    (label di atas, nilai di bawah, rata kiri, lebar penuh) dan titik
+    penghubung disembunyikan; di 640px ke atas tampilan dokumen dipertahankan
+    apa adanya. Dipakai `overflow-wrap: break-word` (bukan `anywhere`) supaya
+    token mono hanya pecah bila benar-benar tak muat.
+  - **Nominal rupiah tidak lagi terbelah dari "Rp."** `rupiah()` di wizard
+    cetak memakai spasi biasa setelah "Rp.", sehingga di 320px baris biaya
+    terbelah "Rp." / "543.900". Diganti non-breaking space (U+00A0): titik
+    putus berpindah ke pemisah "+ PPN" / "=", dan kontrak teks uji tetap cocok
+    karena normalizer testing-library memperlakukan U+00A0 sebagai whitespace.
+  - **Nomor pengajuan dan tanggal di konsol staf tidak lagi membungkus.**
+    "MP-260919-EKWNQU" terbelah tiga baris di kolom sempit; kini
+    `whitespace-nowrap` (tabel staf memang menggulir di dalam wadahnya). Sel
+    email pengguna diberi `break-all` agar alamat panjang tidak melebarkan
+    tabel `min-w-[640px]` melebihi wadah `overflow-x-auto`.
+  - **Gate baru `scripts/verify-mobile.mjs`** (91 pemeriksaan): menjalankan
+    build produksi lewat preview server, lalu memastikan di 360x740 dan
+    320x568 tidak ada gulir horizontal tingkat halaman, tidak ada teks < 12px,
+    target sentuh >= 44px (kotak centang diukur dari label pembungkusnya;
+    tautan inline dikecualikan sesuai WCAG 2.5.8), titik penghubung tersembunyi
+    di mobile, nilai tidak terpotong, tabel staf tetap di dalam wadah
+    bergulirnya, dan nominal rupiah utuh. Bukti dan tangkapan layar ada di
+    `docs/PLAN_2026-09-25_13-58.md`.
 - **Service worker tidak menyapu cache aset shell setelah ikon PWA diganti.**
   Aturan #2 `public/sw.js` mewajibkan `CACHE_VERSION` dinaikkan setiap rilis
   yang mengubah aset shell, tetapi commit `077de87` mengganti ikon PWA
