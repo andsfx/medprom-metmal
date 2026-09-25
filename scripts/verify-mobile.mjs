@@ -213,6 +213,44 @@ for (const [vpNama, viewport] of VIEWPORTS) {
   const adaTabel = r.tabel.length > 0;
   const semuaTerwadahi = r.tabel.every((t) => t.wadahOverflowX === 'auto' || t.wadahOverflowX === 'scroll');
   check(`[${vpNama}] admin: tabel berada di wadah bergulir`, !adaTabel || semuaTerwadahi, r.tabel.map((t) => t.wadahOverflowX).join(','));
+
+  // Isyarat geser: tabel yang lebih lebar dari layar harus memberi tahu staf
+  // bahwa ada kolom lain, dan petunjuknya harus terlihat (di luar wadah gulir).
+  const isyarat = await page.evaluate(() => {
+    // Luapan ada di WADAH tabel (overflow-x-auto), bukan di elemen <table>:
+    // tabel min-w-[760px] di dalam wadah 360px punya clientWidth == scrollWidth
+    // sendiri, sehingga mengukur tabel selalu melaporkan "muat".
+    const wadah = [...document.querySelectorAll('table')]
+      .map((t) => t.parentElement)
+      .filter(Boolean);
+    const perluGeser = wadah.some((w) => w.scrollWidth > w.clientWidth + 1);
+    if (!perluGeser) return { perluGeser: false, terlihat: 0, teks: '' };
+    const p = [...document.querySelectorAll('p')].find((el) => /Geser tabel/i.test(el.textContent || ''));
+    if (!p) return { perluGeser: true, terlihat: 0, teks: '' };
+    const cs = getComputedStyle(p);
+    const r = p.getBoundingClientRect();
+    const dalamGulir = (() => {
+      let n = p.parentElement;
+      while (n && n !== document.body) {
+        const ox = getComputedStyle(n).overflowX;
+        if (ox === 'auto' || ox === 'scroll') return true;
+        n = n.parentElement;
+      }
+      return false;
+    })();
+    return {
+      perluGeser: true,
+      terlihat: cs.display !== 'none' && r.width > 0 && r.height > 0 ? 1 : 0,
+      teks: (p.textContent || '').trim(),
+      diDalamWadahGulir: dalamGulir,
+      px: parseFloat(cs.fontSize),
+    };
+  });
+  check(
+    `[${vpNama}] admin: isyarat geser tampil saat tabel lebih lebar`,
+    !isyarat.perluGeser || (isyarat.terlihat === 1 && !isyarat.diDalamWadahGulir),
+    isyarat.perluGeser ? `terlihat=${isyarat.terlihat} dalamGulir=${isyarat.diDalamWadahGulir} "${isyarat.teks}"` : 'tabel muat, tidak perlu isyarat',
+  );
 }
 
 check('tanpa galat JS', galatJs.length === 0, galatJs.slice(0, 2).join(' | '));
