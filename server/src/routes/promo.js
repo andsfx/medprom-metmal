@@ -24,6 +24,7 @@ import { generateSubmissionNumber, generateStatusToken, generateBatchNumber } fr
 import { INITIAL_STATUS } from '../lib/statusFlow.js';
 import { verifyTurnstile } from '../lib/turnstile.js';
 import { PPN_RATE, hitungHarga, cekDurasiMinimal } from '../lib/pricing.js';
+import { isTaxProofEnabled } from '../lib/settings.js';
 
 const router = Router();
 
@@ -82,7 +83,8 @@ const SUBMISSION_PUBLIC_COLUMNS = `
   price_amount::float8 AS price_amount, price_unit, ppn_included,
   ppn_rate::float8 AS ppn_rate, quantity, duration_days,
   subtotal::float8 AS subtotal, ppn_amount::float8 AS ppn_amount,
-  total_amount::float8 AS total_amount`;
+  total_amount::float8 AS total_amount,
+  tax_proof_file_url, tax_proof_file_name, tax_proof_mime, tax_proof_uploaded_at`;
 
 /**
  * Kolom publik yang dikualifikasi alias tabel.
@@ -290,6 +292,19 @@ router.get('/media-types', async (req, res, next) => {
       values,
     );
     return res.json({ success: true, data: rows });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// GET /promo/settings - saklar fitur publik (hanya yang aman dibaca anonim).
+// Wizard cetak memakainya untuk memutuskan menampilkan field bukti pajak.
+// Nilai dibaca dari DB tiap permintaan, jadi admin bisa menyalakan/mematikan
+// tanpa deploy ulang.
+router.get('/settings', async (_req, res, next) => {
+  try {
+    const taxProofEnabled = await isTaxProofEnabled();
+    return res.json({ success: true, data: { tax_proof_enabled: taxProofEnabled } });
   } catch (err) {
     return next(err);
   }
@@ -832,6 +847,14 @@ router.post('/submit-batch', async (req, res, next) => {
     drive_file_id: sanitize(raw?.drive_file_id || '', 128),
     file_name: sanitize(raw?.file_name || '', 200),
     mime_type: sanitize(raw?.mime_type || '', 100),
+    // Bukti pembayaran pajak (opsional, hanya bila admin menyalakan fiturnya).
+    tax_proof_file_id: sanitize(raw?.tax_proof_file_id || '', 128),
+    tax_proof_file_url: sanitize(raw?.tax_proof_file_url || '', 500),
+    tax_proof_file_name: sanitize(raw?.tax_proof_file_name || '', 200),
+    tax_proof_mime: sanitize(raw?.tax_proof_mime || '', 100),
+    tax_proof_size_bytes: Number.isFinite(Number(raw?.tax_proof_size_bytes))
+      ? Math.max(0, Math.trunc(Number(raw.tax_proof_size_bytes)))
+      : 0,
   }));
 
   for (const [i, it] of normalized.entries()) {
@@ -852,6 +875,20 @@ router.post('/submit-batch', async (req, res, next) => {
   if (errors.length > 0) return res.status(400).json({ success: false, errors });
 
   try {
+    // Bukti pajak hanya disimpan bila admin menyalakan fiturnya. Saat mati,
+    // field pajak dari klien DIABAIKAN sepenuhnya (bukan sekadar tidak
+    // ditampilkan) supaya API tidak bisa dipakai menulis data fitur yang mati.
+    const taxProofEnabled = await isTaxProofEnabled();
+    if (!taxProofEnabled) {
+      for (const it of normalized) {
+        it.tax_proof_file_id = '';
+        it.tax_proof_file_url = '';
+        it.tax_proof_file_name = '';
+        it.tax_proof_mime = '';
+        it.tax_proof_size_bytes = 0;
+      }
+    }
+
     const slugs = [...new Set(normalized.map((it) => it.media_type_slug))];
     const mediaBySlug = await loadCetakMedia(slugs);
 
@@ -936,6 +973,8 @@ router.post('/submit-batch', async (req, res, next) => {
       'device_fingerprint', 'ip_address', 'user_agent', 'applicant_type',
       'submission_date', 'batch_id', 'price_amount', 'price_unit', 'ppn_included',
       'ppn_rate', 'quantity', 'duration_days', 'subtotal', 'ppn_amount', 'total_amount',
+      'tax_proof_file_id', 'tax_proof_file_url', 'tax_proof_file_name',
+      'tax_proof_mime', 'tax_proof_size_bytes',
     ];
     const values = [];
     const tuples = [];
@@ -949,6 +988,8 @@ router.post('/submit-batch', async (req, res, next) => {
         applicantType, submissionDate, batch.id, it.media.price_amount,
         it.media.price_unit, it.media.ppn_included, PPN_RATE, it.quantity,
         it.durationDays, it.harga.subtotal, it.harga.ppnAmount, it.harga.totalAmount,
+        it.tax_proof_file_id, it.tax_proof_file_url, it.tax_proof_file_name,
+        it.tax_proof_mime, it.tax_proof_size_bytes,
       ];
       const placeholders = row.map((v) => {
         values.push(v);

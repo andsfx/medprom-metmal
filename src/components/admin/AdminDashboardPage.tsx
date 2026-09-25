@@ -30,12 +30,13 @@ import {
   downloadExportCsv, fetchAdminUsers, createUser, updateUser, deleteUser,
   type MediaTypeInput,
   fetchAdminReminders, uploadInstallationProof,
+  fetchAdminSettings, updateAdminSettings, uploadTaxProof,
 } from '../../utils/adminApi';
 import type {
   PromoMediaType, AdminSubmissionRow, AdminUserRow, StatusPageData, RemindersData,
 } from '../../types/promo';
 
-type Tab = 'submissions' | 'catalog' | 'users';
+type Tab = 'submissions' | 'catalog' | 'users' | 'settings';
 
 const STATUS_OPTIONS = ['', ...STATUS_ORDER];
 const ROLE_OPTIONS = ['admin', 'tenant_relation', 'superadmin'];
@@ -124,6 +125,12 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [unggahBukti, setUnggahBukti] = useState(false);
 
+  // Bukti pembayaran pajak (staf). Fitur hanya berlaku bila admin menyalakannya.
+  const [taxProofEnabled, setTaxProofEnabled] = useState(false);
+  const [taxFile, setTaxFile] = useState<File | null>(null);
+  const [taxUploading, setTaxUploading] = useState(false);
+  const [taxError, setTaxError] = useState('');
+
   const load = useCallback(async () => {
     setLoading(true);
     setError('');
@@ -181,6 +188,14 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       .catch(() => setMediaTypes([]));
   }, []);
 
+  // Saklar pajak (dibaca dari server) - menentukan apakah blok bukti pajak
+  // muncul di sheet detail. Gagal baca = tetap MATI.
+  useEffect(() => {
+    fetchAdminSettings()
+      .then((s) => setTaxProofEnabled(s.tax_proof_enabled))
+      .catch(() => setTaxProofEnabled(false));
+  }, []);
+
   const mediaRulesBySlug = useMemo(() => {
     const map: Record<string, string> = {};
     for (const m of mediaTypes) map[m.slug] = m.rules;
@@ -217,6 +232,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
     setInstallProof('');
     setProofKind('link');
     setProofFile(null);
+    setTaxFile(null);
+    setTaxError('');
     setDetailLoading(true);
     fetchAdminSubmissionDetail(row.id)
       .then((data) => setDetailData(data))
@@ -308,6 +325,26 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       setSaveError(err instanceof Error ? err.message : 'Gagal mencatat pemasangan.');
     } finally {
       setSaving(false);
+    }
+  }
+
+  /** Unggah/ganti bukti pembayaran pajak untuk pengajuan yang sedang dibuka. */
+  async function uploadTaxProofNow() {
+    if (!detail || !taxFile) return;
+    setTaxUploading(true);
+    setTaxError('');
+    try {
+      const res = await uploadTaxProof(detail.id, taxFile);
+      // Segarkan sheet agar bukti yang baru langsung terlihat.
+      setDetailData((d) => (d ? {
+        ...d,
+        submission: { ...d.submission, tax_proof_file_url: res.tax_proof_file_url, tax_proof_file_name: taxFile.name },
+      } : d));
+      setTaxFile(null);
+    } catch (err) {
+      setTaxError(err instanceof Error ? err.message : 'Gagal mengunggah bukti pajak.');
+    } finally {
+      setTaxUploading(false);
     }
   }
 
@@ -1015,6 +1052,72 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 Salin tautan
               </button>
             </div>
+
+            {/* Bukti pembayaran pajak (media cetak ber-PPN, bila fitur menyala).
+                Menampilkan bukti yang sudah ada dan memungkinkan staf
+                menambah/menggantinya. */}
+            {taxProofEnabled && Number(detail.ppn_rate) > 0 && (
+              <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
+                <p className="doc-plate-no">Bukti Pembayaran Pajak</p>
+                {detailData?.submission?.tax_proof_file_url ? (
+                  <dl className="doc-rows mt-2">
+                    <div className="doc-row items-start">
+                      <dt className="pt-0.5">Berkas</dt>
+                      <span className="doc-leader mt-2.5" aria-hidden="true" />
+                      <dd className="min-w-0 font-sans font-normal normal-case">
+                        <a
+                          href={detailData.submission.tax_proof_file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="doc-link inline-flex min-h-11 items-center gap-1.5 break-all font-medium"
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                          Buka bukti pajak
+                        </a>
+                        {detailData.submission.tax_proof_file_name && (
+                          <p className="break-all text-xs ui-text-muted">{detailData.submission.tax_proof_file_name}</p>
+                        )}
+                      </dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <p className="mt-1.5 text-xs ui-text-muted">Belum ada bukti pembayaran pajak.</p>
+                )}
+                {canManage && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <label htmlFor="tax-proof-file" className="ui-control inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)]">
+                      <Upload className="h-4 w-4" aria-hidden="true" />
+                      {taxFile ? taxFile.name : 'Pilih berkas pajak'}
+                      <input
+                        id="tax-proof-file"
+                        type="file"
+                        accept="image/jpeg,image/png,application/pdf,video/mp4"
+                        className="sr-only"
+                        disabled={taxUploading}
+                        onChange={(e) => { setTaxFile(e.target.files?.[0] ?? null); setTaxError(''); e.target.value = ''; }}
+                      />
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => void uploadTaxProofNow()}
+                      disabled={!taxFile || taxUploading}
+                      className="ui-btn-primary inline-flex min-h-11 items-center gap-1.5 px-4 py-2.5 text-sm font-semibold transition disabled:opacity-50"
+                    >
+                      {taxUploading
+                        ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                        : <Upload className="h-4 w-4" aria-hidden="true" />}
+                      {taxUploading ? 'Mengunggah…' : 'Unggah bukti pajak'}
+                    </button>
+                  </div>
+                )}
+                {taxError && (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[color:var(--stamp-no)]" role="alert">
+                    <X className="h-3.5 w-3.5" aria-hidden="true" />
+                    {taxError}
+                  </p>
+                )}
+              </div>
+            )}
 
             {canManage ? (
               <div className="mt-4 border-t-2 border-[color:var(--rule-ink)] pt-4">
@@ -2007,6 +2110,94 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
 }
 
 
+// ══════════ Tab: Pengaturan (staf) ══════════
+
+/**
+ * Saklar fitur yang disimpan di server (tabel `app_settings`), sehingga
+ * menyalakan/mematikan berlaku LANGSUNG tanpa deploy ulang - berbeda dari
+ * flag build-time `VITE_*` yang di-inline saat build.
+ */
+function SettingsTab({ canManage }: { canManage: boolean }) {
+  const [enabled, setEnabled] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    fetchAdminSettings()
+      .then((s) => setEnabled(s.tax_proof_enabled))
+      .catch(() => setError('Gagal memuat pengaturan.'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  async function toggle(next: boolean) {
+    setSaving(true);
+    setError('');
+    try {
+      const s = await updateAdminSettings({ tax_proof_enabled: next });
+      setEnabled(s.tax_proof_enabled);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Gagal menyimpan pengaturan.');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="doc-sheet p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+        <h2 className="text-xl font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">Pengaturan</h2>
+        <span className="doc-plate-no ml-auto shrink-0">Bagian 04</span>
+      </div>
+      <p className="ui-body ui-text-muted mt-3">
+        Saklar fitur yang berlaku untuk seluruh pengajuan media cetak. Perubahan langsung aktif.
+      </p>
+
+      {loading ? (
+        <p className="mt-4 flex items-center gap-2 text-sm ui-text-muted" role="status">
+          <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+          Memuat…
+        </p>
+      ) : (
+        <div className="mt-5 border border-[color:var(--rule-color)] p-4">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              id="setting-tax-proof"
+              checked={enabled}
+              disabled={!canManage || saving}
+              onChange={(e) => void toggle(e.target.checked)}
+              className="mt-0.5 h-4 w-4 accent-[var(--process)]"
+            />
+            <span>
+              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">
+                Bukti pembayaran pajak (media cetak)
+              </span>
+              <span className="mt-0.5 block text-xs ui-text-muted">
+                Bila menyala, wizard pengajuan cetak menampilkan field unggah bukti
+                pembayaran PPN (opsional) dan staf dapat menambah/mengganti bukti dari
+                detail pengajuan. Bila mati, field tidak muncul dan server mengabaikan
+                data pajak dari klien.
+              </span>
+            </span>
+          </label>
+          {!canManage && (
+            <p className="mt-2 text-xs ui-text-muted">Hanya Admin dan Superadmin yang dapat mengubah pengaturan ini.</p>
+          )}
+          {saving && <p className="mt-2 text-xs ui-text-muted" role="status">Menyimpan…</p>}
+          {error && (
+            <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[color:var(--stamp-no)]" role="alert">
+              <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+              {error}
+            </p>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+
 // ══════════ Dashboard shell ══════════
 
 export default function AdminDashboardPage() {
@@ -2033,8 +2224,13 @@ export default function AdminDashboardPage() {
       { key: 'catalog', label: 'Katalog Media' },
     ];
     if (permissions.canManageUsers) list.push({ key: 'users', label: 'Pengguna' });
+    // Tab Pengaturan untuk staf (tenant_relation hanya baca). Tenant relation
+    // bukan staf, jadi tidak melihat tab ini.
+    if (permissions.canManage || permissions.canManageUsers) {
+      list.push({ key: 'settings', label: 'Pengaturan' });
+    }
     return list;
-  }, [permissions.canManageUsers]);
+  }, [permissions.canManageUsers, permissions.canManage]);
 
   /**
    * Panah kiri/kanan/Home/End pada tablist (pola ARIA "tabs with automatic
@@ -2149,6 +2345,9 @@ export default function AdminDashboardPage() {
           {tab === 'submissions' && <SubmissionsTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
           {tab === 'catalog' && <CatalogTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
           {tab === 'users' && permissions.canManageUsers && <UsersTab onConfirmDelete={onConfirmDelete} />}
+          {tab === 'settings' && (permissions.canManage || permissions.canManageUsers) && (
+            <SettingsTab canManage={permissions.canManage} />
+          )}
         </div>
       </main>
 

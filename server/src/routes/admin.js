@@ -33,6 +33,7 @@ import {
 import { SUBMISSION_STATUSES, canTransition, isInstallableStatus } from '../lib/statusFlow.js';
 import { REMINDER_DAYS } from '../lib/pricing.js';
 import { enforceRateLimit } from '../lib/rateLimit.js';
+import { setSetting, isTaxProofEnabled, TAX_PROOF_ENABLED_KEY } from '../lib/settings.js';
 
 const router = Router();
 
@@ -561,6 +562,73 @@ router.post('/submissions/:id/installation/proof', requireRole(STAFF_ROLES), asy
   }
 });
 
+// POST /admin/submissions/:id/tax-proof - unggah/ganti bukti pembayaran pajak.
+// Hanya untuk pengajuan media cetak ber-PPN dan hanya bila admin menyalakan
+// fiturnya (409 bila mati). Staf boleh menambah/mengganti kapan saja.
+router.post('/submissions/:id/tax-proof', requireRole(STAFF_ROLES), async (req, res, next) => {
+  try {
+    const id = String(req.params?.id || '').trim();
+    if (!id) return res.status(400).json({ success: false, error: 'ID pengajuan wajib diisi' });
+
+    if (!(await isTaxProofEnabled())) {
+      return res.status(409).json({ success: false, error: 'Fitur bukti pembayaran pajak sedang dimatikan.' });
+    }
+    if (!driveReady) {
+      return res.status(503).json({ success: false, error: 'Layanan unggah bukti sedang tidak tersedia.' });
+    }
+    if (!enforceRateLimit(req, res, 'admin-tax-proof', 20, 15 * 60 * 1000)) return;
+
+    const { rows } = await db.query(
+      'SELECT id, ppn_rate FROM promo_submissions WHERE id = $1 LIMIT 1',
+      [id],
+    );
+    const existing = rows[0] || null;
+    if (!existing) return res.status(404).json({ success: false, error: 'Pengajuan tidak ditemukan' });
+    if (!(Number(existing.ppn_rate) > 0)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Bukti pembayaran pajak hanya untuk pengajuan media cetak ber-PPN.',
+      });
+    }
+
+    const file = await readMultipartFile(req);
+    if (file.error) return res.status(400).json({ success: false, error: file.error });
+
+    const mime = String(file.contentType || '').split(';')[0].trim().toLowerCase();
+    if (!ALLOWED_MIME.has(mime)) {
+      return res.status(400).json({ success: false, error: 'Format bukti harus JPEG, PNG, PDF, atau MP4.' });
+    }
+    if (file.length > MAX_UPLOAD_BYTES) {
+      return res.status(400).json({ success: false, error: 'Berkas bukti melebihi 50MB' });
+    }
+    const magic = checkMagicBytes(file.head, mime);
+    if (!magic.ok) return res.status(400).json({ success: false, error: magic.error });
+
+    const uploaded = await uploadToDrive({
+      stream: Readable.from(file.chunks),
+      length: file.length,
+      name: safeFileName(`pajak-${file.originalName || 'pembayaran'}`, extOf(mime)),
+      mimeType: mime,
+    });
+
+    await db.query(
+      `UPDATE promo_submissions
+          SET tax_proof_file_id = $1, tax_proof_file_url = $2, tax_proof_file_name = $3,
+              tax_proof_mime = $4, tax_proof_size_bytes = $5, tax_proof_uploaded_by = $6,
+              tax_proof_uploaded_at = now(), updated_at = now()
+        WHERE id = $7`,
+      [uploaded.id, uploaded.webViewLink, sanitize(file.originalName || '', 200), mime,
+        file.length, req.auth.user.display_name, id],
+    );
+
+    logActivity(req.auth.user, 'upload_tax_proof', 'promo_submission', id,
+      { mime, bytes: file.length, drive_file_id: uploaded.id }, req);
+    return res.json({ success: true, tax_proof_file_id: uploaded.id, tax_proof_file_url: uploaded.webViewLink });
+  } catch (err) {
+    return next(err);
+  }
+});
+
 // POST /admin/submissions/:id/delete.
 router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res, next) => {
   try {
@@ -588,6 +656,36 @@ router.post('/submissions/:id/delete', requireRole(STAFF_ROLES), async (req, res
     await db.query('DELETE FROM promo_submissions WHERE id = $1', [id]);
     logActivity(req.auth.user, 'delete_submission', 'promo_submission', id, null, req);
     return res.json({ success: true });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// PENGATURAN APLIKASI (saklar fitur).
+
+// GET /admin/settings - baca semua saklar yang dikelola dashboard.
+router.get('/settings', requireRole(READ_ROLES), async (_req, res, next) => {
+  try {
+    return res.json({ success: true, data: { tax_proof_enabled: await isTaxProofEnabled() } });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+// POST /admin/settings - ubah saklar. Hanya staf (bukan tenant_relation).
+router.post('/settings', requireRole(STAFF_ROLES), async (req, res, next) => {
+  try {
+    const body = req.body || {};
+    if (typeof body.tax_proof_enabled !== 'boolean') {
+      return res.status(400).json({
+        success: false,
+        error: 'Nilai tax_proof_enabled harus boolean (true/false).',
+      });
+    }
+    await setSetting(TAX_PROOF_ENABLED_KEY, body.tax_proof_enabled ? 'true' : 'false');
+    logActivity(req.auth.user, 'update_settings', 'app_settings', TAX_PROOF_ENABLED_KEY,
+      { tax_proof_enabled: body.tax_proof_enabled }, req);
+    return res.json({ success: true, data: { tax_proof_enabled: await isTaxProofEnabled() } });
   } catch (err) {
     return next(err);
   }

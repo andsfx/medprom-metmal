@@ -259,6 +259,27 @@ export default function SubmissionDetail({ data, onReload }: SubmissionDetailPro
             </p>
           )}
         </div>
+
+        {/* Bukti pembayaran pajak (media cetak ber-PPN). Hanya muncul bila ada
+         * bukti - baik yang diunggah tenant saat mengajukan maupun yang
+         * ditambahkan staf dari dashboard. */}
+        {data.submission.tax_proof_file_url && (
+          <>
+            <div className="doc-perf" />
+            <div className="px-7 py-4">
+              <p className="doc-plate-no">Bukti pembayaran pajak</p>
+              <a
+                href={data.submission.tax_proof_file_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 break-all text-sm font-medium text-brand-primary-700 dark:text-brand-primary-300"
+              >
+                <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {data.submission.tax_proof_file_name || 'Lihat bukti pajak'}
+              </a>
+            </div>
+          </>
+        )}
       </article>
 
       {/* Pemasangan (FR-047) - lembar terpisah, data sebagai titik penghubung. */}
