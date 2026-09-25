@@ -532,3 +532,31 @@ CREATE INDEX IF NOT EXISTS idx_pi_submission ON promo_installations (submission_
 CREATE INDEX IF NOT EXISTS idx_amt_sort ON promo_media_types (sort_order);
 CREATE INDEX IF NOT EXISTS idx_amt_category ON promo_media_types (category);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users (role);
+
+-- ── Bukti pembayaran pajak (media cetak) ────────────────────────────────
+-- Pengaturan aplikasi: pasangan key-value generik untuk saklar yang diubah
+-- admin dari dashboard. Generik supaya fitur berikutnya tidak menambah tabel.
+CREATE TABLE IF NOT EXISTS app_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL DEFAULT '',
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Bawaan: fitur bukti pembayaran pajak MATI sampai admin menyalakannya dari
+-- dashboard. `DO NOTHING` menjaga nilai yang sudah diubah admin saat migrate
+-- dijalankan ulang.
+INSERT INTO app_settings (key, value)
+VALUES ('tax_proof_enabled', 'false')
+ON CONFLICT (key) DO NOTHING;
+
+-- Bukti pembayaran pajak melekat pada PENGAJUAN (bukan versi materi): tenant
+-- boleh mengunggah saat mengajukan, staf boleh menambah/mengganti dari
+-- dashboard. Kolom aditif supaya pengajuan lama tetap sah. Kehadiran bukti
+-- ditandai `tax_proof_file_id <> ''`.
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS tax_proof_file_id TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS tax_proof_file_url TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS tax_proof_file_name TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS tax_proof_mime TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS tax_proof_size_bytes BIGINT NOT NULL DEFAULT 0;
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS tax_proof_uploaded_by TEXT DEFAULT '';
+ALTER TABLE promo_submissions ADD COLUMN IF NOT EXISTS tax_proof_uploaded_at TIMESTAMPTZ;

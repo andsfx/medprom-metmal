@@ -99,6 +99,40 @@ export async function recordInstallation(id: string, input: InstallationInput): 
   if (!result.success) throw new ApiError(result.error || 'Gagal mencatat pemasangan', 'APP');
 }
 
+/** Saklar fitur yang dikelola dashboard (dibaca dari DB, bukan build-time). */
+export interface AdminSettings {
+  tax_proof_enabled: boolean;
+}
+
+export async function fetchAdminSettings(): Promise<AdminSettings> {
+  const data = await apiGet<AdminSettings>('/admin/settings');
+  return { tax_proof_enabled: Boolean(data?.tax_proof_enabled) };
+}
+
+export async function updateAdminSettings(input: AdminSettings): Promise<AdminSettings> {
+  const result = await apiPost<{ success: boolean; error?: string; data?: AdminSettings }>(
+    '/admin/settings', input,
+  );
+  if (!result.success) throw new ApiError(result.error || 'Gagal menyimpan pengaturan', 'APP');
+  return { tax_proof_enabled: Boolean(result.data?.tax_proof_enabled) };
+}
+
+/** Unggah/ganti berkas bukti pembayaran pajak (multipart, satu field `file`). */
+export async function uploadTaxProof(id: string, file: File): Promise<{ tax_proof_file_id: string; tax_proof_file_url: string }> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(apiUrl(`/admin/submissions/${id}/tax-proof`), {
+    method: 'POST',
+    credentials: 'include',
+    body: form,
+  });
+  const body = await res.json().catch(() => ({} as { success?: boolean; error?: string; tax_proof_file_id?: string; tax_proof_file_url?: string }));
+  if (!res.ok || !body.success) {
+    throw new ApiError(body.error || 'Gagal mengunggah bukti pembayaran pajak', 'APP');
+  }
+  return { tax_proof_file_id: body.tax_proof_file_id || '', tax_proof_file_url: body.tax_proof_file_url || '' };
+}
+
 export async function updateSubmissionStatus(
   id: string, status: string, reviewNotes: string,
 ): Promise<void> {

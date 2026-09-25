@@ -24,16 +24,17 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Plus, Trash2 } from 'lucide-react';
+import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import AppShell from '../layout/AppShell';
-import { fetchMediaTypes, searchTenants, submitBatch, errorsFromApiError } from '../../utils/promoApi';
+import { fetchMediaTypes, searchTenants, submitBatch, errorsFromApiError, uploadFile, fetchPublicSettings } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
 import {
-  APPLICANT_TYPE_LABELS, CATEGORY_LABELS, CATEGORY_ORDER, MAX_BATCH_ITEMS,
+  APPLICANT_TYPE_LABELS, CATEGORY_LABELS, CATEGORY_ORDER, MAX_BATCH_ITEMS, MAX_FILE_BYTES,
 } from '../../constants/promo';
 import { cekDurasiMinimal, durationDays, hitungHarga, MIN_DURATION_DAYS, PPN_RATE } from '../../utils/pricing';
 import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
 import type { PromoMediaType, TenantOption, BatchSubmitResult } from '../../types/promo';
+import type { UploadResult } from '../../utils/promoApi';
 import { TenantSearchSelect } from './TenantSearchSelect';
 
 type Step = 1 | 2 | 3;
@@ -168,6 +169,14 @@ export default function PromoCetakWizard() {
   const [items, setItems] = useState<ItemState[]>([]);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
+  // Bukti pembayaran pajak (opsional). Hanya ditampilkan bila admin menyalakan
+  // fiturnya lewat dashboard (dibaca dari /promo/settings, bukan build-time).
+  const [taxProofEnabled, setTaxProofEnabled] = useState(false);
+  const [taxFile, setTaxFile] = useState<File | null>(null);
+  const [taxUploaded, setTaxUploaded] = useState<UploadResult | null>(null);
+  const [taxUploading, setTaxUploading] = useState(false);
+  const [taxError, setTaxError] = useState('');
+
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [submitError, setSubmitError] = useState('');
@@ -248,6 +257,16 @@ export default function PromoCetakWizard() {
       .finally(() => { if (!cancelled) setLoading(false); });
     return () => { cancelled = true; };
   }, [preselect]);
+
+  // Saklar fitur pajak dari server (dinamis, bukan build-time). Gagal baca =
+  // tetap MATI, jadi field pajak tidak muncul saat server bermasalah.
+  useEffect(() => {
+    let cancelled = false;
+    fetchPublicSettings()
+      .then((s) => { if (!cancelled) setTaxProofEnabled(s.tax_proof_enabled); })
+      .catch(() => { if (!cancelled) setTaxProofEnabled(false); });
+    return () => { cancelled = true; };
+  }, []);
 
   // Pulihkan draf saat katalog siap (sekali). Toleran terhadap draf lama:
   // baris tanpa `id` diberi id baru, slug yang tak ada di katalog dibuang.
@@ -350,6 +369,31 @@ export default function PromoCetakWizard() {
     setFieldErrors((er) => ({ ...er, [key]: '' }));
   }
 
+  /**
+   * Pilih lalu unggah berkas bukti pembayaran pajak (satu berkas untuk seluruh
+   * batch). Diunggah segera setelah dipilih supaya file_id sudah tersedia saat
+   * kirim; fitur ini opsional.
+   */
+  async function pilihBerkasPajak(f: File | null) {
+    setTaxError('');
+    setTaxUploaded(null);
+    setTaxFile(f);
+    if (!f) return;
+    if (f.size > MAX_FILE_BYTES) {
+      setTaxError('Berkas melebihi 50MB.');
+      setTaxFile(null);
+      return;
+    }
+    setTaxUploading(true);
+    try {
+      setTaxUploaded(await uploadFile(f));
+    } catch (err) {
+      setTaxError(err instanceof Error ? err.message : 'Gagal mengunggah berkas pajak.');
+    } finally {
+      setTaxUploading(false);
+    }
+  }
+
   function goStep2() {
     const errs: Record<string, string> = {};
     if (applicantType === 'tenant') {
@@ -405,6 +449,17 @@ export default function PromoCetakWizard() {
     setSubmitState('sending');
     setSubmitError('');
     try {
+      // Bukti pajak dikirim hanya bila fitur menyala DAN berkas sudah selesai
+      // diunggah. Server tetap mengabaikannya bila fitur sedang dimatikan.
+      const pajak = taxProofEnabled && taxUploaded
+        ? {
+            tax_proof_file_id: taxUploaded.file_id,
+            tax_proof_file_url: taxUploaded.web_view_link,
+            tax_proof_file_name: taxUploaded.file_name,
+            tax_proof_mime: taxUploaded.mime_type,
+            tax_proof_size_bytes: taxUploaded.file_size_bytes,
+          }
+        : {};
       const res = await submitBatch({
         applicant_type: applicantType,
         tenant_id: applicantType === 'tenant' ? (tenant?.id ?? '') : '',
@@ -423,6 +478,7 @@ export default function PromoCetakWizard() {
           air_start_date: it.air_start_date,
           air_end_date: it.air_end_date,
           quantity: 1,
+          ...pajak,
         })),
       });
       setResult(res);
@@ -1079,6 +1135,54 @@ export default function PromoCetakWizard() {
                     Sebagian media harganya sudah termasuk PPN dan sebagian belum; angka PPN di atas adalah
                     porsi PPN dari seluruh baris.
                   </p>
+                )}
+
+                {/* Bukti pembayaran pajak (opsional). Hanya bila admin menyalakan
+                    fiturnya di dashboard. Satu berkas untuk seluruh batch. */}
+                {taxProofEnabled && (
+                  <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
+                    <p className="doc-plate-no">Bukti Pembayaran Pajak (opsional)</p>
+                    <p className="mt-1.5 text-xs ui-text-muted">
+                      Unggah bukti pembayaran PPN (JPEG, PNG, PDF, atau MP4, maks 50MB). Boleh
+                      dikosongkan dan dilengkapi menyusul lewat Tenant Relations.
+                    </p>
+                    <label
+                      htmlFor="cetak-tax-proof"
+                      className={`mt-3 flex cursor-pointer flex-col items-center justify-center gap-2 border-2 border-dashed p-5 text-center ${
+                        taxError
+                          ? 'border-[color:var(--stamp-no)] bg-[var(--stamp-no-soft)]'
+                          : 'border-[color:var(--rule-strong)] bg-[var(--surface-offset)] hover:bg-[var(--surface-hover)]'
+                      }`}
+                    >
+                      {taxUploading
+                        ? <Loader2 className="h-7 w-7 animate-spin text-[color:var(--process)]" aria-hidden="true" />
+                        : <Upload className="h-7 w-7 text-[color:var(--process)]" aria-hidden="true" />}
+                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        {taxUploading ? 'Mengunggah…' : (taxFile ? 'Ganti berkas' : 'Klik untuk memilih berkas')}
+                      </span>
+                      <span className="text-xs ui-text-muted">JPEG, PNG, PDF, MP4 · maks 50MB</span>
+                      <input
+                        id="cetak-tax-proof"
+                        type="file"
+                        accept="image/jpeg,image/png,application/pdf,video/mp4"
+                        className="sr-only"
+                        disabled={taxUploading}
+                        onChange={(e) => { void pilihBerkasPajak(e.target.files?.[0] ?? null); e.target.value = ''; }}
+                      />
+                    </label>
+                    {taxFile && taxUploaded && !taxError && (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[color:var(--stamp-ok)]">
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        {taxFile.name} siap dikirim.
+                      </p>
+                    )}
+                    {taxError && (
+                      <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-[color:var(--stamp-no)]" role="alert">
+                        <X className="h-3.5 w-3.5" aria-hidden="true" />
+                        {taxError}
+                      </p>
+                    )}
+                  </div>
                 )}
 
                 <label className="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
