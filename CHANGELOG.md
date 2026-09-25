@@ -25,6 +25,11 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   `#00918E` - diselaraskan ke process blue `#1440D6` dan kertas `#f2f2ef`;
   ikon PNG digambar ulang dari geometri SVG baru dengan radius luar yang
   ditajamkan. Judul halaman login diseragamkan ke kelas peran `.ui-title-screen`.
+- **H1 landing dikembalikan ke frasa yang dikunci `scripts/verify-e2e.mjs`**
+  ("Ajukan Materi Promosi Tenant Anda"). Redesign sempat memendekkannya menjadi
+  "Ajukan Materi Promosi", yang akan menggagalkan pemeriksaan produksi; skrip
+  verifikasi tidak boleh diubah, jadi kode yang disesuaikan. Frasa tetap
+  ditampilkan dalam gaya dunia baru (kapital besar, Archivo).
 
 ### Operasional
 - **Deploy produksi 2026-09-24 (VPS + Vercel).** Produksi sebelumnya

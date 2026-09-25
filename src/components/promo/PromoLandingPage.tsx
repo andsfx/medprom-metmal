@@ -231,9 +231,7 @@ export default function PromoLandingPage() {
           <CropMarks />
           <span className="doc-plate-no absolute top-4 right-5 sm:right-9">Plate 01 / Katalog</span>
           <h1 className="mt-1 text-3xl font-extrabold uppercase leading-[0.98] tracking-tight text-slate-900 sm:text-5xl dark:text-white">
-            Ajukan Materi
-            <br />
-            Promosi
+            Ajukan Materi Promosi Tenant Anda
           </h1>
           {/* Garis dimensi: mengukur jumlah katalog, seperti anotasi lembar
            * teknis. Nilainya data nyata dari API, bukan angka tetap. */}
