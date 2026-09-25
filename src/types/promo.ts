@@ -200,6 +200,15 @@ export interface MySubmissionRow {
   subtotal?: number;
   ppn_amount?: number;
   total_amount?: number;
+  /**
+   * Bukti pembayaran pajak (media cetak ber-PPN). Hanya terisi bila admin
+   * menyalakan fiturnya dan bukti sudah diunggah. `tax_proof_file_url` adalah
+   * tautan Drive yang bisa dibuka.
+   */
+  tax_proof_file_url?: string;
+  tax_proof_file_name?: string;
+  tax_proof_mime?: string;
+  tax_proof_uploaded_at?: string | null;
 }
 
 export interface AdminSubmissionRow {
@@ -242,6 +251,11 @@ export interface AdminSubmissionRow {
   subtotal?: number;
   ppn_amount?: number;
   total_amount?: number;
+  /** Bukti pembayaran pajak (media cetak ber-PPN). */
+  tax_proof_file_url?: string;
+  tax_proof_file_name?: string;
+  tax_proof_mime?: string;
+  tax_proof_uploaded_at?: string | null;
   status: string;
   status_changed_at: string | null;
   review_notes: string;

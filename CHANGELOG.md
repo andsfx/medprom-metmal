@@ -4,6 +4,42 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Ditambahkan
+- **Unggah bukti pembayaran pajak untuk media cetak, dengan saklar on/off
+  dari dashboard.** Fitur opsional (tidak menghalangi pengiriman) yang bisa
+  dinyalakan/dimatikan staf tanpa deploy ulang:
+  - **Saklar disimpan di server, bukan build-time.** Tabel baru `app_settings`
+    (key-value generik) berisi `tax_proof_enabled` (bawaan `false`). Endpoint
+    `GET /promo/settings` (publik, hanya boolean) dan `GET/POST /admin/settings`
+    (staf; `tenant_relation` hanya baca). Berbeda dari flag `VITE_*` yang
+    di-inline saat build, nilai ini dibaca dari DB tiap permintaan sehingga
+    perubahan berlaku langsung.
+  - **Wizard cetak.** Bila menyala, langkah "Ringkasan & Kirim" menampilkan
+    field unggah bukti pajak (satu berkas untuk seluruh batch; JPEG/PNG/PDF/MP4,
+    maks 50MB). Berkas diunggah lewat `/drive/upload` yang sudah ada, lalu
+    `tax_proof_*` ikut dikirim di `POST /promo/submit-batch`.
+  - **Dashboard staf.** Tab baru "Pengaturan" berisi saklar; sheet detail
+    pengajuan menampilkan bukti pajak yang ada dan memungkinkan staf
+    menambah/menggantinya lewat `POST /admin/submissions/:id/tax-proof`
+    (dibatasi pengajuan ber-PPN; 409 saat fitur mati; fail-closed 503 tanpa
+    kredensial Drive).
+  - **Halaman tenant.** Bukti pajak yang sudah ada ditampilkan di halaman
+    status/pelacakan.
+  - **Kolom** `tax_proof_file_id/url/name/mime/size_bytes/uploaded_by/
+    uploaded_at` ditambahkan aditif pada `promo_submissions` (pengajuan lama
+    tetap sah). Saat saklar mati, server MENGABAIKAN field pajak dari klien
+    (bukan sekadar tidak menampilkannya), sehingga API tidak bisa dipakai
+    menulis data fitur yang mati.
+  - **Urutan rilis aman.** `isTaxProofEnabled()` menelan kegagalan baca
+    (mis. tabel belum ada karena migrasi belum dijalankan) dan menganggap
+    fitur MATI, sehingga deploy kode sebelum migrasi tidak mematikan
+    pengajuan cetak dengan 500. **Rilis fitur ini tetap butuh
+    `npm run db:migrate`** (membuat `app_settings` + kolom `tax_proof_*`).
+  - Dikunci `__tests__/api/tax-proof.test.js` (14 test),
+    `PromoCetakWizardPajak.test.tsx` (4 test), `AdminSettingsTab.test.tsx`
+    (4 test); ketiganya terbukti merah saat gerbangnya dilepas (uji mutasi).
+    Catatan `docs/PLAN_2026-09-25_09-15.md`.
+
 ### Diubah
 - **Redesign UI/UX menyeluruh: dunia "Lembar Spesifikasi & Tiket Pekerjaan".**
   Seluruh permukaan (landing, wizard digital + cetak, status/batch, lacak,

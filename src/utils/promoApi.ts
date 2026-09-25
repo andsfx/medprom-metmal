@@ -18,6 +18,26 @@ export async function fetchMediaTypes(channel?: 'cetak' | 'digital'): Promise<Pr
   return Array.isArray(data) ? (data as PromoMediaType[]) : [];
 }
 
+// ─── Saklar fitur publik ─────────────────────────────────────────
+
+export interface PublicSettings {
+  tax_proof_enabled: boolean;
+}
+
+/**
+ * Saklar fitur publik (dibaca dari DB, bukan build-time). Bila permintaan
+ * gagal, kembalikan bawaan MATI: fitur baru tidak menyala sendiri saat server
+ * bermasalah.
+ */
+export async function fetchPublicSettings(): Promise<PublicSettings> {
+  try {
+    const data = await apiGet<PublicSettings>('/promo/settings');
+    return { tax_proof_enabled: Boolean(data?.tax_proof_enabled) };
+  } catch {
+    return { tax_proof_enabled: false };
+  }
+}
+
 // ─── Pencarian tenant MID (publik) ───────────────────────────────
 
 export interface TenantSearchResult {
@@ -424,6 +444,15 @@ export interface BatchSubmitPayload {
     air_start_date: string;
     air_end_date: string;
     quantity?: number;
+    /**
+     * Bukti pembayaran pajak (opsional). Diisi dari hasil `uploadFile`; server
+     * mengabaikannya bila fitur pajak sedang dimatikan admin.
+     */
+    tax_proof_file_id?: string;
+    tax_proof_file_url?: string;
+    tax_proof_file_name?: string;
+    tax_proof_mime?: string;
+    tax_proof_size_bytes?: number;
   }>;
 }
 
