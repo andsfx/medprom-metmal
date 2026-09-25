@@ -77,7 +77,12 @@ interface DraftState {
 }
 
 function rupiah(n: number): string {
-  return `Rp. ${Number(n || 0).toLocaleString('id-ID')}`;
+  // Non-breaking space setelah "Rp." (bukan spasi biasa): di layar sempit
+  // spasi biasa jadi titik putus, sehingga baris biaya terbelah "Rp." /
+  // "543.900" dan nominalnya jadi yatim. U+00A0 menjaga nominal utuh dan
+  // memindahkan titik putus ke pemisah "+ PPN" / "=". Pemisah ribuan id-ID
+  // adalah titik, jadi tanpa ini nominal mudah terbelah di tengah.
+  return `Rp.\u00A0${Number(n || 0).toLocaleString('id-ID')}`;
 }
 
 /** Id unik baris; `crypto.randomUUID` bila tersedia (konteks aman/HTTPS). */
@@ -638,12 +643,12 @@ export default function PromoCetakWizard() {
               const basis = basisIdPerBaris[row.id] ?? basisIdBaris(m.slug, idx);
               return (
                 <fieldset key={row.id} className="border-b border-[color:var(--rule-color)] py-3 last:border-b-0">
-                  <legend className="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
+                  <legend className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
                     Lokasi ke-{idx + 1}
                   </legend>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <label htmlFor={`cetak-target-${basis}`} className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
+                      <label htmlFor={`cetak-target-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
                         Lokasi Pemasangan <span className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -660,7 +665,7 @@ export default function PromoCetakWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor={`cetak-start-${basis}`} className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Periode Mulai</label>
+                      <label htmlFor={`cetak-start-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Periode Mulai</label>
                       <input
                         id={`cetak-start-${basis}`}
                         type="date"
@@ -670,7 +675,7 @@ export default function PromoCetakWizard() {
                       />
                     </div>
                     <div>
-                      <label htmlFor={`cetak-end-${basis}`} className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Periode Selesai</label>
+                      <label htmlFor={`cetak-end-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Periode Selesai</label>
                       <input
                         id={`cetak-end-${basis}`}
                         type="date"
@@ -680,7 +685,7 @@ export default function PromoCetakWizard() {
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label htmlFor={`cetak-install-${basis}`} className="mb-1 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Tanggal Pemasangan</label>
+                      <label htmlFor={`cetak-install-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Tanggal Pemasangan</label>
                       <input
                         id={`cetak-install-${basis}`}
                         type="date"
@@ -773,14 +778,14 @@ export default function PromoCetakWizard() {
               return (
                 <li key={s.label} className="flex items-baseline gap-2 pb-2">
                   <span
-                    className={`doc-num text-[11px] font-bold ${
+                    className={`doc-num text-xs font-bold ${
                       aktif ? 'text-[color:var(--process)]' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
                     {String(nomorLangkah).padStart(2, '0')}
                   </span>
                   <span
-                    className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                    className={`text-xs font-semibold uppercase tracking-[0.14em] ${
                       aktif
                         ? 'text-[color:var(--process)]'
                         : selesai
@@ -855,7 +860,7 @@ export default function PromoCetakWizard() {
 
                 <div className="mt-5 space-y-4">
                   <fieldset>
-                    <legend className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">Jenis Pemohon</legend>
+                    <legend className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">Jenis Pemohon</legend>
                     <div className="flex gap-2" role="group" aria-label="Jenis pemohon">
                       {(['tenant', 'non_tenant'] as const).map((t) => (
                         <button
@@ -877,7 +882,7 @@ export default function PromoCetakWizard() {
 
                   {applicantType === 'tenant' ? (
                     <div>
-                      <label htmlFor="cetak-tenant" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-tenant" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Nama Tenant <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <p className="mb-1.5 text-xs ui-text-muted">
@@ -893,7 +898,7 @@ export default function PromoCetakWizard() {
                     </div>
                   ) : (
                     <div>
-                      <label htmlFor="cetak-non-tenant" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-non-tenant" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Nama Non Tenant <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <p className="mb-1.5 text-xs ui-text-muted">Nama badan usaha atau perorangan yang mengajukan.</p>
@@ -915,7 +920,7 @@ export default function PromoCetakWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="cetak-pic" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-pic" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Nama Pemohon <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -934,7 +939,7 @@ export default function PromoCetakWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="cetak-phone" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-phone" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Nomor Telepon <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -957,7 +962,7 @@ export default function PromoCetakWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="cetak-date" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">Tanggal Pengajuan</label>
+                    <label htmlFor="cetak-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">Tanggal Pengajuan</label>
                     <input
                       id="cetak-date"
                       type="date"
@@ -968,7 +973,7 @@ export default function PromoCetakWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="cetak-notes" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="cetak-notes" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Catatan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <textarea

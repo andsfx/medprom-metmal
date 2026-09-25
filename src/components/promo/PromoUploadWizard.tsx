@@ -567,14 +567,14 @@ export default function PromoUploadWizard() {
               return (
                 <li key={s.label} className="flex items-baseline gap-2 pb-2">
                   <span
-                    className={`doc-num text-[11px] font-bold ${
+                    className={`doc-num text-xs font-bold ${
                       aktif ? 'text-[color:var(--process)]' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
                     {String(nomorLangkah).padStart(2, '0')}
                   </span>
                   <span
-                    className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${
+                    className={`text-xs font-semibold uppercase tracking-[0.14em] ${
                       aktif
                         ? 'text-[color:var(--process)]'
                         : selesai
@@ -729,7 +729,7 @@ export default function PromoUploadWizard() {
                                 <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                                   {m.rules.split('\n').filter(Boolean).map((line, idx) => (
                                     <li key={idx} className="flex items-start gap-2">
-                                      <span aria-hidden="true" className="doc-num mt-0.5 text-[10px] font-bold text-slate-400">
+                                      <span aria-hidden="true" className="doc-num mt-0.5 text-xs font-bold text-slate-400">
                                         {String(idx + 1).padStart(2, '0')}
                                       </span>
                                       <span>{line}</span>
@@ -774,7 +774,7 @@ export default function PromoUploadWizard() {
 
                 <div className="mt-5 space-y-4">
                   <div>
-                    <label htmlFor="tenant-search" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="tenant-search" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Nama Tenant <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
@@ -793,7 +793,7 @@ export default function PromoUploadWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="pic-name" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="pic-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Nama PIC <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -812,7 +812,7 @@ export default function PromoUploadWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="pic-phone" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="pic-phone" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Nomor Telepon PIC <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -835,7 +835,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="installation-date" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="installation-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Tanggal Pemasangan yang Diharapkan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <input
@@ -862,7 +862,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="campaign-name" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="campaign-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Nama Campaign <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <input
@@ -882,7 +882,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="material-title" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="material-title" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Judul Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <input
@@ -902,7 +902,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="material-description" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="material-description" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Deskripsi Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <textarea
@@ -923,7 +923,7 @@ export default function PromoUploadWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="material-type" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="material-type" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Jenis Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <select
@@ -942,7 +942,7 @@ export default function PromoUploadWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="media-target" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="media-target" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Media / Lokasi Pemasangan <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -964,7 +964,7 @@ export default function PromoUploadWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="air-start-date" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="air-start-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Mulai Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                       </label>
                       <input
@@ -979,7 +979,7 @@ export default function PromoUploadWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="air-end-date" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="air-end-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                         Berakhir Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                       </label>
                       <input
@@ -998,7 +998,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="notes" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="notes" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Catatan untuk Tim Tenant Relations <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <textarea
@@ -1127,7 +1127,7 @@ export default function PromoUploadWizard() {
                 {/* Tautan materi - untuk file besar / folder Drive */}
                 {sourceMode === 'link' && (
                   <div className="mt-4">
-                    <label htmlFor="link-input" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="link-input" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                       Tautan Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
@@ -1161,7 +1161,7 @@ export default function PromoUploadWizard() {
                 {/* File picker */}
                 {sourceMode === 'upload' && (
                 <div className="mt-5">
-                  <label htmlFor="file-input" className="mb-1.5 block text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                  <label htmlFor="file-input" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
                     File Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                   </label>
                   <label

@@ -858,6 +858,30 @@ summary:focus-visible,
   text-align: right;
 }
 
+/* Di bawah 640px tabel titik penghubung DITUMPUK: label di atas nilainya.
+ * Pola satu baris (label kiri - titik - nilai kanan) hanya terbaca bila nilai
+ * muat satu baris. Di layar ponsel nilai seperti "4 x 8m Horizontal
+ * (Resolusi 1025 x 2000 Pixel)" membungkus sampai tiga baris sementara titik
+ * penghubung menyusut jadi 12px, sehingga baris terbaca rusak ("Material
+ * ..... Sticker di Impraboard"). Ditumpuk, label dan nilai sama-sama memakai
+ * lebar penuh; titik penghubung disembunyikan karena tak lagi menghubungkan
+ * apa pun. Spesifisitas disamakan dengan aturan dasar agar menang.
+ * Aturan ini harus tinggal di sini, bukan sebagai utility Tailwind: Tailwind
+ * v4 menaruh utility di @layer, sehingga kelas tak berlapis ini selalu menang. */
+@media (max-width: 639px) {
+  .doc-rows > .doc-row {
+    display: block;
+  }
+  .doc-rows > .doc-row > .doc-leader {
+    display: none;
+  }
+  .doc-rows > .doc-row > dd {
+    margin-top: 0.125rem;
+    text-align: left;
+    overflow-wrap: break-word;
+  }
+}
+
 /* Tepi perforasi: batas yang bisa "disobek" pada tiket. */
 .doc-perf {
   height: 0;

@@ -63,7 +63,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
           {/* Garis dimensi pada foto: ukuran media diukur langsung di atas
            * gambarnya, seperti anotasi pada lembar teknis. */}
           {media.size_spec && (
-            <span className="doc-num absolute bottom-2.5 left-2.5 rounded-[2px] border border-[color:var(--rule-strong)] bg-[var(--surface-card)] px-1.5 py-0.5 text-[11px] font-semibold tracking-wide">
+            <span className="doc-num absolute bottom-2.5 left-2.5 rounded-[2px] border border-[color:var(--rule-strong)] bg-[var(--surface-card)] px-1.5 py-0.5 text-xs font-semibold tracking-wide">
               {media.size_spec}
             </span>
           )}
@@ -163,7 +163,7 @@ function MediaCard({ media }: { media: PromoMediaType }) {
               <ul className="mt-2 space-y-1.5 pb-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
                 {media.rules.split('\n').filter(Boolean).map((line, i) => (
                   <li key={i} className="flex items-start gap-2">
-                    <span aria-hidden="true" className="doc-num mt-0.5 text-[10px] font-bold text-slate-400">
+                    <span aria-hidden="true" className="doc-num mt-0.5 text-xs font-bold text-slate-400">
                       {String(i + 1).padStart(2, '0')}
                     </span>
                     <span>{line}</span>
