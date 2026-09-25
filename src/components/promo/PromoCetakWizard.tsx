@@ -238,8 +238,10 @@ export default function PromoCetakWizard() {
         if (cancelled) return;
         setMediaTypes(rows);
         if (preselect && rows.some((m) => m.slug === preselect)) {
+          // Media dari katalog ditandai terpilih lebih awal, tetapi wizard cetak
+          // selalu dimulai dari langkah Data Pemohon (pilih Tenant/Non-tenant).
+          // Jangan lompat ke langkah Pilih Media: pemohon belum ditentukan.
           setItems([buatBaris(preselect)]);
-          setStep(2);
         }
       })
       .catch(() => { if (!cancelled) setLoadError(true); })

@@ -42,6 +42,16 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   warisan ada di `docs/PLAN_2026-09-24_17-35.md`.
 
 ### Diperbaiki
+- **Wizard cetak tidak lagi melompat ke langkah Pilih Media saat media
+  dipilih dari katalog.** Membuka `/ajukan-cetak?media=<slug>` (mis. dari
+  kartu cetak di landing) dulu langsung membuka langkah 2 "Pilih Media &
+  Periode" karena efek pra-pilih memanggil `setStep(2)`, padahal langkah 1
+  "Data Pemohon" (pilih Tenant/Non-tenant) belum diisi. Wizard cetak kini
+  selalu dimulai dari langkah Data Pemohon; media dari katalog tetap ditandai
+  terpilih lebih awal sehingga sudah tercentang saat staf sampai ke langkah
+  media. Dikunci `PromoCetakWizardPreselect.test.tsx` (3 test, terbukti merah
+  pada kode sebelum perbaikan). Catatan
+  `docs/PLAN_2026-09-25_08-40.md`.
 - **Pemasangan tanpa materi kini meminta konfirmasi eksplisit (opsi B).**
   Staf tetap boleh mencatat pemasangan untuk pengajuan cetak yang belum
   menerima materi (materi bisa diterima di luar aplikasi), tetapi lebih dulu
