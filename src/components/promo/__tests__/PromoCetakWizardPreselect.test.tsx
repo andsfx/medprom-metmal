@@ -98,4 +98,15 @@ describe('PromoCetakWizard — preselect media cetak', () => {
     expect(await screen.findByRole('button', { name: 'Tenant' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /Pilih Media & Periode/i })).not.toBeInTheDocument();
   });
+
+  it('langkah Data Pemohon menampilkan penanda media yang dipilih dari katalog', async () => {
+    renderWizard('/ajukan-cetak?media=spanduk');
+    expect(await screen.findByText(/Media terpilih: Spanduk/i)).toBeInTheDocument();
+  });
+
+  it('tanpa media terpilih, penanda tidak ditampilkan', async () => {
+    renderWizard('/ajukan-cetak');
+    await screen.findByRole('button', { name: 'Tenant' });
+    expect(screen.queryByText(/Media terpilih:/i)).not.toBeInTheDocument();
+  });
 });

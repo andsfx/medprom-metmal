@@ -42,6 +42,16 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   warisan ada di `docs/PLAN_2026-09-24_17-35.md`.
 
 ### Diperbaiki
+- **Service worker tidak menyapu cache aset shell setelah ikon PWA diganti.**
+  Aturan #2 `public/sw.js` mewajibkan `CACHE_VERSION` dinaikkan setiap rilis
+  yang mengubah aset shell, tetapi commit `077de87` mengganti ikon PWA
+  (`icon.svg`, `icon-192/512`, `icon-maskable-512`, `apple-touch-icon`) tanpa
+  menaikkannya, sehingga pengguna yang sudah punya service worker lama terus
+  disajikan ikon lama dari cache tanpa batas. `CACHE_VERSION` dinaikkan `v11`
+  ke `v12`; event `activate` menyapu seluruh cache `medprom-*` lama. Dikunci
+  `__tests__/service-worker-shell.test.js` (2 test) yang mem-pin pasangan
+  (versi, hash isi aset shell): mengubah aset shell tanpa memperbarui pin
+  gagal, memaksa keputusan versi cache diambil.
 - **Wizard cetak tidak lagi melompat ke langkah Pilih Media saat media
   dipilih dari katalog.** Membuka `/ajukan-cetak?media=<slug>` (mis. dari
   kartu cetak di landing) dulu langsung membuka langkah 2 "Pilih Media &
@@ -49,7 +59,9 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   "Data Pemohon" (pilih Tenant/Non-tenant) belum diisi. Wizard cetak kini
   selalu dimulai dari langkah Data Pemohon; media dari katalog tetap ditandai
   terpilih lebih awal sehingga sudah tercentang saat staf sampai ke langkah
-  media. Dikunci `PromoCetakWizardPreselect.test.tsx` (3 test, terbukti merah
+  media. Langkah Data Pemohon juga menampilkan penanda "Media terpilih: ..."
+  bila media sudah dipilih dari katalog, supaya staf tidak mengira pilihannya
+  hilang. Dikunci `PromoCetakWizardPreselect.test.tsx` (5 test, terbukti merah
   pada kode sebelum perbaikan). Catatan
   `docs/PLAN_2026-09-25_08-40.md`.
 - **Pemasangan tanpa materi kini meminta konfirmasi eksplisit (opsi B).**

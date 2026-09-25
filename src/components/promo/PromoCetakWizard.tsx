@@ -791,6 +791,11 @@ export default function PromoCetakWizard() {
                   <span className="doc-plate-no ml-auto shrink-0">Bagian 01</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">Isi data pemohon dan kontak yang dapat dihubungi.</p>
+                {items.length > 0 && (
+                  <p className="mt-3 border-l-2 border-[color:var(--process)] bg-[var(--process-soft)] px-3 py-2 text-xs font-medium text-[color:var(--process)]">
+                    Media terpilih: {items.map((it) => mediaBySlug[it.slug]?.name ?? it.slug).join(', ')}. Bisa diubah di langkah Pilih Media.
+                  </p>
+                )}
 
                 <div className="mt-5 space-y-4">
                   <fieldset>
