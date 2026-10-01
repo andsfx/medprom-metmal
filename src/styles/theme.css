@@ -1,87 +1,102 @@
 /*
- * Design tokens: medprom-metmal (arah "Lembar Spesifikasi & Tiket Pekerjaan").
+ * Design tokens: medprom-metmal (arah "Daftar Kerja Seluler").
  *
- * Dunia: berkas pekerjaan percetakan. Kertas kerja, tinta, satu warna proses,
- * stempel. Kedalaman dari GARIS dan KERTAS, bukan bayangan. Angka adalah data,
- * jadi hidup di Spline Sans Mono; teks kerja di Archivo.
+ * Dunia: daftar kerja untuk ponsel. Kertas putih, tinta hampir hitam, pemisah
+ * garis rambut, dan ANGKA SELALU ELEMEN TERBESAR DI BARISNYA. Produk ini
+ * akromatik: tidak ada warna aksen, aksi utama memakai tinta penuh, dan warna
+ * hanya muncul untuk menyatakan keadaan pekerjaan.
+ *
+ * Karakter datang dari tipografi (Instrument Sans, tracking negatif) dan skala
+ * ukuran, bukan dari hue.
  */
 
 :root {
-  /* Typography — dua rupa: Archivo (kerja + display) & Spline Sans Mono (data) */
-  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
-  --font-body: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  /* Tipografi — dua rupa: Instrument Sans (kerja + display) & Spline Sans Mono
+   * (data). Menggantikan Archivo, yang dinilai terlalu netral. */
+  --font-display: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
 
   /* Skala teks per PERAN (bukan per angka): 12-14-16-18-20-24-32.
    * Satu peran = satu ukuran, sehingga judul tidak bisa lebih kecil dari isi. */
-  --text-meta: 0.75rem;   /* 12px: label, cap; batas bawah */
-  --text-dense: 0.875rem; /* 14px: baris data & lencana */
-  --text-body: 1rem;      /* 16px: dasar teks isi */
-  --text-title: 1.125rem; /* 18px: judul kartu/butir */
-  --text-section: 1.25rem;/* 20px: judul bagian (h2) */
-  --text-screen: 1.5rem;  /* 24px: nama layar & judul halaman (h1) */
-  --text-sheet: 2rem;     /* 32px: judul lembar di landing */
+  --text-meta: 0.75rem;    /* 12px: label, cap; batas bawah */
+  --text-dense: 0.875rem;  /* 14px: baris data & lencana */
+  --text-body: 1rem;       /* 16px: dasar teks isi */
+  --text-title: 1.125rem;  /* 18px: judul kartu, HARGA baris */
+  --text-section: 1.25rem; /* 20px: judul bagian (h2) */
+  --text-screen: 1.5rem;   /* 24px: nama layar & total biaya */
+  --text-sheet: 2rem;      /* 32px: judul hero (landing) */
+
+  /* Tracking: makin besar ukurannya, makin rapat. Bagian dari rupa, bukan
+   * hiasan — inilah yang memberi karakter tanpa warna. */
+  --track-hero: -0.035em;
+  --track-section: -0.03em;
+  --track-row: -0.02em;
+  --track-control: -0.01em;
 
   --leading-tight: 1.15;
-  --leading-body: 1.6;
+  --leading-body: 1.5;
 
   /* Lebar baca nyaman: ~65 karakter. */
   --measure: 68ch;
 
-  /* Permukaan: kertas kerja + lembar yang lebih terang di atasnya. */
-  --surface-page: #f2f2ef;   /* meja kerja */
-  --surface-offset: #ebebe7; /* blok tenang / baris bergantian */
-  --surface-card: #fbfbf9;   /* lembar */
-  --surface-hover: #f0f0ec;
-  --surface-ink: #101010;    /* blok tinta penuh (tiket, chrome staf) */
-  --surface-ink-2: #1c1c1a;  /* tinta terangkat di dalam blok tinta */
+  /* Permukaan: kertas putih, dibedakan oleh GARIS bukan kecerahan bertingkat.
+   * `--surface-card` tetap berarti permukaan KARTU (seperti di dunia lama),
+   * supaya 12 pemanggil lamanya tidak berubah arti. */
+  --surface-page: #ffffff;   /* lembar: latar utama */
+  --surface-card: #ffffff;   /* permukaan kartu/lembar */
+  --surface-offset: #fafafa; /* blok tenang: catatan, baris terpilih, kepala tabel */
+  --surface-tint: #f4f4f5;   /* blok isian: placeholder foto, lencana netral */
+  --surface-hover: #f4f4f5;  /* hover baris/opsi */
 
   /* Tinta */
-  --ink-primary: #101010;
-  --ink-secondary: #4b4b48;
-  /* Muted dinaikkan ke #66665f: pada kertas kerja (#f2f2ef) dan lembar
-   * (#fbfbf9), nilai sebelumnya (#7a7a74) hanya mencapai 3,85:1 dan 4,17:1 -
-   * di bawah ambang AA 4,5:1 untuk teks normal, padahal kelas ini dipakai
-   * luas untuk helper, metadata, dan cap. Nilai ini 5,16:1 / 5,58:1. */
-  --ink-muted: #66665f;
-  --ink-invert: #fbfbf9;
-  --ink-invert-2: #b9b9b3;
+  --ink-primary: #09090b;
+  --ink-secondary: #52525b;
+  /* Muted #65656e dipilih dengan mengukur, bukan mengira: nilai pratinjau
+   * #71717a hanya mencapai 4,40:1 di atas blok isian (#f4f4f5), di bawah
+   * ambang AA 4,5:1, padahal kelas ini dipakai untuk label di dalam baris
+   * terpilih. Nilai ini 5,77:1 / 5,53:1 / 5,25:1. */
+  --ink-muted: #65656e;
+  --ink-invert: #ffffff;
+  --ink-invert-2: #d4d4d8;
 
-  /* Garis: pemisah utama dunia ini. */
-  --rule-color: #d3d3cc;
-  --rule-strong: #b4b4ac;
-  --rule-ink: #101010;
+  /* Garis: alat kedalaman utama, hanya dua bobot. */
+  --rule-color: #e4e4e7;  /* pemisah baris/daftar — dekoratif (1,27:1) */
+  --rule-strong: #8a8a90; /* tepi kontrol — WAJIB >=3:1 (WCAG 1.4.11); 3,43:1 */
   --rule: 1px solid var(--rule-color);
   --rule-2: 1px solid var(--rule-strong);
 
-  /* Warna proses: satu aksi, bukan permukaan. */
-  --brand-tosca: #1440d6;
-  --brand-tosca-600: #1440d6; /* solid CTA bg: AA 6.4:1 with white */
-  --brand-tosca-soft: #4a6ee0;
-  --process: #1440d6;
-  --process-strong: #0f33ad;
-  --process-soft: #e7ebfb;
+  /* Aksi: bukan warna merek. Tinta penuh (gaya paling modern yang tersisa
+   * setelah aksen tosca dan process blue ditolak). */
+  --action: #09090b;
+  --action-strong: #27272a;
+  --action-soft: #f4f4f5;
 
-  /* Stempel: keadaan pekerjaan, bukan dekorasi. */
+  /* Stempel: keadaan pekerjaan, bukan dekorasi. Warna inilah satu-satunya
+   * kroma di produk ini. Nilai revisi digelapkan dari pratinjau #a16207
+   * (4,48:1 di atas blok isian) agar lolos AA. */
   --stamp-ok: #0d6b3f;
-  --stamp-ok-soft: #e3f1e9;
-  --stamp-rev: #a15c00;
-  --stamp-rev-soft: #f8eedd;
-  --stamp-no: #b3261e;
-  --stamp-no-soft: #fae7e5;
+  --stamp-ok-soft: #f1f8f3;
+  --stamp-rev: #8a5a0a;
+  --stamp-rev-soft: #fbf6ec;
+  --stamp-no: #b91c1c;
+  --stamp-no-soft: #fdf3f3;
+  --stamp-wait: #52525b;
+  --stamp-wait-soft: #f4f4f5;
 
   /* Focus */
-  --focus-ring-color: var(--process);
+  --focus-ring-color: var(--ink-primary);
 
-  /* Radius: dokumen tajam, bukan aplikasi membulat. */
-  --radius-card: 3px;
-  --radius-control: 3px;
-  --radius-chip: 2px;
-  --radius-sheet: 6px;
+  /* Radius: membulat sedang. 2-6px siku cetak terbaca sebagai noise di ponsel;
+   * pil penuh terbaca sebagai template. */
+  --radius-card: 12px;
+  --radius-control: 10px;
+  --radius-thumb: 10px;
+  --radius-chip: 6px;
+  --radius-sheet: 16px;
 
-  /* Elevasi: dunia ini tidak memakai bayangan. Kedalaman dari garis + kertas.
-   * Token dipertahankan agar pemanggil lama tidak pecah, tetapi bernilai
-   * garis, bukan blur: bar memakai garis bawah, sheet memakai garis tegas. */
+  /* Elevasi: dunia ini tidak memakai bayangan sama sekali. Token dipertahankan
+   * agar pemanggil lama tidak pecah, tetapi bernilai `none`. */
   --elevation-bar: none;
   --elevation-sheet: none;
   --elevation-fab: none;
@@ -97,153 +112,130 @@
 }
 
 @theme {
-  /* Warna proses (menggantikan skala tosca lama). */
-  --color-brand-primary: #1440d6;
-  --color-brand-primary-50: #eef1fd;
-  --color-brand-primary-100: #dfe4fb;
-  --color-brand-primary-200: #c0c9f7;
-  --color-brand-primary-300: #9aa9f0;
-  --color-brand-primary-400: #6d84e7;
-  --color-brand-primary-500: #1440d6;
-  --color-brand-primary-600: #1440d6;
-  --color-brand-primary-700: #0f33ad;
-  --color-brand-primary-800: #0b2683;
-  --color-brand-primary-900: #081a5c;
-  --color-brand-primary-950: #050f38;
-  --color-brand-soft: #4a6ee0;
+  /* Aksi memakai tinta. Ramp `brand-primary` DIPERTAHANKAN sebagai nama karena
+   * ratusan utilitas `text-brand-primary-700` di komponen lama menunjuknya,
+   * tetapi skalanya kini abu netral — bukan biru. Hierarki terang->gelap
+   * dipertahankan supaya hover/active tetap terbaca. */
+  --color-brand-primary: #09090b;
+  --color-brand-primary-50: #f4f4f5;
+  --color-brand-primary-100: #e4e4e7;
+  --color-brand-primary-200: #d4d4d8;
+  --color-brand-primary-300: #a1a1aa;
+  --color-brand-primary-400: #71717a;
+  --color-brand-primary-500: #52525b;
+  --color-brand-primary-600: #27272a;
+  --color-brand-primary-700: #09090b;
+  --color-brand-primary-800: #000000;
+  --color-brand-primary-900: #000000;
+  --color-brand-primary-950: #000000;
+  --color-brand-soft: #f4f4f5;
 
   /* Permukaan & tinta (nama lama dipertahankan; nilai mengikuti dunia baru). */
-  --color-surface-page: #f2f2ef;
-  --color-surface-offset: #ebebe7;
-  --color-surface-hover: #f0f0ec;
-  --color-rule: #d3d3cc;
-  --color-ink-primary: #101010;
+  --color-surface-page: #ffffff;
+  --color-surface-offset: #fafafa;
+  --color-surface-hover: #f4f4f5;
+  --color-rule: #e4e4e7;
+  --color-ink-primary: #09090b;
 
-  /* Skala netral: MEMETAKAN ULANG slate/stone ke kertas-tinta dunia ini,
-   * sehingga seluruh utilitas lama (text-slate-900, bg-slate-800, ...)
-   * otomatis memakai palet baru tanpa menyentuh 14 berkas komponen. */
-  --color-slate-50: #f7f7f4;
-  --color-slate-100: #f0f0ec;
-  --color-slate-200: #e2e2db;
-  --color-slate-300: #c9c9c0;
-  /* 400/500 disamakan ke nilai yang lolos AA 4,5:1 di ketiga permukaan
-   * (lembar, meja kerja, blok tenang). Keduanya dipakai untuk teks kecil
-   * (nomor langkah, penanda urutan), jadi keduanya harus terbaca. */
-  --color-slate-400: #6a6a64;
-  --color-slate-500: #66665f;
-  --color-slate-600: #5a5a54;
-  --color-slate-700: #454540;
-  --color-slate-800: #2a2a26;
-  --color-slate-900: #101010;
-  --color-slate-950: #0a0a09;
+  /* Skala netral: MEMETAKAN ULANG slate/stone ke tinta dunia ini, sehingga
+   * seluruh utilitas lama (text-slate-900, bg-slate-800, ...) otomatis memakai
+   * palet baru tanpa menyentuh berkas komponen. */
+  --color-slate-50: #fafafa;
+  --color-slate-100: #f4f4f5;
+  --color-slate-200: #e4e4e7;
+  --color-slate-300: #d4d4d8;
+  /* 400/500 dipakai untuk teks kecil (nomor langkah, penanda urutan), jadi
+   * keduanya harus lolos AA 4,5:1 di ketiga permukaan. */
+  --color-slate-400: #65656e;
+  --color-slate-500: #65656e;
+  --color-slate-600: #52525b;
+  --color-slate-700: #3f3f46;
+  --color-slate-800: #27272a;
+  --color-slate-900: #09090b;
+  --color-slate-950: #000000;
 
-  --color-stone-50: #f7f7f4;
-  --color-stone-100: #f0f0ec;
-  --color-stone-200: #e2e2db;
-  --color-stone-300: #c9c9c0;
-  --color-stone-400: #6a6a64;
-  --color-stone-500: #66665f;
-  --color-stone-600: #5a5a54;
-  --color-stone-700: #454540;
-  --color-stone-800: #2a2a26;
-  --color-stone-900: #101010;
+  --color-stone-50: #fafafa;
+  --color-stone-100: #f4f4f5;
+  --color-stone-200: #e4e4e7;
+  --color-stone-300: #d4d4d8;
+  --color-stone-400: #65656e;
+  --color-stone-500: #65656e;
+  --color-stone-600: #52525b;
+  --color-stone-700: #3f3f46;
+  --color-stone-800: #27272a;
+  --color-stone-900: #09090b;
 
   /* Font untuk utilitas Tailwind (font-sans / font-mono). */
-  --font-sans: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
   --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
 
   /* Skala semantik: MEMETAKAN ULANG red/amber/green/emerald ke ramp stempel
    * dunia ini. Komponen lama memakai ratusan utilitas `text-red-600`,
    * `bg-amber-50`, `text-green-800` untuk galat/peringatan/sukses; tanpa
-   * pemetaan ini warnanya melawan palet kertas-tinta. Sekarang ketiganya
-   * diderivasi dari warna stempel yang sama dengan `.doc-stamp`. */
-  --color-red-50: #fdf3f2;
-  --color-red-100: #fae7e5;
-  --color-red-200: #f3c9c5;
-  --color-red-300: #e9a19b;
-  --color-red-400: #d96b62;
-  --color-red-500: #c94338;
-  --color-red-600: #b3261e;
-  --color-red-700: #941c16;
-  --color-red-800: #7a1913;
-  --color-red-900: #661712;
-  --color-red-950: #3a0b08;
+   * pemetaan ini warnanya melawan palet tinta. Sekarang ketiganya diderivasi
+   * dari warna stempel yang sama dengan komponen `Stamp`. */
+  --color-red-50: #fdf3f3;
+  --color-red-100: #fbe9e9;
+  --color-red-200: #f3c6c6;
+  --color-red-300: #e79d9d;
+  --color-red-400: #d76a6a;
+  --color-red-500: #c94343;
+  --color-red-600: #b91c1c;
+  --color-red-700: #9c1717;
+  --color-red-800: #821414;
+  --color-red-900: #6b1111;
+  --color-red-950: #3d0a0a;
 
-  --color-amber-50: #fdf8ef;
-  --color-amber-100: #f8eedd;
-  --color-amber-200: #f0d8b0;
-  --color-amber-300: #e4bb78;
-  --color-amber-400: #d19a41;
-  --color-amber-500: #b87a10;
-  --color-amber-600: #a15c00;
-  --color-amber-700: #834a02;
-  --color-amber-800: #6b3d06;
-  --color-amber-900: #58330a;
-  --color-amber-950: #331c03;
+  --color-amber-50: #fbf6ec;
+  --color-amber-100: #f5ead4;
+  --color-amber-200: #ead3a5;
+  --color-amber-300: #dbb96e;
+  --color-amber-400: #c69a3e;
+  --color-amber-500: #a87c1a;
+  --color-amber-600: #8a5a0a;
+  --color-amber-700: #714a0a;
+  --color-amber-800: #5b3c09;
+  --color-amber-900: #4a3108;
+  --color-amber-950: #2a1b04;
 
-  --color-green-50: #f0f9f4;
-  --color-green-100: #e3f1e9;
-  --color-green-200: #bfe0cd;
-  --color-green-300: #8fc9ab;
-  --color-green-400: #55ab82;
-  --color-green-500: #2a8c60;
+  --color-green-50: #f1f8f3;
+  --color-green-100: #e0f0e6;
+  --color-green-200: #b9e0c8;
+  --color-green-300: #88c9a2;
+  --color-green-400: #4fac78;
+  --color-green-500: #258a56;
   --color-green-600: #0d6b3f;
   --color-green-700: #0a5633;
   --color-green-800: #0a462b;
   --color-green-900: #093a25;
   --color-green-950: #032015;
 
-  --color-emerald-50: #f0f9f4;
-  --color-emerald-100: #e3f1e9;
-  --color-emerald-200: #bfe0cd;
-  --color-emerald-300: #8fc9ab;
-  --color-emerald-400: #55ab82;
-  --color-emerald-500: #2a8c60;
+  --color-emerald-50: #f1f8f3;
+  --color-emerald-100: #e0f0e6;
+  --color-emerald-200: #b9e0c8;
+  --color-emerald-300: #88c9a2;
+  --color-emerald-400: #4fac78;
+  --color-emerald-500: #258a56;
   --color-emerald-600: #0d6b3f;
   --color-emerald-700: #0a5633;
   --color-emerald-800: #0a462b;
   --color-emerald-900: #093a25;
   --color-emerald-950: #032015;
 
-  /* Radius: MEMETAKAN ULANG skala Tailwind ke dokumen. Dunia ini siku
-   * (lembar kerja, bukan aplikasi membulat), jadi seluruh utilitas
-   * rounded-md/rounded-lg/rounded-2xl/rounded-3xl di komponen lama otomatis
-   * ikut tajam tanpa menyentuh satu berkas pun. */
-  --radius-md: 3px;
-  --radius-lg: 4px;
-  --radius-xl: 5px;
-  --radius-2xl: 6px;
-  --radius-3xl: 8px;
+  /* Radius: MEMETAKAN ULANG skala Tailwind ke radius membulat sedang, supaya
+   * seluruh utilitas rounded-* di komponen lama ikut tanpa disentuh. */
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-xl: 10px;
+  --radius-2xl: 12px;
+  --radius-3xl: 16px;
 }
 
-/* Mode gelap: "meja malam". Bukan inversi buta — kertas jadi arang, tinta jadi
- * kapur, warna proses tetap. Aktif hanya bila kelas `.dark` dipasang. */
-.dark {
-  --surface-page: #131312;
-  --surface-offset: #1a1a18;
-  --surface-card: #1e1e1c;
-  --surface-hover: #262623;
-  --surface-ink: #f2f2ef;
-  --surface-ink-2: #e4e4df;
-
-  --ink-primary: #f2f2ef;
-  --ink-secondary: #b9b9b3;
-  --ink-muted: #9a9a94;
-  --ink-invert: #131312;
-  --ink-invert-2: #454540;
-
-  --rule-color: #333330;
-  --rule-strong: #4a4a45;
-  --rule-ink: #f2f2ef;
-
-  --brand-tosca-600: #4a6ee0;
-  --process-strong: #6d84e7;
-  --process-soft: #16204a;
-
-  --stamp-ok: #57b98a;
-  --stamp-ok-soft: #12291d;
-  --stamp-rev: #d79a3f;
-  --stamp-rev-soft: #2e2413;
-  --stamp-no: #e0706a;
-  --stamp-no-soft: #331413;
-}
+/*
+ * Mode gelap DIHAPUS, bukan dinonaktifkan. Dunia ini akromatik dan bergantung
+ * pada kontras tinta-terhadap-kertas; membalik kontras menuntut audit tersendiri
+ * (bukan inversi token), dan sebelumnya blok `.dark` tidak pernah aktif karena
+ * tidak ada kode yang memasang kelasnya — sementara 192 utilitas `dark:` di
+ * komponen jadi kode mati. Bila mode gelap diinginkan, itu keputusan produk
+ * baru yang membawa audit kontrasnya sendiri.
+ */

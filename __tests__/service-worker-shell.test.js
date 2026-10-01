@@ -16,9 +16,9 @@ import { readFileSync, existsSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { resolve } from 'node:path';
 
-const PINNED_VERSION = 'v12';
+const PINNED_VERSION = 'v13';
 // sha256 dari "<asset>:<sha256 isi>\n..." untuk semua SHELL_ASSETS kecuali '/'.
-const PINNED_HASH = '27812df9081714c9928f54cb9da9ba3d13450cf481a6dfe001aeccd57ffe32fa';
+const PINNED_HASH = 'b06aec0bb706f87171108dcc685acb706e855e456f3e07cf0d0c109436c0ea11';
 
 const root = process.cwd();
 const swSource = readFileSync(resolve(root, 'public/sw.js'), 'utf8');

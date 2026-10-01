@@ -157,7 +157,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
           value={query}
           autoComplete="off"
           placeholder={manualMode ? 'Nama tenant Anda' : 'Ketik nama tenant min. 2 huruf, pilih dari daftar'}
-          className={`ui-control w-full rounded-md py-2.5 pl-9 ${selectedIdRef.current || query ? 'pr-9' : 'pr-3'} text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100 ${error ? 'border-red-300 dark:border-red-700' : ''}`}
+          className={`ui-control w-full rounded-md py-2.5 pl-9 ${selectedIdRef.current || query ? 'pr-9' : 'pr-3'} text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 ${error ? 'border-red-300' : ''}`}
           onChange={(e) => {
             const next = e.target.value;
             if (manualMode) {
@@ -179,7 +179,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
             onClick={clearSelection}
             disabled={disabled}
             aria-label="Hapus pilihan tenant"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700 dark:text-slate-400 dark:hover:bg-slate-700"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-500 transition hover:bg-slate-100 hover:text-slate-700"
           >
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
@@ -194,10 +194,10 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
           id={listboxId}
           role="listbox"
           aria-label="Daftar tenant"
-          className="doc-sheet absolute z-30 mt-1 max-h-64 w-full overflow-auto py-1 text-sm"
+          className="ui-card absolute z-30 mt-1 max-h-64 w-full overflow-auto py-1 text-sm"
         >
           {loading && tenants.length === 0 && (
-            <li className="px-3 py-2 text-slate-500 dark:text-slate-300" role="status">Mencari tenant…</li>
+            <li className="px-3 py-2 text-slate-500" role="status">Mencari tenant…</li>
           )}
           {tenants.map((t, i) => (
             <li
@@ -211,13 +211,13 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
                 onMouseEnter={() => setHighlighted(i)}
                 onClick={() => commitTenant(t)}
                 className={`flex min-h-11 w-full items-center justify-between gap-2 px-3 py-2 text-left transition ${
-                  highlighted === i ? 'bg-brand-primary-50 dark:bg-brand-primary-950/40' : ''
+                  highlighted === i ? 'bg-brand-primary-50' : ''
                 }`}
               >
                 <span className="min-w-0">
-                  <span className="block truncate font-medium text-slate-900 dark:text-slate-100">{t.name}</span>
+                  <span className="block truncate font-medium text-slate-900">{t.name}</span>
                   {(t.floor || t.lot) && (
-                    <span className="doc-num block truncate text-xs text-slate-500 dark:text-slate-400">
+                    <span className="ui-num block truncate text-xs text-slate-500">
                       {[t.floor, t.lot].filter(Boolean).join(' · ')}
                     </span>
                   )}
@@ -229,7 +229,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
       )}
 
       {error && (
-        <p id={`${id}-error`} className="mt-1.5 text-xs font-medium text-red-600 dark:text-red-400">{error}</p>
+        <p id={`${id}-error`} role="alert" className="mt-1.5 text-xs font-medium text-red-600">{error}</p>
       )}
     </div>
   );

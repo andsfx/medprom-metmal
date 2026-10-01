@@ -44,6 +44,153 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
     Catatan `docs/PLAN_2026-09-25_09-15.md`.
 
 ### Diubah
+- **Redesign UI/UX menyeluruh: dunia "Daftar Kerja Seluler" diterapkan ke
+  seluruh permukaan.** Menggantikan "Lembar Spesifikasi & Tiket Pekerjaan".
+  Dunia cetak (tanda potong, nomor plate, garis dimensi, perforasi, titik
+  penghubung, kertas abu-netral, process blue) dibuang karena metafora kertas
+  memakan ruang dan terbaca sebagai noise di layar 6 inci - perangkat yang
+  paling sering dipakai.
+  - **Akromatik + stempel.** Kertas putih `#ffffff`, tinta `#09090b`, garis
+    rambut `#e4e4e7`, dan **nol warna aksen**: aksi utama memakai tinta penuh.
+    Warna hanya tersisa untuk stempel keadaan (setuju/revisi/tolak/tunggu).
+  - **Tipografi Instrument Sans** (menggantikan Archivo) + Spline Sans Mono,
+    dengan `preload` + `display=swap` + `<noscript>` dan tracking negatif
+    per peran (`-0.035em` hero, `-0.03em` bagian, `-0.02em` baris).
+  - **Aturan hierarki: angka memimpin.** Nama baris 16px, harga 18px mono,
+    total biaya 24px - angka terpenting di layar selalu yang terbesar.
+    Baris daftar mengikuti kategori deck (outdoor 5 / indoor 7 / social 2).
+  - **Perabot baru:** `.ui-row` (+`-lead`/`-main`/`-head`/`-num`), `.ui-specs`,
+    `.ui-calc`, `.ui-timeline`, `.ui-stat`, `.ui-label`, `.ui-figure`,
+    `.ui-title-hero`/`-row`. Perabot lama (`doc-crop`, `doc-plate-no`,
+    `doc-dim`, `doc-perf`, `doc-leader`, `doc-link`, `doc-stamp`) **dihapus**;
+    `doc-num`/`doc-calc`/`doc-rows`/`doc-tag`/`doc-sheet`/`doc-alert`
+    dipetakan ke `ui-num`/`ui-calc`/`ui-specs`/`ui-tag`/`ui-card`/`ui-alert`.
+  - **Radius 10-16px** (menggantikan 2-6px siku). Skala Tailwind `rounded-*`,
+    `slate`/`stone`, dan `red`/`amber`/`green`/`emerald` dipetakan ulang di
+    `@theme`, sehingga ratusan utilitas lama ikut palet baru.
+  - **Harga katalog mengikuti deck secara verbatim.** `price_note` dipakai
+    apa adanya, **satu baris per `\n`**: tangga tarif multi-baris (Videotron 4
+    baris), baris berlabel jadi dua kolom (nominal rata kanan), dan kalimat
+    panjang turun ke barisnya sendiri. Sebelumnya kolom ini hanya dibaca lewat
+    satu jalur sehingga risiko "Gratis" hilang.
+  - **Kontras diukur, bukan diklaim.** Tiga nilai pratinjau gagal ambang dan
+    dikoreksi: `--ink-muted` `#71717a` -> `#65656e` (4,40:1 di blok isian),
+    `--stamp-rev` `#a16207` -> `#8a5a0a` (4,48:1), dan `--rule-strong`
+    `#d4d4d8` -> `#8a8a90` (**1,48:1** - tepi input nyaris tak terlihat, gagal
+    ambang komponen 3:1). **19/19 pasangan terverifikasi lolos AA.**
+  - **Tepi kontrol kini `--rule-strong`,** karena pada input berlatar putih di
+    atas halaman putih justru tepi itulah satu-satunya penanda kotak isian.
+  - **Mode gelap dihapus** (blok `.dark` di CSS **dan 192 utilitas `dark:`**):
+    dunia akromatik bergantung pada kontras tinta-terhadap-kertas, jadi
+    membaliknya menuntut audit tersendiri, bukan inversi token.
+  - **Empat drift judul diperbaiki sekalian** (audit 2026-09-30): `D1` kelas
+    peran judul kini 600 + tracking negatif; `D2` `.ui-title-section` dipakai
+    di seluruh h2 (0 sisa judul ad-hoc); `D3` 192 `dark:` dihapus; `D4` hero
+    landing memakai `.ui-title-hero` sehingga `--text-sheet` benar-benar dipakai.
+  - **Ikon PWA dan manifest diselaraskan ke tinta** (`icon.svg` + 4 PNG
+    diregenerasi, `theme_color` `#09090b`, `background_color` `#ffffff`).
+    Skeleton critical CSS di `index.html` ikut palet baru.
+  - **`CACHE_VERSION` service worker dinaikkan v12 -> v13** karena aset shell
+    (ikon, manifest) berubah; pin di `__tests__/service-worker-shell.test.js`
+    diperbarui bersamaan.
+  - `scripts/verify-mobile.mjs` menyesuaikan selektor ke kosakata baru (dulu
+    mem-query `.doc-leader`/`.doc-num` yang sudah tidak ada, sehingga
+    pemeriksaannya jadi no-op palsu).
+  - Verifikasi: `npx tsc --noEmit` bersih, `npm run build` hijau,
+    `npx vitest run` **655/655 hijau**, dan build produksi diperiksa langsung
+    pada 6 rute x 6 lebar (320-1280px) - **0 scroll horizontal**. Catatan
+    `docs/PLAN_2026-09-30_16-33.md`.
+  - **Harga katalog kini satu sumber untuk tiga permukaan.**
+    `src/utils/mediaPrice.ts` + `MediaPriceTag.tsx` menggantikan tiga salinan
+    logika harga (landing dan kedua wizard). Sebelumnya kedua wizard
+    **menggabungkan** `price_note` multi-baris jadi satu kalimat, sehingga
+    Sticker Lift tampil sebagai
+    `Rp. 3.630.000,-/sisi/bulan (Lift Sisi Luar) Rp. 4.235.000,-/…` dalam satu
+    baris - dua tarif berdurasi berbeda terbaca sebagai satu harga. Sekarang
+    tangga tarif selalu terpisah per baris di ketiga permukaan.
+  - **Kepala baris ditumpuk di bawah 640px.** Terukur di 320px: harga
+    `Rp. 6.700.000,-/sisi/bulan` butuh 168px dari lebar baris ~272px. Karena
+    angka wajib `nowrap` (kalau membungkus, nominalnya pecah dan tidak bisa
+    dibandingkan), yang mengalah adalah nama - "Digital Poster" terpepet sampai
+    **10px** dan membungkus satu huruf per baris. Ditumpuk, nama selalu dapat
+    lebar penuh dan harga turun ke barisnya sendiri; angka tetap yang terbesar,
+    hanya posisinya berubah.
+  - **Ukuran media jadi baris spesifikasi, bukan chip di samping nama.** Chip
+    `shrink-0` mengambil ~130px di kepala baris dan mengembalikan persoalan yang
+    sama; sebagai `.ui-spec` ukurannya terbaca sama dan nama tidak berebut ruang.
+  - **68 label disatukan ke `.ui-label`** dengan dua nada (redup untuk metadata,
+    `data-tone="strong"` untuk legend/kepala seksi). Nilai warna tiap label
+    dipertahankan, jadi **kontrasnya tidak berubah** (tidak ada label yang turun
+    dari 19,9:1 ke 5,8:1).
+  - Nilai `data-tone` mati (`"process"`, `"none"` pada `.ui-tag`) diganti ke
+    `"ink"`/absen; sebelumnya atribut itu tidak punya aturan CSS sama sekali.
+- **`DESIGN.md` ditulis ulang untuk arah "Daftar Kerja Seluler".** Dunia "Lembar
+  Spesifikasi & Tiket Pekerjaan" (kertas abu-netral, tanda potong, nomor plate,
+  garis dimensi, process blue) dinilai memakan ruang dan terbaca sebagai noise
+  di layar 6 inci - tepat perangkat yang paling sering dipakai tenant.
+  - **Sistem baru: akromatik + stempel.** Kertas putih `#ffffff`, tinta
+    `#09090b`, garis rambut `#e4e4e7`, dan **nol warna aksen** - aksi utama
+    adalah tinta penuh, bukan warna merek. Warna hanya untuk stempel keadaan.
+  - **Tipografi: Instrument Sans** (menggantikan Archivo) + Spline Sans Mono.
+    Tracking negatif tetap: `-0.035em` hero, `-0.03em` judul bagian.
+  - **Aturan hierarki baris:** angka memimpin, nama mengalah, label mengecil.
+    Harga/total/KPI selalu elemen terbesar di barisnya.
+  - **Radius 10-12px** (menggantikan 2-6px siku). Perabot `doc-*` (394
+    kemunculan) dipetakan ke awalan tunggal `ui-*`; `.doc-crop`,
+    `.doc-plate-no`, `.doc-dim`, dan `.doc-perf` **dihapus tanpa pengganti**
+    karena tidak memberi informasi kepada tenant.
+  - **Mode gelap dihapus** dari dokumen sebagai keputusan produk: dunia ini
+    akromatik dan bergantung pada kontras tinta-terhadap-kertas, jadi membalik
+    kontras menuntut audit tersendiri. 192 utilitas `dark:` dinyatakan kode mati.
+  - **Kontras dihitung ulang, bukan diklaim.** Tiga nilai mockup terbukti gagal
+    ambang dan dikoreksi: `--ink-muted` `#71717a` -> `#65656e` (4,40:1 di atas
+    blok isian), `--stamp-rev` `#a16207` -> `#8a5a0a` (4,48:1), dan
+    `--rule-strong` `#d4d4d8` -> `#8a8a90` (1,48:1, gagal ambang komponen
+    3:1). 16 pasangan terverifikasi lolos AA.
+  - **Empat drift judul ditemukan saat audit** dan dicatat sebagai pekerjaan:
+    `D1` bobot/tracking kelas judul, `D2` `.ui-title-section` dipakai 0x
+    sementara 14 `<h2>` menduplikasi string kelas verbatim, `D3` 192 `dark:`
+    mati, `D4` hero landing memakai `text-3xl sm:text-5xl` ad-hoc sehingga
+    `--text-sheet` 0 pemakaian.
+  - **Peringatan urutan ditambahkan** di kepala dokumen: `DESIGN.md` kini
+    **mendahului kode**. Aturan "kode menang" belum berlaku sampai migrasi
+    selesai; daftar selisihnya ada di bagian Catatan Ketidaksesuaian.
+  - **Urutan harga katalog dikunci: `price_amount` -> `price_note` -> "Hubungi".**
+    Produksi **sudah** menampilkan `price_note` verbatim
+    (`PromoLandingPage.tsx:102-132`), jadi informasi "Gratis" dan "Rp 6.700.000"
+    tidak hilang hari ini. Yang berubah adalah **dokumennya**: `DESIGN.md` kini
+    mengunci urutannya sebagai aturan, karena mockup pratinjau v5 sempat
+    menyimpulkan "tidak ada `price_amount`" = "tidak ada harga" dan menampilkan
+    LED Banner sebagai "Hubungi Marcom" - padahal deck menyatakannya
+    **gratis bersyarat**.
+  - Urutan yang benar: `price_amount` ada -> angka mono; jika kosong tetapi
+    `price_note` ada -> `price_note` **verbatim** (berlaku untuk 6 media);
+    keduanya kosong -> "Hubungi TR"/"Hubungi Marcom" menurut kanal (berlaku
+    untuk 4 media: `boom-gate`, `sticker-lift`, `videotron`,
+    `videotron-integrasia`).
+  - **Pengelompokan katalog memakai kategori deck, bukan kanal.** Hanya 3 dari
+    14 slug berkanal `cetak`, jadi mengelompokkan per kanal akan memecah katalog
+    menjadi "3 cetak" dan "11 sisanya" serta menghapus struktur
+    `outdoor`/`indoor`/`social` yang justru dipakai deck (outdoor 5 - indoor 7 -
+    social 2). Kanal tetap dipakai sebagai tag baris dan penentu rute
+    (`/ajukan-cetak` vs `/ajukan`).
+  - Dokumen ini **belum diterapkan ke kode**. Catatan
+    `docs/PLAN_2026-09-30_16-33.md`.
+- **Setiap rute kini dimuat malas (code splitting), sehingga bundel awal turun
+  ~50%.** Sebelumnya kesepuluh halaman diimpor statis di `src/App.tsx`, jadi
+  **setiap pengunjung beranda ikut mengunduh konsol staf**
+  (`AdminDashboardPage`, ~2.380 baris) dan kedua wizard - halaman yang tidak
+  pernah dibuka mayoritas pengunjung publik. Kini `React.lazy` + satu
+  `Suspense` di sekitar `<Routes>` dengan fallback `role="status"`.
+  - Bundel awal: **452 kB → 226 kB** (gzip **119,9 → 73,1 kB**). Chunk admin
+    (80 kB / 17 kB gzip), kedua wizard, dan halaman lain hanya diunduh saat
+    rutenya dibuka.
+  - Konsol staf tidak lagi ikut bundel publik. Ini **bukan pengamanan** - kode
+    tetap dapat diunduh siapa pun yang meminta chunk-nya; otorisasi nyata tetap
+    di server. Yang dihemat hanya unduhan.
+  - Test rute di `src/__tests__/App.test.tsx` disesuaikan dari `getByRole`
+    sinkron ke `findByRole` asinkron (kontrak rute tidak berubah, hanya
+    mekanisme muatnya).
 - **Redesign UI/UX menyeluruh: dunia "Lembar Spesifikasi & Tiket Pekerjaan".**
   Seluruh permukaan (landing, wizard digital + cetak, status/batch, lacak,
   riwayat, login, konsol staf) memakai dunia visual baru: kertas kerja
@@ -81,6 +228,54 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   warisan ada di `docs/PLAN_2026-09-24_17-35.md`.
 
 ### Diperbaiki
+- **Halaman `/lacak` tidak lagi menjadi jalan buntu saat captcha gagal dimuat.**
+  Bila widget Turnstile tidak dapat dipasang (kasus nyata: sitekey belum
+  terdaftar pada hostname → Cloudflare membalas `error-callback` `110200`),
+  halaman sebelumnya gagal secara **senyap**: placeholder hilang, tidak ada
+  pesan galat, tombol Lacak terkunci selamanya, dan UI tetap menyuruh pengguna
+  "selesaikan verifikasi captcha di atas" - menunjuk ruang kosong yang tak akan
+  pernah terisi. Terukur di produksi: `iframe` 0, `.cf-turnstile` 0, token `''`.
+  - `TurnstileWidget` kini **memakai `error-callback`** (sebelumnya dibuang) dan
+    melaporkan keadaan itu lewat prop baru `onUnavailable`. Pesannya diubah dari
+    "Periksa koneksi" menjadi jujur dan memberi langkah lanjut.
+  - `/lacak` membedakan "pengguna belum menyelesaikan captcha" dari "captcha
+    tidak akan pernah muncul": yang kedua **tidak lagi mengunci tombol**, jadi
+    pencarian tetap dapat dicoba dan pengguna tidak terjebak. Pesan yang salah
+    diganti keterangan bahwa verifikasi sedang tidak tersedia.
+  - **Perbaikan konfigurasi tetap diperlukan** agar captcha hidup kembali:
+    daftarkan `medprom-metmal.vercel.app` di *Turnstile → widget → Settings →
+    Hostname Management*. Perubahan ini membuat kegagalan itu terlihat dan
+    tidak mematikan fitur, bukan mengaktifkan captcha kembali.
+  - Dikunci 2 test di `Turnstile.test.tsx` (terbukti merah saat gerbangnya
+    dilepas - uji mutasi).
+- **Judul dokumen mengikuti layar, bukan seragam di semua rute.** Sebelumnya
+  `/`, `/ajukan`, `/ajukan-cetak`, `/riwayat`, `/lacak`, dan `/login` semuanya
+  berjudul sama, sehingga riwayat peramban, daftar tab, dan penanda tidak bisa
+  dibedakan. Hook baru `src/hooks/useDocumentTitle.ts` menyetel judul per layar
+  (mis. "Lacak Pengajuan · Media Promosi Metropolitan Mall Bekasi") dan
+  memulihkan judul sebelumnya saat unmount; `AppShell` menerapkannya otomatis
+  untuk 9 layar tenant, sedangkan `/login` dan `/admin` (yang punya kerangka
+  sendiri) menyetelnya eksplisit - `/admin` mengikuti tab aktif.
+- **Umpan balik galat pada wizard cetak disamakan dengan wizard digital.**
+  Audit UI/UX 2026-09-30 menemukan dua celah di `/ajukan-cetak`:
+  - **Fokus tidak berpindah ke field tidak valid pertama.** Setelah submit
+    gagal, fokus tetap di `BODY` sementara pesan galat muncul di tempat lain
+    pada lembar yang panjang. Di PWA terpasang tidak ada scroll bar yang
+    memberi petunjuk posisi, jadi pengguna yang menekan "Lanjut" dari dasar
+    lembar tidak melihat apa pun berubah. Kini `PromoCetakWizard` memakai pola
+    `fokusKeField()` + `focusErrorTick` yang sudah terbukti di
+    `PromoUploadWizard` (fokus + `scrollIntoView({block:'center'})`), dipicu
+    dari `goStep2`, `goStep3`, dan gerbang persetujuan ketentuan.
+  - **Pesan galat combobox tenant tidak diumumkan.** `TenantSearchSelect`
+    merender pesan galatnya tanpa `role="alert"` - satu-satunya dari seluruh
+    field di kedua wizard yang begitu - sehingga galat field pertama tidak
+    sampai ke pengguna pembaca layar. Ditambahkan `role="alert"`; kaitannya
+    dengan perbaikan fokus di atas membuat galat pertama kini terbaca dua kali
+    (diumumkan + saat difokuskan), bukan nol kali.
+  - `html` mendapat `scroll-padding-top` setinggi app bar lengket sebagai
+    jaring pengaman WCAG 2.2 "Focus Not Obscured" (mitigasi kanonik; terukur
+    saat ini belum ada target yang tertutup).
+  - Catatan `docs/PLAN_2026-09-30_15-41.md`.
 - **UI mobile: lantai ukuran teks dan tabel titik penghubung yang rusak di
   layar sempit.** Audit terukur di 360x740 dan 320x568 menemukan dua cacat:
   - **86 tempat memakai teks di bawah 12px** (`text-[11px]` 84x, `text-[10px]`

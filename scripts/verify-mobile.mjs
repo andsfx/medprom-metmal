@@ -12,9 +12,8 @@
  *      DESIGN.md "Tidak ada teks di bawah 12px").
  *   3. Target sentuh >= 44px (`--tap-min`). Tautan `display: inline` di dalam
  *      prosa dikecualikan sesuai WCAG 2.5.8 (Inline).
- *   4. Di bawah 640px, tabel titik penghubung ditumpuk: titik penghubung
- *      (`.doc-leader`) tidak boleh tampil, dan nilai tidak boleh terpotong
- *      oleh wadahnya.
+ *   4. Di bawah 640px, pasangan spesifikasi ditumpuk: nilai tidak boleh
+ *      terpotong oleh wadahnya.
  *
  * Bukan pengganti pemeriksaan mata: tangkapan layar tetap ditulis ke
  * `.tmp/audit/` supaya perubahan bisa ditinjau.
@@ -88,12 +87,12 @@ async function periksa(page) {
       }
     }
 
-    // Titik penghubung harus tersembunyi di mobile.
-    const leaderTampil = [...document.querySelectorAll('.doc-leader')]
-      .filter((el) => getComputedStyle(el).display !== 'none').length;
-
-    // Nilai tabel titik penghubung tidak boleh melebihi wadahnya.
-    const ddMeluber = [...document.querySelectorAll('.doc-row > dd')]
+    // Nilai spesifikasi tidak boleh melebihi wadahnya.
+    // Dunia "Daftar Kerja Seluler" membuang titik penghubung (`doc-leader`):
+    // pasangan label/nilai rata kanan, dan ditumpuk di bawah 640px. Ganti
+    // pemeriksaannya jadi overflow pada `.ui-spec > dd` supaya invarian yang
+    // sama (nilai tidak terpotong) tetap terjaga setelah kelasnya berganti.
+    const ddMeluber = [...document.querySelectorAll('.ui-spec > dd, .ui-row-num')]
       .filter((dd) => dd.scrollWidth > dd.clientWidth + 1)
       .map((dd) => dd.textContent.trim().slice(0, 28));
 
@@ -107,7 +106,7 @@ async function periksa(page) {
       };
     });
 
-    return { vw, halamanGulir, kecil, sempit, leaderTampil, ddMeluber, tabel };
+    return { vw, halamanGulir, kecil, sempit, ddMeluber, tabel };
   });
 }
 
@@ -129,7 +128,6 @@ for (const [vpNama, viewport] of VIEWPORTS) {
     check(`[${vpNama}] ${nama}: tanpa gulir halaman`, !r.halamanGulir, r.halamanGulir ? `scrollWidth=${r.vw}` : '');
     check(`[${vpNama}] ${nama}: tanpa teks < 12px`, r.kecil.length === 0, r.kecil.slice(0, 3).join(' | '));
     check(`[${vpNama}] ${nama}: target sentuh >= 44px`, r.sempit.length === 0, r.sempit.slice(0, 3).join(' | '));
-    check(`[${vpNama}] ${nama}: titik penghubung tersembunyi`, r.leaderTampil === 0, r.leaderTampil ? `${r.leaderTampil} tampil` : '');
     check(`[${vpNama}] ${nama}: nilai tidak terpotong`, r.ddMeluber.length === 0, r.ddMeluber.slice(0, 3).join(' | '));
   }
 }
@@ -170,8 +168,11 @@ for (const [vpNama, viewport] of VIEWPORTS) {
   check(`[${vpNama}] cetak langkah 3: nilai tidak terpotong`, r3.ddMeluber.length === 0, r3.ddMeluber.slice(0, 3).join(' | '));
 
   // Nominal rupiah tidak boleh terbelah dari "Rp." (non-breaking space).
+  // Selektor mengikuti kosakata baru: baris biaya memakai `.ui-num`,
+  // `.ui-calc-v`, atau `.ui-row-num` (dulu `doc-num`).
   const biaya = await page.evaluate(() => {
-    const p = [...document.querySelectorAll('p.doc-num')].find((el) => /Rp\./.test(el.textContent || ''));
+    const p = [...document.querySelectorAll('.ui-num, .ui-calc-v, .ui-row-num')]
+      .find((el) => /Rp\./.test(el.textContent || ''));
     if (!p) return null;
     const teks = p.textContent || '';
     return { teks: teks.slice(0, 60), adaNbsp: /\u00A0/.test(teks) };

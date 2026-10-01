@@ -22,6 +22,7 @@ import { MAX_FILE_BYTES, MIME_LABELS, CATEGORY_LABELS, MATERIAL_TYPES, isUploadM
 import { checkInstallationDate, toIsoDate, describeLeadTime, parseLeadTime, parseMaterialEmail } from '../../utils/leadTime';
 import { TenantSearchSelect } from './TenantSearchSelect';
 import AppShell from '../layout/AppShell';
+import MediaPriceTag from './MediaPriceTag';
 import type { PromoMediaType, TenantOption } from '../../types/promo';
 
 type Step = 1 | 2 | 3;
@@ -104,18 +105,6 @@ function FileIcon({ mime }: { mime: string }) {
   if (mime === 'video/mp4') return <Film className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
   if (mime === 'application/pdf') return <FileText className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
   return <ImageIcon className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
-}
-
-/** Sudut tanda potong lembar: murni dekoratif, jadi tidak dibaca pembaca layar. */
-function CropMarks() {
-  return (
-    <>
-      <span className="doc-crop" data-corner="tl" aria-hidden="true" />
-      <span className="doc-crop" data-corner="tr" aria-hidden="true" />
-      <span className="doc-crop" data-corner="bl" aria-hidden="true" />
-      <span className="doc-crop" data-corner="br" aria-hidden="true" />
-    </>
-  );
 }
 
 export default function PromoUploadWizard() {
@@ -488,16 +477,10 @@ export default function PromoUploadWizard() {
     return (
       <AppShell title="Pengajuan Terkirim" hideTabBar>
         <div className="mx-auto max-w-2xl px-4 py-8">
-          <div className="doc-sheet overflow-hidden">
-            <CropMarks />
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] px-6 pt-6 pb-2.5">
-              <span className="doc-plate-no">Tiket Pekerjaan</span>
-              <span className="doc-plate-no ml-auto shrink-0">Bagian 03 / Selesai</span>
-            </div>
-
-            <div className="px-6 pt-6 pb-4 text-center">
+          <div className="ui-card">
+            <div className="px-6 pt-8 pb-4 text-center">
               <CheckCircle2 className="mx-auto h-12 w-12 text-[color:var(--stamp-ok)]" aria-hidden="true" />
-              <h2 className="mt-3 text-xl font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
+              <h2 className="ui-title-section mt-3">Pengajuan Terkirim!</h2>
               <p className="ui-body ui-text-muted mt-2">
                 Materi <span className="font-semibold">{selectedMedia?.name}</span> dari tenant{' '}
                 <span className="font-semibold">{tenant?.name}</span> sudah kami terima.
@@ -508,14 +491,14 @@ export default function PromoUploadWizard() {
                * ditulis huruf kecil seperti semula: skrip verifikasi produksi
                * mencocokkan /Nomor pengajuan\s*(MP-...)/ persis. */}
               <div className="mt-5 border-y border-[color:var(--rule-color)] py-4">
-                <p className="doc-plate-no">Nomor pengajuan</p>
-                <p className="doc-num mt-1 text-2xl font-bold tracking-[0.1em] text-slate-900 dark:text-white">{ticketId}</p>
+                <p className="ui-label">Nomor pengajuan</p>
+                <p className="ui-number mt-1 text-2xl">{ticketId}</p>
               </div>
 
-              <p className="mt-4 text-xs ui-text-muted">
+              <p className="ui-meta ui-text-muted mt-4">
                 Simpan nomor ini untuk memantau status kapan saja, tanpa perlu akun.
               </p>
-              <p className="mt-2 text-xs ui-text-muted">
+              <p className="ui-meta ui-text-muted mt-2">
                 Status juga dapat dipantau di halaman Riwayat dari perangkat ini.
               </p>
 
@@ -537,9 +520,7 @@ export default function PromoUploadWizard() {
               </div>
             </div>
 
-            {/* Tepi perforasi: batas yang bisa disobek, tanda tiket. */}
-            <div className="doc-perf mx-6" aria-hidden="true" />
-            <p className="doc-plate-no px-6 py-4 text-center">
+            <p className="ui-rule ui-meta ui-text-muted px-6 py-4 text-center">
               Metropolitan Mall Bekasi · Kanal Materi Digital
             </p>
           </div>
@@ -556,8 +537,7 @@ export default function PromoUploadWizard() {
       hideTabBar
     >
       <div className="mx-auto max-w-2xl px-4 py-5">
-        {/* Pip bagian dokumen: label langkah kapital ber-track + bilah segmen
-         * bergaris. Bukan pil membulat - ini lembar kerja, bukan aplikasi. */}
+{/* Pip langkah: nomor mono + label, bukan pil membulat. */}
         <nav className="mb-6" aria-label="Langkah pengajuan">
           <ol className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-color)]">
             {STEPS.map((s, i) => {
@@ -567,19 +547,15 @@ export default function PromoUploadWizard() {
               return (
                 <li key={s.label} className="flex items-baseline gap-2 pb-2">
                   <span
-                    className={`doc-num text-xs font-bold ${
-                      aktif ? 'text-[color:var(--process)]' : 'text-slate-400 dark:text-slate-500'
+                    className={`ui-number text-xs ${
+                      aktif || selesai ? 'ui-text-strong' : 'ui-text-muted'
                     }`}
                   >
                     {String(nomorLangkah).padStart(2, '0')}
                   </span>
                   <span
-                    className={`text-xs font-semibold uppercase tracking-[0.14em] ${
-                      aktif
-                        ? 'text-[color:var(--process)]'
-                        : selesai
-                          ? 'text-slate-700 dark:text-slate-200'
-                          : 'text-slate-400 dark:text-slate-500'
+                    className={`ui-dense font-semibold ${
+                      aktif || selesai ? 'ui-text-strong' : 'ui-text-muted'
                     }`}
                   >
                     {s.label}
@@ -588,7 +564,7 @@ export default function PromoUploadWizard() {
               );
             })}
             <li className="ml-auto pb-2">
-              <span className="doc-plate-no">
+              <span className="ui-meta ui-text-muted">
                 Langkah {step} dari {STEPS.length}
               </span>
             </li>
@@ -606,7 +582,7 @@ export default function PromoUploadWizard() {
                 key={s.label}
                 className={`h-[6px] flex-1 border ${
                   i < step
-                    ? 'border-[color:var(--process)] bg-[color:var(--process)]'
+                    ? 'border-[color:var(--ink-primary)] bg-[color:var(--ink-primary)]'
                     : 'border-[color:var(--rule-strong)] bg-[var(--surface-offset)]'
                 }`}
               />
@@ -615,9 +591,9 @@ export default function PromoUploadWizard() {
         </nav>
 
         {loading && (
-          <div className="doc-sheet flex items-center justify-center gap-3 p-10" role="status">
-            <Loader2 className="h-5 w-5 animate-spin text-[color:var(--process)]" aria-hidden="true" />
-            <span className="text-sm ui-text-muted">Memuat katalog media…</span>
+          <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
+            <Loader2 className="h-5 w-5 animate-spin text-[color:var(--ink-secondary)]" aria-hidden="true" />
+            <span className="ui-dense ui-text-muted">Memuat katalog media...</span>
           </div>
         )}
         {loadError && (
@@ -631,30 +607,32 @@ export default function PromoUploadWizard() {
         )}
 
         {!loading && !loadError && (
-          <div className="doc-sheet overflow-hidden">
-            <CropMarks />
+          <div className="ui-card overflow-hidden">
             {/* ─── Langkah 1: Pilih media ─── */}
             {step === 1 && (
               <div className="p-5 sm:p-6">
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Pilih Jenis Media Promosi</h2>
-                  <span className="doc-plate-no ml-auto shrink-0">{mediaTypesNonCetak.length} media</span>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus:outline-none">Pilih Jenis Media Promosi</h2>
+                  <span className="ui-meta ui-text-muted ml-auto shrink-0">{mediaTypesNonCetak.length} media</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">Pilih media tempat materi Anda akan dipasang.</p>
 
-                {/* Baris lembar spesifikasi: dipisah GARIS, bukan kartu per
-                 * baris (dunia ini tidak mengurung tiap butir dalam lembar). */}
+                {/* Pilihan media = DAFTAR BARIS, bukan kartu berbingkai: satu
+                 * `ui-row` per media, dipisah garis rambut. Baris terpilih
+                 * ditandai blok tenang + garis kontrol di kiri, bukan warna
+                 * aksen. */}
                 <ul className="mt-5 border-t border-[color:var(--rule-color)]">
-                  {mediaTypesNonCetak.map((m, i) => (
-                    <li
-                      key={m.slug}
-                      className={`border-b border-[color:var(--rule-color)] py-3.5 pl-3 ${
-                        selectedSlug === m.slug
-                          ? 'bg-[var(--process-soft)]'
-                          : 'hover:bg-[var(--surface-hover)]'
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
+                  {mediaTypesNonCetak.map((m, i) => {
+                    const terpilih = selectedSlug === m.slug;
+                    return (
+                      <li
+                        key={m.slug}
+                        className={`ui-row border-l-2 ${
+                          terpilih
+                            ? 'border-l-[color:var(--rule-strong)] bg-[var(--surface-offset)]'
+                            : 'border-l-transparent hover:bg-[var(--surface-hover)]'
+                        }`}
+                      >
                         {/* Foto contoh - dekoratif: nama media sudah ada di sebelahnya,
                          * jadi sengaja alt="" agar pembaca layar tidak mengulang. */}
                         {m.image_path && (
@@ -665,71 +643,74 @@ export default function PromoUploadWizard() {
                             height={600}
                             loading="lazy"
                             decoding="async"
-                            className="h-12 w-16 shrink-0 rounded-[var(--radius-control)] object-cover sm:h-14 sm:w-[74px]"
+                            className="ui-row-lead"
                           />
                         )}
-                        <div className="min-w-0 flex-1">
-                          <label
-                            htmlFor={`media-${i}`}
-                            className="flex cursor-pointer flex-wrap items-center gap-x-2.5 gap-y-1"
-                          >
-                            <input
-                              id={`media-${i}`}
-                              type="radio"
-                              name="media_type"
-                              value={m.slug}
-                              checked={selectedSlug === m.slug}
-                              onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
-                              aria-describedby={fieldErrors.media ? 'err-media' : undefined}
-                              className="h-4 w-4 shrink-0 rounded-none accent-[var(--process)]"
-                            />
-                            {/* Nomor plate = urutan deck; urutannya sendiri informasi. */}
-                            <span className="doc-plate-no">
-                              Plate {String(m.sort_order ?? i + 1).padStart(2, '0')}
-                            </span>
-                            {/* `min-w-0` + `overflow-wrap: anywhere`: nama media bisa
-                             * memuat kata majemuk tanpa titik putus (mis.
-                             * "Feed Instagram/Fanpage/TikTok"). Tanpa keduanya,
-                             * flex item ini menolak menyusut di bawah lebar
-                             * min-content kata terpanjang dan meluber keluar
-                             * lembar pada viewport 320px. */}
-                            <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
-                            <span className="doc-tag" data-tone="none">
-                              {CATEGORY_LABELS[m.category] ?? m.category}
-                            </span>
-                          </label>
+                        <div className="ui-row-main">
+                          <div className="ui-row-head">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <label
+                                htmlFor={`media-${i}`}
+                                className="flex cursor-pointer items-start gap-2.5"
+                              >
+                                <input
+                                  id={`media-${i}`}
+                                  type="radio"
+                                  name="media_type"
+                                  value={m.slug}
+                                  checked={terpilih}
+                                  onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
+                                  aria-describedby={fieldErrors.media ? 'err-media' : undefined}
+                                  className="mt-1 h-4 w-4 shrink-0 rounded-none accent-[var(--ink-primary)]"
+                                />
+                                {/* `overflow-wrap: anywhere`: nama media bisa memuat
+                                 * kata majemuk tanpa titik putus (mis. "Feed
+                                 * Instagram/Fanpage/TikTok"), yang meluber keluar
+                                 * baris pada viewport 320px tanpa pematah kata. */}
+                                <span className="ui-title-row">{m.name}</span>
+                              </label>
+                            </div>
+                            <MediaPriceTag media={m} />
+                          </div>
 
-                          {/* Ukuran & material sebagai tabel titik penghubung:
-                           * nilainya data, jadi rata kanan dan monospace. */}
-                          <dl className="doc-rows mt-2.5">
-                            <div className="doc-row">
+                          <dl className="ui-specs mt-2">
+                            {/* Ukuran dulu berdiri sebagai chip di sebelah nama.
+                             * Chip itu `shrink-0` dan mengambil ~130px dari
+                             * kepala baris, sehingga di 320px nama media
+                             * terpepet sampai 10px dan membungkus satu huruf
+                             * per baris. Sebagai baris spesifikasi, ukurannya
+                             * terbaca sama dan nama tidak lagi berebut ruang -
+                             * pola yang sama dengan wizard cetak. */}
+                            <div className="ui-spec">
                               <dt>Ukuran</dt>
-                              <span className="doc-leader" aria-hidden="true" />
                               <dd>{m.size_spec || '-'}</dd>
                             </div>
-                            <div className="doc-row">
+                            <div className="ui-spec">
                               <dt>Material</dt>
-                              <span className="doc-leader" aria-hidden="true" />
                               <dd>{m.material_spec || '-'}</dd>
+                            </div>
+                            <div className="ui-spec">
+                              <dt>Kanal</dt>
+                              <dd>{CATEGORY_LABELS[m.category] ?? m.category}</dd>
                             </div>
                           </dl>
 
-                          {selectedSlug === m.slug && m.rules && (
+                          {terpilih && m.rules && (
                             <div className="mt-2">
                               <button
                                 type="button"
                                 onClick={() => setRulesOpen((v) => !v)}
                                 aria-expanded={rulesOpen}
-                                className="inline-flex items-center gap-1 border-b border-[color:var(--rule-strong)] pb-0.5 text-xs font-semibold text-[color:var(--process)]"
+                                className="inline-flex items-center gap-1 border-b border-[color:var(--rule-strong)] pb-0.5 ui-meta font-semibold ui-text-strong"
                               >
                                 Ketentuan
                                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${rulesOpen ? 'rotate-180' : ''}`} aria-hidden="true" />
                               </button>
                               {rulesOpen && (
-                                <ul className="mt-1.5 space-y-1 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                                <ul className="mt-1.5 space-y-1">
                                   {m.rules.split('\n').filter(Boolean).map((line, idx) => (
-                                    <li key={idx} className="flex items-start gap-2">
-                                      <span aria-hidden="true" className="doc-num mt-0.5 text-xs font-bold text-slate-400">
+                                    <li key={idx} className="ui-meta ui-text-muted flex items-start gap-2">
+                                      <span aria-hidden="true" className="ui-num mt-0.5 shrink-0 font-medium">
                                         {String(idx + 1).padStart(2, '0')}
                                       </span>
                                       <span>{line}</span>
@@ -740,20 +721,20 @@ export default function PromoUploadWizard() {
                             </div>
                           )}
                         </div>
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ul>
 
                 <div className="ui-helper-slot mt-3">
-                  {fieldErrors.media && <p id="err-media" role="alert" className="text-xs font-medium text-[color:var(--stamp-no)]">{fieldErrors.media}</p>}
+                  {fieldErrors.media && <p id="err-media" role="alert" className="ui-meta font-medium text-[color:var(--stamp-no)]">{fieldErrors.media}</p>}
                 </div>
 
                 <button
                   type="button"
                   onClick={goStep2}
                   disabled={!selectedSlug}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
+                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 ui-dense font-semibold"
                 >
                   Lanjut ke Data Tenant
                   <ArrowRight className="h-4 w-4" aria-hidden="true" />
@@ -764,17 +745,17 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 2: Data tenant ─── */}
             {step === 2 && (
               <div className="p-5 sm:p-6">
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Data Tenant &amp; PIC</h2>
-                  <span className="doc-plate-no ml-auto shrink-0">Bagian 02</span>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus:outline-none">Data Tenant &amp; PIC</h2>
+                  <span className="ui-meta ui-text-muted ml-auto shrink-0">Bagian 02</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">
-                  Materi untuk <span className="font-semibold text-slate-700 dark:text-slate-200">{selectedMedia?.name}</span>.
+                  Materi untuk <span className="font-semibold ui-text-strong">{selectedMedia?.name}</span>.
                 </p>
 
                 <div className="mt-5 space-y-4">
                   <div>
-                    <label htmlFor="tenant-search" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="tenant-search" className="ui-label mb-1.5 block" data-tone="strong">
                       Nama Tenant <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
@@ -793,7 +774,7 @@ export default function PromoUploadWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="pic-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="pic-name" className="ui-label mb-1.5 block" data-tone="strong">
                         Nama PIC <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -812,7 +793,7 @@ export default function PromoUploadWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="pic-phone" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="pic-phone" className="ui-label mb-1.5 block" data-tone="strong">
                         Nomor Telepon PIC <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -835,7 +816,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="installation-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="installation-date" className="ui-label mb-1.5 block" data-tone="strong">
                       Tanggal Pemasangan yang Diharapkan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <input
@@ -852,7 +833,7 @@ export default function PromoUploadWizard() {
                       Permintaan tanggal bersifat harapan. Jadwal final ditentukan Mall (lihat ketentuan media).
                     </p>
                     {leadInfo.lead && (
-                      <p className="mt-1 text-xs font-medium text-[color:var(--process)]">
+                      <p className="mt-1 text-xs font-medium text-[color:var(--action)]">
                         Materi harus diterima paling lambat {leadInfo.label}, tanggal paling awal {leadInfo.earliest}.
                       </p>
                     )}
@@ -862,7 +843,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="campaign-name" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="campaign-name" className="ui-label mb-1.5 block" data-tone="strong">
                       Nama Campaign <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <input
@@ -882,7 +863,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="material-title" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="material-title" className="ui-label mb-1.5 block" data-tone="strong">
                       Judul Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <input
@@ -902,7 +883,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="material-description" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="material-description" className="ui-label mb-1.5 block" data-tone="strong">
                       Deskripsi Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <textarea
@@ -923,7 +904,7 @@ export default function PromoUploadWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="material-type" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="material-type" className="ui-label mb-1.5 block" data-tone="strong">
                         Jenis Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <select
@@ -942,7 +923,7 @@ export default function PromoUploadWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="media-target" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="media-target" className="ui-label mb-1.5 block" data-tone="strong">
                         Media / Lokasi Pemasangan <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -964,7 +945,7 @@ export default function PromoUploadWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="air-start-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="air-start-date" className="ui-label mb-1.5 block" data-tone="strong">
                         Mulai Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                       </label>
                       <input
@@ -979,7 +960,7 @@ export default function PromoUploadWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="air-end-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="air-end-date" className="ui-label mb-1.5 block" data-tone="strong">
                         Berakhir Tayang <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                       </label>
                       <input
@@ -998,7 +979,7 @@ export default function PromoUploadWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="notes" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="notes" className="ui-label mb-1.5 block" data-tone="strong">
                       Catatan untuk Tim Tenant Relations <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <textarea
@@ -1035,9 +1016,9 @@ export default function PromoUploadWizard() {
             {/* ─── Langkah 3: Kirim materi (unggah / tautan) ─── */}
             {step === 3 && selectedMedia && (
               <div className="p-5 sm:p-6">
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Kirim Materi</h2>
-                  <span className="doc-plate-no ml-auto shrink-0">Bagian 03</span>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2.5">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus-visible:outline-none">Kirim Materi</h2>
+                  <span className="ui-label ml-auto shrink-0">Bagian 03</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">
                   Kirim materi untuk <span className="font-semibold">{selectedMedia.name}</span>
@@ -1047,37 +1028,37 @@ export default function PromoUploadWizard() {
 
                 {/* Ringkasan sebagai tabel titik penghubung: nilainya data. */}
                 <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
-                  <p className="doc-plate-no">Ringkasan Lembar</p>
-                  <dl className="doc-rows mt-2.5">
-                    <div className="doc-row">
+                  <p className="ui-label">Ringkasan Lembar</p>
+                  <dl className="ui-specs mt-2.5">
+                    <div className="ui-spec">
                       <dt>Tenant</dt>
-                      <span className="doc-leader" aria-hidden="true" />
+
                       <dd>{tenant?.name}</dd>
                     </div>
-                    <div className="doc-row">
+                    <div className="ui-spec">
                       <dt>PIC</dt>
-                      <span className="doc-leader" aria-hidden="true" />
+
                       <dd>{picName} · {picPhone}</dd>
                     </div>
-                    <div className="doc-row">
+                    <div className="ui-spec">
                       <dt>Media</dt>
-                      <span className="doc-leader" aria-hidden="true" />
+
                       <dd>{selectedMedia.name}</dd>
                     </div>
-                    <div className="doc-row">
+                    <div className="ui-spec">
                       <dt>Campaign</dt>
-                      <span className="doc-leader" aria-hidden="true" />
+
                       <dd>{campaignName}</dd>
                     </div>
-                    <div className="doc-row">
+                    <div className="ui-spec">
                       <dt>Lokasi</dt>
-                      <span className="doc-leader" aria-hidden="true" />
+
                       <dd>{mediaTarget}</dd>
                     </div>
                     {installationDate && (
-                      <div className="doc-row">
+                      <div className="ui-spec">
                         <dt>Tgl pasang</dt>
-                        <span className="doc-leader" aria-hidden="true" />
+
                         <dd>{installationDate}</dd>
                       </div>
                     )}
@@ -1095,8 +1076,8 @@ export default function PromoUploadWizard() {
                     onClick={() => { setSourceMode('link'); setFileError(''); }}
                     className={`flex min-h-11 flex-1 items-center justify-center gap-2 border px-3 py-2.5 text-sm font-semibold ${
                       sourceMode === 'link'
-                        ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process)]'
-                        : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300'
+                        ? 'border-[color:var(--action)] bg-[var(--action-soft)] text-[color:var(--action)]'
+                        : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                     }`}
                   >
                     <Link2 className="h-4 w-4" aria-hidden="true" />
@@ -1108,8 +1089,8 @@ export default function PromoUploadWizard() {
                     onClick={() => { setSourceMode('upload'); setLinkError(''); }}
                     className={`flex min-h-11 flex-1 items-center justify-center gap-2 border px-3 py-2.5 text-sm font-semibold ${
                       sourceMode === 'upload'
-                        ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process)]'
-                        : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300'
+                        ? 'border-[color:var(--action)] bg-[var(--action-soft)] text-[color:var(--action)]'
+                        : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                     }`}
                   >
                     <Upload className="h-4 w-4" aria-hidden="true" />
@@ -1127,7 +1108,7 @@ export default function PromoUploadWizard() {
                 {/* Tautan materi - untuk file besar / folder Drive */}
                 {sourceMode === 'link' && (
                   <div className="mt-4">
-                    <label htmlFor="link-input" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="link-input" className="ui-label mb-1.5 block" data-tone="strong">
                       Tautan Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                     </label>
                     <p className="mb-1.5 text-xs ui-text-muted">
@@ -1161,7 +1142,7 @@ export default function PromoUploadWizard() {
                 {/* File picker */}
                 {sourceMode === 'upload' && (
                 <div className="mt-5">
-                  <label htmlFor="file-input" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                  <label htmlFor="file-input" className="ui-label mb-1.5 block" data-tone="strong">
                     File Materi <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                   </label>
                   <label
@@ -1172,8 +1153,8 @@ export default function PromoUploadWizard() {
                         : 'border-[color:var(--rule-strong)] bg-[var(--surface-offset)] hover:bg-[var(--surface-hover)]'
                     }`}
                   >
-                    <Upload className="h-8 w-8 text-[color:var(--process)]" aria-hidden="true" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                    <Upload className="h-8 w-8 text-[color:var(--action)]" aria-hidden="true" />
+                    <span className="text-sm font-medium text-slate-700">
                       {file ? 'Ganti file' : 'Klik untuk memilih file'}
                     </span>
                     <span className="text-xs ui-text-muted">{formatsLabel} · maks 50MB</span>
@@ -1204,8 +1185,8 @@ export default function PromoUploadWizard() {
                     <div className="mt-3 flex items-center gap-3 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-3">
                       <FileIcon mime={file.type} />
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-medium text-slate-900 dark:text-white">{file.name}</p>
-                        <p className="doc-num text-xs ui-text-muted">
+                        <p className="truncate text-sm font-medium text-slate-900">{file.name}</p>
+                        <p className="ui-num text-xs ui-text-muted">
                           {MIME_LABELS[file.type] ?? file.type} · {formatBytes(file.size)}
                         </p>
                       </div>
@@ -1213,7 +1194,7 @@ export default function PromoUploadWizard() {
                         type="button"
                         onClick={() => setFile(null)}
                         aria-label="Hapus file"
-                        className="inline-flex h-11 w-11 items-center justify-center text-slate-500 hover:bg-[var(--surface-hover)] hover:text-slate-700 dark:text-slate-400"
+                        className="inline-flex h-11 w-11 items-center justify-center text-slate-500 hover:bg-[var(--surface-hover)] hover:text-slate-700"
                       >
                         <X className="h-4 w-4" aria-hidden="true" />
                       </button>
@@ -1226,15 +1207,15 @@ export default function PromoUploadWizard() {
                     marketing; tautan pengajuan tetap dipakai untuk verifikasi. */}
                 {materialEmail && (
                   <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
-                    <p className="doc-plate-no">Kanal Email</p>
-                    <p className="mt-1 text-sm font-semibold text-slate-900 dark:text-white">
+                    <p className="ui-label">Kanal Email</p>
+                    <p className="mt-1 text-sm font-semibold text-slate-900">
                       Materi social media juga dapat dikirim via email
                     </p>
                     <p className="mt-1 text-xs ui-text-muted">
                       Kirim berkas materi ke{' '}
                       <a
                         href={`mailto:${materialEmail}?subject=${encodeURIComponent(`Materi Promosi ${selectedMedia.name} - ${tenant?.name ?? ''}`)}`}
-                        className="doc-link font-medium"
+                        className="underline underline-offset-[3px] font-medium"
                       >
                         {materialEmail}
                       </a>
@@ -1251,13 +1232,13 @@ export default function PromoUploadWizard() {
                 )}
 
                 {/* Persetujuan ketentuan - wajib sebelum kirim (PRD §9.3). */}
-                <label className="mt-5 flex items-start gap-2.5 text-sm text-slate-700 dark:text-slate-200">
+                <label className="mt-5 flex items-start gap-2.5 text-sm text-slate-700">
                   <input
                     id="terms-accepted"
                     type="checkbox"
                     checked={termsAccepted}
                     onChange={(e) => { setTermsAccepted(e.target.checked); setFieldErrors((er) => ({ ...er, terms_accepted: '' })); }}
-                    className="mt-0.5 h-4 w-4 shrink-0 rounded-none accent-[var(--process)]"
+                    className="mt-0.5 h-4 w-4 shrink-0 rounded-none accent-[var(--action)]"
                     aria-invalid={fieldErrors.terms_accepted ? true : undefined}
                     aria-describedby={fieldErrors.terms_accepted ? 'err-terms_accepted' : undefined}
                   />

@@ -26,6 +26,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import AppShell from '../layout/AppShell';
+import MediaPriceTag from './MediaPriceTag';
 import { fetchMediaTypes, searchTenants, submitBatch, errorsFromApiError, uploadFile, fetchPublicSettings } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
 import {
@@ -36,6 +37,7 @@ import { checkInstallationDate, toIsoDate } from '../../utils/leadTime';
 import type { PromoMediaType, TenantOption, BatchSubmitResult } from '../../types/promo';
 import type { UploadResult } from '../../utils/promoApi';
 import { TenantSearchSelect } from './TenantSearchSelect';
+import Stamp from './Stamp';
 
 type Step = 1 | 2 | 3;
 type SubmitState = 'idle' | 'sending' | 'success' | 'error';
@@ -85,6 +87,13 @@ function rupiah(n: number): string {
   return `Rp.\u00A0${Number(n || 0).toLocaleString('id-ID')}`;
 }
 
+/**
+ * Harga katalog untuk satu baris pilihan media (daftar deck tidak seragam).
+ * Urutan mengikuti aturan harga `DESIGN.md`: `price_amount` → angka mono;
+ * bila kosong tetapi `price_note` ada → tampilkan `price_note` verbatim;
+ * keduanya kosong → "Hubungi TR"/"Hubungi Marcom" menurut kanal. Menyimpulkan
+ * "tanpa price_amount" = "tanpa harga" akan menghapus label "Gratis" milik deck.
+ */
 /** Id unik baris; `crypto.randomUUID` bila tersedia (konteks aman/HTTPS). */
 function buatIdBaris(): string {
   const c = globalThis.crypto;
@@ -108,6 +117,36 @@ function buatIdBaris(): string {
  */
 function basisIdBaris(slug: string, idx: number): string {
   return idx === 0 ? slug : `${slug}-${idx + 1}`;
+}
+
+/**
+ * Urutan field mengikuti urutan TAMPIL di lembar, bukan urutan validasi.
+ *
+ * Saat beberapa field sekaligus tidak valid, yang difokuskan harus yang paling
+ * atas supaya pengguna melihatnya lebih dulu. Kunci ber-akhiran `<basis>`
+ * (mis. `target_spanduk`) dipetakan di `fokusKeField`.
+ */
+const FOCUS_ORDER = [
+  'tenant', 'non_tenant', 'pic_name', 'pic_phone', 'media',
+  'target_', 'periode_', 'lead_', 'terms_accepted',
+] as const;
+
+/**
+ * Fokuskan field tidak valid pertama dan gulirkan ia ke tengah layar.
+ *
+ * Pola yang sama dipakai `PromoUploadWizard` (cermin sengaja: dua wizard, dua
+ * berkas, tanpa modul bersama). Di PWA terpasang tidak ada scroll bar yang
+ * memberi petunjuk posisi, jadi tanpa ini pengguna yang menekan "Lanjut" dari
+ * dasar lembar tidak melihat apa pun berubah.
+ */
+function fokusKeField(key: string): void {
+  const id = key === 'terms_accepted' ? 'cetak-terms' : `cetak-${key.replace(/_/g, '-')}`;
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.focus({ preventScroll: true });
+  // `scrollIntoView` tidak ada di jsdom (unit test) - panggil opsional agar
+  // jalur fokus tetap teruji tanpa memaksa lingkungan test menyediakannya.
+  el.scrollIntoView?.({ block: 'center', behavior: 'smooth' });
 }
 
 /** Baris baru untuk satu media katalog. */
@@ -135,18 +174,6 @@ function formatTanggal(iso: string): string {
   return Number.isNaN(d.getTime())
     ? iso
     : d.toLocaleDateString('id-ID', { dateStyle: 'medium' });
-}
-
-/** Sudut tanda potong lembar: murni dekoratif, jadi tidak dibaca pembaca layar. */
-function CropMarks() {
-  return (
-    <>
-      <span className="doc-crop" data-corner="tl" aria-hidden="true" />
-      <span className="doc-crop" data-corner="tr" aria-hidden="true" />
-      <span className="doc-crop" data-corner="bl" aria-hidden="true" />
-      <span className="doc-crop" data-corner="br" aria-hidden="true" />
-    </>
-  );
 }
 
 export default function PromoCetakWizard() {
@@ -186,6 +213,33 @@ export default function PromoCetakWizard() {
   const [submitState, setSubmitState] = useState<SubmitState>('idle');
   const [submitError, setSubmitError] = useState('');
   const [result, setResult] = useState<BatchSubmitResult | null>(null);
+
+  /**
+   * Pemicu pemindahan fokus ke field tidak valid pertama.
+   *
+   * Sengaja BUKAN state turunan dari `fieldErrors`: mengandalkan perubahan
+   * `fieldErrors` akan merebut fokus setiap kali pengguna memperbaiki satu
+   * field, karena tiap ketikan membuat objek error baru. Pola ini cermin dari
+   * `PromoUploadWizard`.
+   */
+  const [focusErrorTick, setFocusErrorTick] = useState(0);
+
+  useEffect(() => {
+    if (focusErrorTick === 0) return;
+    // `FOCUS_ORDER` memuat prefiks (`target_`, `periode_`, `lead_`) yang tidak
+    // pernah menjadi kunci persis, jadi pencocokan dilakukan dua tahap: kunci
+    // persis lebih dulu, lalu prefiks.
+    const keys = Object.keys(fieldErrors);
+    const key =
+      FOCUS_ORDER.find((k) => keys.includes(k)) ??
+      FOCUS_ORDER.find((k) => k.endsWith('_') && keys.some((x) => x.startsWith(k)));
+    if (!key) return;
+    const target = keys.find((x) => x === key || x.startsWith(key))!;
+    fokusKeField(target);
+    // Hanya bergantung pada tick: `fieldErrors` sengaja tidak menjadi
+    // dependency agar memperbaiki satu field tidak memindahkan fokus.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [focusErrorTick]);
 
   const cetakMedia = useMemo(
     () => mediaTypes.filter((m) => m.media_channel === 'cetak'),
@@ -411,6 +465,7 @@ export default function PromoCetakWizard() {
     else if (!/^[+0-9][0-9\s-]{7,19}$/.test(picPhone.trim())) errs.pic_phone = 'Format nomor telepon tidak valid.';
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
+      setFocusErrorTick((t) => t + 1);
       return;
     }
     setFieldErrors({});
@@ -440,6 +495,7 @@ export default function PromoCetakWizard() {
     }
     if (Object.keys(errs).length > 0) {
       setFieldErrors(errs);
+      setFocusErrorTick((t) => t + 1);
       return;
     }
     setFieldErrors({});
@@ -449,6 +505,7 @@ export default function PromoCetakWizard() {
   async function handleSubmit() {
     if (!termsAccepted) {
       setSubmitError('Centang persetujuan ketentuan sebelum mengirim.');
+      setFocusErrorTick((t) => t + 1);
       return;
     }
     setSubmitState('sending');
@@ -501,66 +558,59 @@ export default function PromoCetakWizard() {
     return (
       <AppShell title="Pengajuan Terkirim" hideTabBar>
         <div className="mx-auto max-w-2xl px-4 py-8">
-          <div className="doc-sheet overflow-hidden">
-            <CropMarks />
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] px-6 pt-6 pb-2.5">
-              <span className="doc-plate-no">Tiket Pekerjaan</span>
-              <span className="doc-plate-no ml-auto shrink-0">Batch Cetak</span>
-            </div>
-
-            <div className="px-6 pt-6 pb-4 text-center">
+          <div className="ui-card overflow-hidden px-6 py-6">
+            <div className="pb-4 text-center">
               <CheckCircle2 className="mx-auto h-12 w-12 text-[color:var(--stamp-ok)]" aria-hidden="true" />
-              <h2 className="mt-3 text-xl font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">Pengajuan Terkirim!</h2>
+              <h2 className="ui-title-section mt-3">Pengajuan Terkirim!</h2>
               <p className="ui-body ui-text-muted mt-2">
                 Pengajuan media promosi cetak untuk{' '}
-                <span className="font-semibold">{applicantType === 'tenant' ? tenant?.name : nonTenantName}</span>{' '}
+                <span className="ui-text-strong font-semibold">{applicantType === 'tenant' ? tenant?.name : nonTenantName}</span>{' '}
                 sudah kami terima ({result.items.length} media).
               </p>
+            </div>
 
-              {/* Nomor batch = nomor job: data, jadi mono besar. */}
-              <div className="mt-5 border-y border-[color:var(--rule-color)] py-4">
-                <p className="doc-plate-no">Nomor batch</p>
-                <p className="doc-num mt-1 text-2xl font-bold tracking-[0.1em] text-slate-900 dark:text-white">{result.batch_number}</p>
-              </div>
-
-              {/* Nomor per media: satu baris per pekerjaan, dipisah garis. */}
-              <dl className="doc-rows mt-5 text-left">
-                {result.items.map((it) => (
-                  <div key={it.id} className="doc-row">
-                    <dt className="doc-num">{it.submission_number}</dt>
-                    <span className="doc-leader" aria-hidden="true" />
-                    <dd className="font-sans">{mediaBySlug[it.media_type_slug]?.name ?? it.media_type_slug}</dd>
-                  </div>
-                ))}
-              </dl>
-
-              <p className="mt-4 text-xs ui-text-muted">
-                Simpan nomor batch ini untuk memantau status seluruh media kapan saja.
-              </p>
-
-              <div className="mt-6 flex flex-wrap justify-center gap-3">
-                {result.batch_token && (
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/batch/${result.batch_token}`)}
-                    className="ui-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
-                  >
-                    Lihat Status Pengajuan
-                  </button>
-                )}
-                <button
-                  type="button"
-                  onClick={() => navigate('/')}
-                  className="ui-btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
-                >
-                  Kembali ke Beranda
-                </button>
+            {/* Nomor batch = nomor pengajuan: data, jadi angka terbesar di layar. */}
+            <div className="ui-calc">
+              <div>
+                <div className="ui-calc-k">Nomor batch</div>
+                <div className="ui-calc-v" data-emphasis="true">{result.batch_number}</div>
               </div>
             </div>
 
-            {/* Tepi perforasi: batas yang bisa disobek, tanda tiket. */}
-            <div className="doc-perf mx-6" aria-hidden="true" />
-            <p className="doc-plate-no px-6 py-4 text-center">
+            {/* Nomor per media: satu baris daftar per pekerjaan. */}
+            <dl className="ui-specs mt-5 text-left">
+              {result.items.map((it) => (
+                <div key={it.id} className="ui-spec">
+                  <dt className="ui-num">{it.submission_number}</dt>
+                  <dd className="font-sans">{mediaBySlug[it.media_type_slug]?.name ?? it.media_type_slug}</dd>
+                </div>
+              ))}
+            </dl>
+
+            <p className="ui-meta ui-text-muted mt-4 text-center">
+              Simpan nomor batch ini untuk memantau status seluruh media kapan saja.
+            </p>
+
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
+              {result.batch_token && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/batch/${result.batch_token}`)}
+                  className="ui-btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                >
+                  Lihat Status Pengajuan
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => navigate('/')}
+                className="ui-btn-secondary inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold"
+              >
+                Kembali ke Beranda
+              </button>
+            </div>
+
+            <p className="ui-meta ui-text-muted mt-6 border-t border-[color:var(--rule-color)] pt-4 text-center">
               Metropolitan Mall Bekasi · Kanal Media Cetak
             </p>
           </div>
@@ -578,62 +628,71 @@ export default function PromoCetakWizard() {
     // dipakai sebagai `key` React dan identitas baris di state.
     const basisIdPerBaris: Record<string, string> = {};
     barisMedia.forEach((row, idx) => { basisIdPerBaris[row.id] = basisIdBaris(m.slug, idx); });
+    const spesifikasi = [m.size_spec, m.material_spec].filter(Boolean).join(' · ');
     return (
       <div
         key={m.slug}
-        className={`border-b border-[color:var(--rule-color)] py-3.5 pl-3 ${
-          terpilih ? 'bg-[var(--process-soft)]' : ''
-        }`}
+        className={`ui-row ${terpilih ? 'bg-[var(--surface-offset)]' : ''}`}
       >
-        <label className="flex cursor-pointer items-start gap-3">
-          <input
-            id={`cetak-media-${m.slug}`}
-            type="checkbox"
-            checked={terpilih}
-            disabled={!terpilih && items.length >= MAX_BATCH_ITEMS}
-            onChange={() => toggleMedia(m.slug)}
-            className="mt-1 h-4 w-4 rounded-none accent-[var(--process)]"
+        <input
+          id={`cetak-media-${m.slug}`}
+          type="checkbox"
+          checked={terpilih}
+          disabled={!terpilih && items.length >= MAX_BATCH_ITEMS}
+          onChange={() => toggleMedia(m.slug)}
+          className="mt-1.5 h-4 w-4 shrink-0 accent-[var(--action)]"
+        />
+        {/* Foto contoh mempercepat pengenalan media; rasionya dikunci kelas
+         * `.ui-row-lead` supaya tinggi baris tidak melompat saat gambar tiba. */}
+        {m.image_path && (
+          <img
+            src={m.image_path}
+            alt={`Contoh pemasangan ${m.name}`}
+            width={64}
+            height={64}
+            loading="lazy"
+            decoding="async"
+            className="ui-row-lead"
           />
-          <span className="min-w-0 flex-1">
-            <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-              <span className="doc-plate-no">
-                Plate {String(m.sort_order ?? 0).padStart(2, '0')}
-              </span>
-              <span className="min-w-0 text-sm font-semibold text-slate-900 [overflow-wrap:anywhere] dark:text-white">{m.name}</span>
-              <span className="doc-tag" data-tone="none">
-                {CATEGORY_LABELS[m.category] ?? m.category}
-              </span>
-            </span>
-            {m.price_note && (
-              <span className="mt-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">
-                {m.price_note} {m.ppn_included ? '(sudah termasuk PPN)' : '(belum termasuk PPN)'}
-              </span>
-            )}
-          </span>
-        </label>
+        )}
+        <div className="ui-row-main">
+          {/* Nama + TARIF: angka memimpin (18px) di atas nama (16px).
+           * `<label>` hanya membungkus NAMA, bukan seluruh kepala baris:
+           * `<label>` hanya menerima konten phrasing, sedangkan harga bisa
+           * dirender sebagai tangga tarif (`<div>`). */}
+          <div className="ui-row-head">
+            <label htmlFor={`cetak-media-${m.slug}`} className="min-w-0 cursor-pointer">
+              <span className="ui-title-row">{m.name}</span>
+            </label>
+            <MediaPriceTag media={m} />
+          </div>
 
-        {/* Ukuran & material sebagai tabel titik penghubung: nilainya data,
-         * jadi rata kanan dan monospace. Diletakkan di luar `<label>` karena
-         * `<label>` hanya menerima konten phrasing. */}
-        <dl className="doc-rows mt-2.5">
-          {m.size_spec && (
-            <div className="doc-row">
-              <dt>Ukuran</dt>
-              <span className="doc-leader" aria-hidden="true" />
-              <dd>{m.size_spec}</dd>
-            </div>
+          {/* Ukuran & material sebagai pasangan label/nilai; diletakkan di luar
+           * `<label>` karena `<label>` hanya menerima konten phrasing. */}
+          {spesifikasi && (
+            <dl className="ui-specs mt-1.5">
+              {m.size_spec && (
+                <div className="ui-spec">
+                  <dt>Ukuran</dt>
+                  <dd>{m.size_spec}</dd>
+                </div>
+              )}
+              {m.material_spec && (
+                <div className="ui-spec">
+                  <dt>Material</dt>
+                  <dd>{m.material_spec}</dd>
+                </div>
+              )}
+            </dl>
           )}
-          {m.material_spec && (
-            <div className="doc-row">
-              <dt>Material</dt>
-              <span className="doc-leader" aria-hidden="true" />
-              <dd>{m.material_spec}</dd>
-            </div>
-          )}
-        </dl>
 
-        {terpilih && (
-          <div className="mt-3 border-t border-[color:var(--rule-color)]">
+          <p className="ui-meta ui-text-muted mt-1">
+            {m.location_note && <>{m.location_note} · </>}
+            {m.ppn_included ? 'sudah termasuk PPN' : 'belum termasuk PPN'}
+          </p>
+
+          {terpilih && (
+            <div className="mt-3 border-t border-[color:var(--rule-color)]">
             {barisMedia.map((row, idx) => {
               const dur = durationDays(row.air_start_date, row.air_end_date);
               const harga = m.price_amount
@@ -643,12 +702,12 @@ export default function PromoCetakWizard() {
               const basis = basisIdPerBaris[row.id] ?? basisIdBaris(m.slug, idx);
               return (
                 <fieldset key={row.id} className="border-b border-[color:var(--rule-color)] py-3 last:border-b-0">
-                  <legend className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
+                  <legend className="ui-label" data-tone="strong">
                     Lokasi ke-{idx + 1}
                   </legend>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="sm:col-span-2">
-                      <label htmlFor={`cetak-target-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">
+                      <label htmlFor={`cetak-target-${basis}`} className="ui-label mb-1 block" data-tone="strong">
                         Lokasi Pemasangan <span className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -665,7 +724,7 @@ export default function PromoCetakWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor={`cetak-start-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Periode Mulai</label>
+                      <label htmlFor={`cetak-start-${basis}`} className="ui-label mb-1 block" data-tone="strong">Periode Mulai</label>
                       <input
                         id={`cetak-start-${basis}`}
                         type="date"
@@ -675,7 +734,7 @@ export default function PromoCetakWizard() {
                       />
                     </div>
                     <div>
-                      <label htmlFor={`cetak-end-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Periode Selesai</label>
+                      <label htmlFor={`cetak-end-${basis}`} className="ui-label mb-1 block" data-tone="strong">Periode Selesai</label>
                       <input
                         id={`cetak-end-${basis}`}
                         type="date"
@@ -685,7 +744,7 @@ export default function PromoCetakWizard() {
                       />
                     </div>
                     <div className="sm:col-span-2">
-                      <label htmlFor={`cetak-install-${basis}`} className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-700 dark:text-slate-200">Tanggal Pemasangan</label>
+                      <label htmlFor={`cetak-install-${basis}`} className="ui-label mb-1 block" data-tone="strong">Tanggal Pemasangan</label>
                       <input
                         id={`cetak-install-${basis}`}
                         type="date"
@@ -709,18 +768,18 @@ export default function PromoCetakWizard() {
                     {harga && dur > 0 && (
                       <>
                         {/* Perhitungan baris ini: blok biaya dokumen, bukan kartu. */}
-                        <div className="doc-calc sm:col-span-2">
+                        <div className="ui-calc sm:col-span-2">
                           <div>
-                            <div className="doc-calc-k">Durasi</div>
-                            <div className="doc-calc-v">{dur} hari</div>
+                            <div className="ui-calc-k">Durasi</div>
+                            <div className="ui-calc-v">{dur} hari</div>
                           </div>
                           <div>
-                            <div className="doc-calc-k">Subtotal</div>
-                            <div className="doc-calc-v">{rupiah(harga.subtotal)}</div>
+                            <div className="ui-calc-k">Subtotal</div>
+                            <div className="ui-calc-v">{rupiah(harga.subtotal)}</div>
                           </div>
                           <div>
-                            <div className="doc-calc-k">{m.ppn_included ? 'Termasuk PPN' : LABEL_PPN_STANDAR}</div>
-                            <div className="doc-calc-v">{rupiah(harga.ppnAmount)}</div>
+                            <div className="ui-calc-k">{m.ppn_included ? 'Termasuk PPN' : LABEL_PPN_STANDAR}</div>
+                            <div className="ui-calc-v">{rupiah(harga.ppnAmount)}</div>
                           </div>
                         </div>
                         <p className="text-xs ui-text-muted sm:col-span-2">
@@ -753,8 +812,9 @@ export default function PromoCetakWizard() {
               <Plus className="h-3.5 w-3.5" aria-hidden="true" />
               Tambah lokasi lain
             </button>
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -778,19 +838,19 @@ export default function PromoCetakWizard() {
               return (
                 <li key={s.label} className="flex items-baseline gap-2 pb-2">
                   <span
-                    className={`doc-num text-xs font-bold ${
-                      aktif ? 'text-[color:var(--process)]' : 'text-slate-400 dark:text-slate-500'
+                    className={`ui-num text-xs font-bold ${
+                      aktif ? 'text-[color:var(--action)]' : 'text-slate-400'
                     }`}
                   >
                     {String(nomorLangkah).padStart(2, '0')}
                   </span>
                   <span
-                    className={`text-xs font-semibold uppercase tracking-[0.14em] ${
+                    className={`ui-label ${
                       aktif
-                        ? 'text-[color:var(--process)]'
+                        ? 'text-[color:var(--action)]'
                         : selesai
-                          ? 'text-slate-700 dark:text-slate-200'
-                          : 'text-slate-400 dark:text-slate-500'
+                          ? 'text-slate-700'
+                          : 'text-slate-400'
                     }`}
                   >
                     {s.label}
@@ -799,7 +859,7 @@ export default function PromoCetakWizard() {
               );
             })}
             <li className="ml-auto pb-2">
-              <span className="doc-plate-no">
+              <span className="ui-label">
                 Langkah {step} dari {STEPS.length}
               </span>
             </li>
@@ -817,7 +877,7 @@ export default function PromoCetakWizard() {
                 key={s.label}
                 className={`h-[6px] flex-1 border ${
                   i < step
-                    ? 'border-[color:var(--process)] bg-[color:var(--process)]'
+                    ? 'border-[color:var(--action)] bg-[color:var(--action)]'
                     : 'border-[color:var(--rule-strong)] bg-[var(--surface-offset)]'
                 }`}
               />
@@ -826,8 +886,8 @@ export default function PromoCetakWizard() {
         </nav>
 
         {loading && (
-          <div className="doc-sheet flex items-center justify-center gap-3 p-10" role="status">
-            <Loader2 className="h-5 w-5 animate-spin text-[color:var(--process)]" aria-hidden="true" />
+          <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
+            <Loader2 className="h-5 w-5 animate-spin text-[color:var(--action)]" aria-hidden="true" />
             <span className="text-sm ui-text-muted">Memuat katalog media cetak…</span>
           </div>
         )}
@@ -842,25 +902,24 @@ export default function PromoCetakWizard() {
         )}
 
         {!loading && !loadError && (
-          <div className="doc-sheet overflow-hidden">
-            <CropMarks />
+          <div className="ui-card overflow-hidden">
             {/* ─── Langkah 1: Data Pemohon ─── */}
             {step === 1 && (
               <div className="p-5 sm:p-6">
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Data Pemohon</h2>
-                  <span className="doc-plate-no ml-auto shrink-0">Bagian 01</span>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2.5">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus-visible:outline-none">Data Pemohon</h2>
+                  <span className="ui-label ml-auto shrink-0">Bagian 01</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">Isi data pemohon dan kontak yang dapat dihubungi.</p>
                 {items.length > 0 && (
-                  <p className="mt-3 border-l-2 border-[color:var(--process)] bg-[var(--process-soft)] px-3 py-2 text-xs font-medium text-[color:var(--process)]">
+                  <p className="mt-3 bg-[var(--surface-offset)] px-3 py-2 text-xs font-medium text-[color:var(--action)]">
                     Media terpilih: {items.map((it) => mediaBySlug[it.slug]?.name ?? it.slug).join(', ')}. Bisa diubah di langkah Pilih Media.
                   </p>
                 )}
 
                 <div className="mt-5 space-y-4">
                   <fieldset>
-                    <legend className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">Jenis Pemohon</legend>
+                    <legend className="ui-label mb-1.5 block" data-tone="strong">Jenis Pemohon</legend>
                     <div className="flex gap-2" role="group" aria-label="Jenis pemohon">
                       {(['tenant', 'non_tenant'] as const).map((t) => (
                         <button
@@ -870,8 +929,8 @@ export default function PromoCetakWizard() {
                           onClick={() => { setApplicantType(t); setFieldErrors({}); }}
                           className={`min-h-11 flex-1 border px-3 py-2 text-sm font-semibold ${
                             applicantType === t
-                              ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process)]'
-                              : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)] dark:text-slate-300'
+                              ? 'border-[color:var(--action)] bg-[var(--action-soft)] text-[color:var(--action)]'
+                              : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                           }`}
                         >
                           {APPLICANT_TYPE_LABELS[t]}
@@ -882,7 +941,7 @@ export default function PromoCetakWizard() {
 
                   {applicantType === 'tenant' ? (
                     <div>
-                      <label htmlFor="cetak-tenant" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-tenant" className="ui-label mb-1.5 block" data-tone="strong">
                         Nama Tenant <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <p className="mb-1.5 text-xs ui-text-muted">
@@ -898,7 +957,7 @@ export default function PromoCetakWizard() {
                     </div>
                   ) : (
                     <div>
-                      <label htmlFor="cetak-non-tenant" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-non-tenant" className="ui-label mb-1.5 block" data-tone="strong">
                         Nama Non Tenant <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <p className="mb-1.5 text-xs ui-text-muted">Nama badan usaha atau perorangan yang mengajukan.</p>
@@ -920,7 +979,7 @@ export default function PromoCetakWizard() {
 
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>
-                      <label htmlFor="cetak-pic" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-pic" className="ui-label mb-1.5 block" data-tone="strong">
                         Nama Pemohon <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -939,7 +998,7 @@ export default function PromoCetakWizard() {
                       </div>
                     </div>
                     <div>
-                      <label htmlFor="cetak-phone" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                      <label htmlFor="cetak-phone" className="ui-label mb-1.5 block" data-tone="strong">
                         Nomor Telepon <span aria-hidden="true" className="text-[color:var(--stamp-no)]">*</span>
                       </label>
                       <input
@@ -962,7 +1021,7 @@ export default function PromoCetakWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="cetak-date" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">Tanggal Pengajuan</label>
+                    <label htmlFor="cetak-date" className="ui-label mb-1.5 block" data-tone="strong">Tanggal Pengajuan</label>
                     <input
                       id="cetak-date"
                       type="date"
@@ -973,7 +1032,7 @@ export default function PromoCetakWizard() {
                   </div>
 
                   <div>
-                    <label htmlFor="cetak-notes" className="mb-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-800 dark:text-slate-100">
+                    <label htmlFor="cetak-notes" className="ui-label mb-1.5 block" data-tone="strong">
                       Catatan <span className="text-xs font-normal ui-text-muted">(opsional)</span>
                     </label>
                     <textarea
@@ -1001,9 +1060,9 @@ export default function PromoCetakWizard() {
             {/* ─── Langkah 2: Pilih Media & Periode ─── */}
             {step === 2 && (
               <div className="p-5 sm:p-6">
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Pilih Media &amp; Periode</h2>
-                  <span className="doc-plate-no ml-auto shrink-0">{dipilih} baris</span>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2.5">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus-visible:outline-none">Pilih Media &amp; Periode</h2>
+                  <span className="ui-label ml-auto shrink-0">{dipilih} baris</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">
                   Pilih satu atau beberapa media promosi cetak outdoor dan indoor. Minimal sewa {MIN_DURATION_DAYS} hari.
@@ -1017,14 +1076,14 @@ export default function PromoCetakWizard() {
                   {kelompokMedia.map((grup) => (
                     <section key={grup.kategori} aria-labelledby={`cetak-kategori-${grup.kategori}`}>
                       {/* Header seksi: judul kapital + garis 2px tinta. */}
-                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2">
+                      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2">
                         <h3
                           id={`cetak-kategori-${grup.kategori}`}
-                          className="text-base font-extrabold uppercase tracking-wide text-slate-900 dark:text-white"
+                          className="text-base font-extrabold uppercase tracking-wide text-slate-900"
                         >
                           {CATEGORY_LABELS[grup.kategori] ?? grup.kategori}
                         </h3>
-                        <span className="doc-plate-no ml-auto shrink-0">{grup.media.length} media</span>
+                        <span className="ui-label ml-auto shrink-0">{grup.media.length} media</span>
                       </div>
                       <div className="mt-3 border-t border-[color:var(--rule-color)]">
                         {grup.media.map((m) => renderBlokMedia(m))}
@@ -1057,55 +1116,55 @@ export default function PromoCetakWizard() {
             {/* ─── Langkah 3: Ringkasan & Kirim ─── */}
             {step === 3 && (
               <div className="p-5 sm:p-6">
-                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="text-xl font-extrabold uppercase tracking-wide text-slate-900 focus:outline-none dark:text-white">Ringkasan &amp; Kirim</h2>
-                  <span className="doc-plate-no ml-auto shrink-0">Bagian 03</span>
+                <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2.5">
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus-visible:outline-none">Ringkasan &amp; Kirim</h2>
+                  <span className="ui-label ml-auto shrink-0">Bagian 03</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">Periksa kembali data sebelum mengirim.</p>
 
                 {/* Data pemohon sebagai tabel titik penghubung. */}
                 <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
-                  <p className="doc-plate-no">Data Pemohon</p>
-                  <dl className="doc-rows mt-2.5">
-                    <div className="doc-row"><dt>Jenis Pemohon</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans">{APPLICANT_TYPE_LABELS[applicantType]}</dd></div>
-                    <div className="doc-row"><dt>{applicantType === 'tenant' ? 'Nama Tenant' : 'Nama Non Tenant'}</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans">{applicantType === 'tenant' ? tenant?.name : nonTenantName}</dd></div>
-                    <div className="doc-row"><dt>Nama Pemohon</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans">{picName}</dd></div>
-                    <div className="doc-row"><dt>Telepon</dt><span className="doc-leader" aria-hidden="true" /><dd>{picPhone}</dd></div>
-                    <div className="doc-row"><dt>Tanggal Pengajuan</dt><span className="doc-leader" aria-hidden="true" /><dd>{formatTanggal(submissionDate)}</dd></div>
-                    {notes && <div className="doc-row items-start"><dt className="pt-0.5">Catatan</dt><span className="doc-leader mt-2.5" aria-hidden="true" /><dd className="text-left font-sans text-xs leading-snug font-normal">{notes}</dd></div>}
+                  <p className="ui-label">Data Pemohon</p>
+                  <dl className="ui-specs mt-2.5">
+                    <div className="ui-spec"><dt>Jenis Pemohon</dt><dd className="font-sans">{APPLICANT_TYPE_LABELS[applicantType]}</dd></div>
+                    <div className="ui-spec"><dt>{applicantType === 'tenant' ? 'Nama Tenant' : 'Nama Non Tenant'}</dt><dd className="font-sans">{applicantType === 'tenant' ? tenant?.name : nonTenantName}</dd></div>
+                    <div className="ui-spec"><dt>Nama Pemohon</dt><dd className="font-sans">{picName}</dd></div>
+                    <div className="ui-spec"><dt>Telepon</dt><dd>{picPhone}</dd></div>
+                    <div className="ui-spec"><dt>Tanggal Pengajuan</dt><dd>{formatTanggal(submissionDate)}</dd></div>
+                    {notes && <div className="ui-spec items-start"><dt className="pt-0.5">Catatan</dt><dd className="text-left font-sans text-xs leading-snug font-normal">{notes}</dd></div>}
                   </dl>
                 </div>
 
                 {/* Baris per media: satu pekerjaan per baris, dipisah garis. */}
                 <div className="mt-4 border border-[color:var(--rule-color)]">
-                  <p className="doc-plate-no border-b border-[color:var(--rule-color)] bg-[var(--surface-offset)] px-3 py-2">
+                  <p className="ui-label border-b border-[color:var(--rule-color)] bg-[var(--surface-offset)] px-3 py-2">
                     Media dipilih ({dipilih})
                   </p>
                   <ul>
                     {barisHarga.map(({ it, m, dur, harga }) => (
                       <li key={it.id} className="border-b border-[color:var(--rule-color)] px-3 py-3 text-xs last:border-b-0">
-                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">{m?.name ?? it.slug}</p>
-                        <dl className="doc-rows mt-1.5">
-                          <div className="doc-row">
+                        <p className="text-sm font-semibold text-slate-800">{m?.name ?? it.slug}</p>
+                        <dl className="ui-specs mt-1.5">
+                          <div className="ui-spec">
                             <dt>Lokasi</dt>
-                            <span className="doc-leader" aria-hidden="true" />
+
                             <dd className="font-sans">{it.media_target || '-'}</dd>
                           </div>
-                          <div className="doc-row">
+                          <div className="ui-spec">
                             <dt>Periode</dt>
-                            <span className="doc-leader" aria-hidden="true" />
+
                             <dd className="font-sans">{formatTanggal(it.air_start_date)} s/d {formatTanggal(it.air_end_date)} ({dur} hari)</dd>
                           </div>
                           {it.installation_date && (
-                            <div className="doc-row">
+                            <div className="ui-spec">
                               <dt>Tanggal pemasangan</dt>
-                              <span className="doc-leader" aria-hidden="true" />
+
                               <dd className="font-sans">{formatTanggal(it.installation_date)}</dd>
                             </div>
                           )}
                         </dl>
                         {harga && (
-                          <p className="doc-num mt-1.5 font-semibold text-slate-800 dark:text-slate-100">
+                          <p className="ui-num mt-1.5 font-semibold text-slate-800">
                             {m?.ppn_included
                               ? `${rupiah(harga.totalAmount)} (sudah termasuk PPN ${rupiah(harga.ppnAmount)})`
                               : `${rupiah(harga.subtotal)} + PPN ${rupiah(harga.ppnAmount)} = ${rupiah(harga.totalAmount)}`}
@@ -1117,18 +1176,18 @@ export default function PromoCetakWizard() {
                 </div>
 
                 {/* Blok perhitungan agregat: subtotal / PPN / total. */}
-                <div className="doc-calc mt-4">
+                <div className="ui-calc mt-4">
                   <div>
-                    <div className="doc-calc-k">Subtotal</div>
-                    <div className="doc-calc-v">{rupiah(totalSubtotal)}</div>
+                    <div className="ui-calc-k">Subtotal</div>
+                    <div className="ui-calc-v">{rupiah(totalSubtotal)}</div>
                   </div>
                   <div>
-                    <div className="doc-calc-k">{labelAgregatPpn}</div>
-                    <div className="doc-calc-v">{rupiah(totalPpn)}</div>
+                    <div className="ui-calc-k">{labelAgregatPpn}</div>
+                    <div className="ui-calc-v">{rupiah(totalPpn)}</div>
                   </div>
                   <div>
-                    <div className="doc-calc-k">Total</div>
-                    <div className="doc-calc-v" data-emphasis="true">{rupiah(totalTagihan)}</div>
+                    <div className="ui-calc-k">Total</div>
+                    <div className="ui-calc-v" data-emphasis="true">{rupiah(totalTagihan)}</div>
                   </div>
                 </div>
                 <p className="mt-2 text-xs ui-text-muted">
@@ -1146,7 +1205,7 @@ export default function PromoCetakWizard() {
                     fiturnya di dashboard. Satu berkas untuk seluruh batch. */}
                 {taxProofEnabled && (
                   <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
-                    <p className="doc-plate-no">Bukti Pembayaran Pajak (opsional)</p>
+                    <p className="ui-label">Bukti Pembayaran Pajak (opsional)</p>
                     <p className="mt-1.5 text-xs ui-text-muted">
                       Unggah bukti pembayaran PPN (JPEG, PNG, PDF, atau MP4, maks 50MB). Boleh
                       dikosongkan dan dilengkapi menyusul lewat Tenant Relations.
@@ -1160,9 +1219,9 @@ export default function PromoCetakWizard() {
                       }`}
                     >
                       {taxUploading
-                        ? <Loader2 className="h-7 w-7 animate-spin text-[color:var(--process)]" aria-hidden="true" />
-                        : <Upload className="h-7 w-7 text-[color:var(--process)]" aria-hidden="true" />}
-                      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+                        ? <Loader2 className="h-7 w-7 animate-spin text-[color:var(--action)]" aria-hidden="true" />
+                        : <Upload className="h-7 w-7 text-[color:var(--action)]" aria-hidden="true" />}
+                      <span className="text-sm font-medium text-slate-700">
                         {taxUploading ? 'Mengunggah…' : (taxFile ? 'Ganti berkas' : 'Klik untuk memilih berkas')}
                       </span>
                       <span className="text-xs ui-text-muted">JPEG, PNG, PDF, MP4 · maks 50MB</span>
@@ -1190,13 +1249,13 @@ export default function PromoCetakWizard() {
                   </div>
                 )}
 
-                <label className="mt-4 flex items-start gap-2 text-sm text-slate-700 dark:text-slate-200">
+                <label className="mt-4 flex items-start gap-2 text-sm text-slate-700">
                   <input
                     type="checkbox"
                     id="cetak-terms"
                     checked={termsAccepted}
                     onChange={(e) => { setTermsAccepted(e.target.checked); setSubmitError(''); }}
-                    className="mt-0.5 h-4 w-4 accent-[var(--process)]"
+                    className="mt-0.5 h-4 w-4 accent-[var(--action)]"
                   />
                   <span>
                     Saya menyatakan materi dan data yang saya ajukan benar, dan menyetujui ketentuan

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePermission } from '../../hooks/usePermission';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 import { useConfirmDialog } from '../ConfirmDialog';
 import Sheet from '../ui/Sheet';
 import Stamp from '../promo/Stamp';
@@ -370,9 +371,10 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
   return (
 
     <div>
-      {/* Ringkasan jumlah per status - blok angka dokumen, dipisah garis
-       * (bukan kartu membulat berbayang). Angka mono besar, label kapital. */}
-      <div className="grid grid-cols-2 border-t-2 border-[color:var(--rule-ink)] sm:grid-cols-4 lg:grid-cols-7">
+      {/* Ringkasan jumlah per status - baris angka mono besar (`.ui-stat`) di
+       * atas garis, bukan kartu. Angka memimpin lewat UKURANNYA; filter aktif
+       * ditandai tinta (blok tenang + garis bawah), bukan warna aksen. */}
+      <div className="grid grid-cols-2 border-t border-[color:var(--rule-color)] sm:grid-cols-4 lg:grid-cols-7">
         {STATUS_ORDER.map((s) => (
           <button
             key={s}
@@ -380,15 +382,17 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             onClick={() => { setStatusFilter(statusFilter === s ? '' : s); setPage(1); }}
             aria-pressed={statusFilter === s}
             aria-label={`${STATUS_LABELS[s]} ${summary[s] ?? 0}`}
-            className={`border-b border-r border-[color:var(--rule-color)] px-3 py-2.5 text-left transition ${
-              statusFilter === s ? 'bg-[var(--process-soft)]' : 'hover:bg-[var(--surface-hover)]'
+            className={`ui-stat border-b border-r border-[color:var(--rule-color)] px-3 py-2.5 text-left transition hover:bg-[var(--surface-hover)] ${
+              statusFilter === s ? 'bg-[var(--surface-hover)]' : ''
             }`}
           >
-            <span className={`doc-num block text-2xl font-bold leading-none ${statusFilter === s ? 'text-[color:var(--process)]' : 'text-slate-900'}`}>
-              {summary[s] ?? 0}
-            </span>
-            <span className="mt-1.5 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+            <span className="ui-stat-k">
               {STATUS_LABELS[s]}
+            </span>
+            <span
+              className={`ui-stat-v ${statusFilter === s ? 'underline decoration-2 underline-offset-4' : ''}`}
+            >
+              {summary[s] ?? 0}
             </span>
           </button>
         ))}
@@ -404,28 +408,31 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
        * (`AdminDashboardPage.test.tsx` "tidak menampilkan panel bila tidak ada
        * pengingat"). Yang ditambahkan hanya pembeda "gagal memuat". */}
       {remindersError && (
-        <section className="mb-4 border border-[color:var(--rule-color)] border-t-2 border-t-[color:var(--stamp-no)] bg-[var(--stamp-no-soft)] p-3" role="alert">
-          <p className="text-sm font-semibold text-red-800">Gagal memuat pengingat periode berakhir.</p>
-          <p className="mt-1 text-xs text-red-700">Muat ulang halaman untuk mencoba lagi.</p>
+        <section className="ui-alert-panel mb-4 flex items-start gap-2 p-3" role="alert">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" aria-hidden="true" />
+          <div>
+            <p className="text-sm font-semibold text-red-800">Gagal memuat pengingat periode berakhir.</p>
+            <p className="mt-1 text-xs text-red-700">Muat ulang halaman untuk mencoba lagi.</p>
+          </div>
         </section>
       )}
       {reminders && reminders.items.length > 0 && (
         <section
-          className="mb-4 border border-[color:var(--rule-color)] border-t-2 border-t-[color:var(--rule-ink)] bg-[var(--surface-card)] p-3"
+          className="ui-card mb-4 p-3"
           aria-labelledby="pengingat-judul"
         >
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-[color:var(--rule-color)] pb-2">
-            <h2 id="pengingat-judul" className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-900">
+            <h2 id="pengingat-judul" className="ui-title-section">
               Pengingat periode berakhir
             </h2>
             <p className="text-xs ui-text-muted">
-              {reminders.overdue > 0 && <span className="doc-num font-semibold text-red-600">{reminders.overdue} sudah lewat</span>}
+              {reminders.overdue > 0 && <span className="ui-num font-semibold text-red-600">{reminders.overdue} sudah lewat</span>}
               {reminders.overdue > 0 && reminders.due_soon > 0 && ' · '}
-              {reminders.due_soon > 0 && <span className="doc-num">{reminders.due_soon} dalam {reminders.days} hari</span>}
+              {reminders.due_soon > 0 && <span className="ui-num">{reminders.due_soon} dalam {reminders.days} hari</span>}
               {(reminders.belum_terpasang ?? 0) > 0 && (
                 <>
                   {(reminders.overdue > 0 || reminders.due_soon > 0) && ' · '}
-                  <span className="doc-num font-semibold text-[color:var(--process)]">{reminders.belum_terpasang} belum tercatat terpasang</span>
+                  <span className="ui-num font-semibold text-amber-700">{reminders.belum_terpasang} belum tercatat terpasang</span>
                 </>
               )}
             </p>
@@ -459,22 +466,22 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         air_end_date: r.air_end_date,
                         created_at: '',
                       } as AdminSubmissionRow))}
-                      className="doc-num min-h-11 font-semibold text-slate-700 underline-offset-2 transition hover:text-[color:var(--process)] hover:underline"
+                      className="ui-num min-h-11 font-semibold text-slate-700 underline-offset-2 transition hover:underline"
                     >
                       {r.submission_number}
                     </button>
                     <span className="ml-1.5 ui-text-muted">{r.tenant_name} · {r.media_type_slug}</span>
                     {r.category === 'belum_terpasang' && (
-                      <span className="doc-tag ml-1.5 shrink-0" data-tone="process">
+                      <span className="ui-tag ml-1.5 shrink-0">
                         belum tercatat terpasang
                       </span>
                     )}
                   </span>
-                  <span className={`doc-num shrink-0 font-semibold ${r.days_left !== null && r.days_left < 0 ? 'text-red-600' : 'text-amber-700'}`}>
+                  <span className={`ui-num shrink-0 font-semibold ${r.days_left !== null && r.days_left < 0 ? 'text-red-600' : 'text-amber-700'}`}>
                     {r.days_left === null ? r.end_date || '-' : r.days_left < 0 ? `lewat ${Math.abs(r.days_left)} hari` : `${r.days_left} hari lagi`}
                   </span>
                   {wa && (
-                    <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 font-medium text-[color:var(--process)]">
+                    <a href={wa} target="_blank" rel="noopener noreferrer" className="shrink-0 font-medium underline underline-offset-[3px]">
                       Ingatkan via WhatsApp
                     </a>
                   )}
@@ -488,7 +495,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               onClick={() => setPengingatTerbuka((v) => !v)}
               aria-expanded={pengingatTerbuka}
               aria-controls="pengingat-daftar"
-              className="ui-control mt-2 inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600 transition hover:text-[color:var(--process)]"
+              className="ui-label ui-control mt-2 inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-3 py-2 transition hover:" data-tone="strong"
             >
               {pengingatTerbuka
                 ? 'Sembunyikan'
@@ -501,7 +508,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       {/* Baris kontrol dokumen: pencarian, filter, jumlah, ekspor. */}
       <div className="mb-4 flex flex-wrap items-end gap-x-3 gap-y-2 border-y border-[color:var(--rule-color)] py-3">
         <div className="min-w-48 flex-1">
-          <label htmlFor="filter-search" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Cari</label>
+          <label htmlFor="filter-search" className="ui-label mb-1 block">Cari</label>
           <input
             id="filter-search"
             type="search"
@@ -513,7 +520,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </div>
 
         <div>
-          <label htmlFor="filter-status" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</label>
+          <label htmlFor="filter-status" className="ui-label mb-1 block">Status</label>
           <select
             id="filter-status"
             value={statusFilter}
@@ -527,7 +534,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </div>
 
         <div>
-          <label htmlFor="filter-media" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Media</label>
+          <label htmlFor="filter-media" className="ui-label mb-1 block">Media</label>
           <select
             id="filter-media"
             value={mediaFilter}
@@ -540,7 +547,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </div>
 
         <div>
-          <label htmlFor="filter-tenant" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Tenant</label>
+          <label htmlFor="filter-tenant" className="ui-label mb-1 block">Tenant</label>
           <input
             id="filter-tenant"
             type="text"
@@ -552,34 +559,34 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </div>
 
         <div>
-          <label htmlFor="filter-date-from" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Dari tanggal</label>
+          <label htmlFor="filter-date-from" className="ui-label mb-1 block">Dari tanggal</label>
           <input
             id="filter-date-from"
             type="date"
             value={dateFrom}
             onChange={(e) => { setDateFrom(e.target.value); setPage(1); }}
-            className="ui-control doc-num border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
+            className="ui-control border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
         <div>
-          <label htmlFor="filter-date-to" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Sampai tanggal</label>
+          <label htmlFor="filter-date-to" className="ui-label mb-1 block">Sampai tanggal</label>
           <input
             id="filter-date-to"
             type="date"
             value={dateTo}
             onChange={(e) => { setDateTo(e.target.value); setPage(1); }}
-            className="ui-control doc-num border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
+            className="ui-control border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
           />
         </div>
 
-        <span className="doc-num ml-auto text-xs ui-text-muted">{total} pengajuan</span>
+        <span className="ui-num ml-auto text-xs ui-text-muted">{total} pengajuan</span>
 
         <button
           type="button"
           onClick={handleExport}
           disabled={exporting}
-          className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)] disabled:opacity-60"
+          className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--action)] disabled:opacity-60"
         >
           {exporting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Download className="h-4 w-4" aria-hidden="true" />}
           Unduh CSV
@@ -593,8 +600,9 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
         </div>
       )}
 
-      {/* Tabel dokumen: baris dipisah garis 1px, tanpa kartu bersarang.
-       * Sel angka memakai `.doc-num` rata kanan agar kolom bisa dibandingkan.
+      {/* Tabel pengajuan: baris dipisah garis rambut 1px, tanpa kartu
+       * bersarang dan tanpa bingkai tinta. Sel angka memakai `.ui-num` rata
+       * kanan agar kolom bisa dibandingkan.
        * Petunjuk geser diletakkan DI LUAR wadah bergulir: di dalam, ia ikut
        * tergulir dan justru hilang saat paling dibutuhkan. */}
       <p className="px-3 pb-1 text-xs ui-text-muted lg:hidden">
@@ -603,14 +611,14 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       <div className="overflow-x-auto">
         <table className="w-full min-w-[760px] text-left text-sm">
           <thead>
-            <tr className="border-b-2 border-[color:var(--rule-ink)]">
-              <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Nomor</th>
-              <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Tanggal</th>
-              <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Tenant</th>
-              <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Materi</th>
-              <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">File</th>
-              <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
-              <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
+            <tr className="border-b border-[color:var(--rule-color)]">
+              <th className="px-3 py-2 ui-label">Nomor</th>
+              <th className="px-3 py-2 text-right ui-label">Tanggal</th>
+              <th className="px-3 py-2 ui-label">Tenant</th>
+              <th className="px-3 py-2 ui-label">Materi</th>
+              <th className="px-3 py-2 ui-label">File</th>
+              <th className="px-3 py-2 ui-label">Status</th>
+              <th className="px-3 py-2 text-right ui-label">Aksi</th>
             </tr>
           </thead>
           <tbody>
@@ -630,17 +638,17 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             {!loading && rows.map((r) => (
               <tr key={r.id} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
                 <td className="px-3 py-3">
-                  <span className="doc-num whitespace-nowrap text-xs font-semibold text-slate-900">
+                  <span className="ui-num whitespace-nowrap text-xs font-semibold text-slate-900">
                     {r.submission_number || '-'}
                   </span>
                   {/* Nomor batch pengajuan cetak: satu kirim form cetak memuat
                    * beberapa pengajuan, jadi nomor batch membantu staf mengenali
                    * baris kiriman yang sama. Baris non-batch tidak menambah apa pun. */}
                   {r.batch_number && (
-                    <p className="doc-plate-no mt-0.5">{r.batch_number}</p>
+                    <p className="ui-num mt-0.5 text-xs ui-text-muted">{r.batch_number}</p>
                   )}
                 </td>
-                <td className="doc-num whitespace-nowrap px-3 py-3 text-right text-xs text-slate-600">
+                <td className="ui-num whitespace-nowrap px-3 py-3 text-right text-xs text-slate-600">
                   {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
                 </td>
                 <td className="px-3 py-3">
@@ -652,7 +660,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 <td className="px-3 py-3">
                   <p className="text-slate-800">{r.material_title || r.media_type_slug}</p>
                   <p className="text-xs ui-text-muted">{r.media_type_slug}</p>
-                  {r.installation_date && <p className="doc-num text-xs ui-text-muted">pasang: {r.installation_date}</p>}
+                  {r.installation_date && <p className="ui-num text-xs ui-text-muted">pasang: {r.installation_date}</p>}
                   {leadTimeRisk(r) && (
                     <span
                       className="mt-1 inline-flex items-center gap-1 border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-xs font-bold text-amber-800"
@@ -674,7 +682,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                       href={r.source_type === 'link' ? r.link_url : r.file_url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex max-w-40 items-center gap-1.5 truncate text-xs font-medium text-[color:var(--process)] hover:text-[color:var(--process-strong)]"
+                      className="inline-flex max-w-40 items-center gap-1.5 truncate text-xs font-medium underline underline-offset-[3px]"
                     >
                       <FileIcon mime={r.mime_type} source={r.source_type} />
                       <span className="truncate">
@@ -690,7 +698,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     <button
                       type="button"
                       onClick={() => openDetail(r)}
-                      className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                      className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-slate-900"
                     >
                       Detail
                     </button>
@@ -724,7 +732,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
           >
             <ChevronLeft className="h-4 w-4" aria-hidden="true" />
           </button>
-          <span className="doc-num text-xs font-semibold ui-text-muted">Halaman {page} / {totalPages}</span>
+          <span className="ui-num text-xs font-semibold ui-text-muted">Halaman {page} / {totalPages}</span>
           <button
             type="button"
             onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
@@ -747,32 +755,32 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
       >
         {detail && (
           <>
-            <div className="border-b-2 border-[color:var(--rule-ink)] pb-2.5">
+            <div className="border-b border-[color:var(--rule-strong)] pb-2.5">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <p className="doc-plate-no text-slate-900">{detail.submission_number || '-'}</p>
+                <p className="ui-label ui-text-strong">{detail.submission_number || '-'}</p>
                 <Stamp status={detail.status} />
               </div>
               <p className="mt-1 text-xs ui-text-muted">
-                {detail.tenant_name} · {detail.media_type_slug} · <span className="doc-num">{detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</span>
+                {detail.tenant_name} · {detail.media_type_slug} · <span className="ui-num">{detail.created_at ? new Date(detail.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}</span>
               </p>
             </div>
 
-            <dl className="doc-rows mt-3">
+            <dl className="ui-specs mt-3">
               {/* Jenis pemohon menentukan label baris nama di bawah. Pengajuan
                * cetak boleh diajukan tenant maupun non-tenant; tanpa baris ini
                * staf tidak bisa membedakannya dan label "Tenant" menyesatkan
                * untuk pemohon non-tenant. */}
-              <div className="doc-row">
+              <div className="ui-spec">
                 <dt>Jenis Pemohon</dt>
-                <span className="doc-leader" aria-hidden="true" />
+
                 <dd>
                   {APPLICANT_TYPE_LABELS[detail.applicant_type ?? 'tenant'] ?? APPLICANT_TYPE_LABELS.tenant}
                 </dd>
               </div>
-              <div className="doc-row"><dt>PIC</dt><span className="doc-leader" aria-hidden="true" /><dd>{detail.pic_name} · {detail.pic_phone}</dd></div>
-              <div className="doc-row">
+              <div className="ui-spec"><dt>PIC</dt><dd>{detail.pic_name} · {detail.pic_phone}</dd></div>
+              <div className="ui-spec">
                 <dt>{detailNonTenant ? 'Nama Non Tenant' : 'Nama Tenant'}</dt>
-                <span className="doc-leader" aria-hidden="true" />
+
                 <dd>
                   {detail.tenant_name}
                   {/* Penanda MID hanya bermakna untuk tenant: non-tenant memang
@@ -786,39 +794,39 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               </div>
               {/* Nomor batch: satu kirim form cetak bisa memuat beberapa media. */}
               {detail.batch_number && (
-                <div className="doc-row">
+                <div className="ui-spec">
                   <dt>Nomor Batch</dt>
-                  <span className="doc-leader" aria-hidden="true" />
+
                   <dd>{detail.batch_number}</dd>
                 </div>
               )}
-              {detail.campaign_name && <div className="doc-row"><dt>Campaign</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.campaign_name}</dd></div>}
+              {detail.campaign_name && <div className="ui-spec"><dt>Campaign</dt><dd className="font-sans font-normal normal-case">{detail.campaign_name}</dd></div>}
               {/* Baris Deskripsi SELALU tampil. Dulu baris ini hilang saat
                * `material_description` kosong, sehingga staf mengira data
                * hilang padahal field-nya memang tidak diisi - khususnya
                * pengajuan kanal cetak, yang form-nya tidak meminta deskripsi.
                * Kini kekosongan dinyatakan eksplisit, bukan disembunyikan. */}
-              <div className="doc-row items-start">
+              <div className="ui-spec items-start">
                 <dt className="pt-0.5">Deskripsi</dt>
-                <span className="doc-leader mt-2.5" aria-hidden="true" />
+
                 <dd className="font-sans font-normal normal-case">
                   {detail.material_description || <span className="ui-text-muted">tidak diisi</span>}
                 </dd>
               </div>
-              {detail.material_type && <div className="doc-row"><dt>Jenis materi</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.material_type}</dd></div>}
-              {detail.media_target && <div className="doc-row"><dt>Media/lokasi</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.media_target}</dd></div>}
+              {detail.material_type && <div className="ui-spec"><dt>Jenis materi</dt><dd className="font-sans font-normal normal-case">{detail.material_type}</dd></div>}
+              {detail.media_target && <div className="ui-spec"><dt>Media/lokasi</dt><dd className="font-sans font-normal normal-case">{detail.media_target}</dd></div>}
               {(detail.air_start_date || detail.air_end_date) && (
-                <div className="doc-row">
+                <div className="ui-spec">
                   <dt>Periode tayang</dt>
-                  <span className="doc-leader" aria-hidden="true" />
+
                   <dd>{detail.air_start_date || '-'} s/d {detail.air_end_date || '-'}</dd>
                 </div>
               )}
-              {detail.installation_date && <div className="doc-row"><dt>Tgl pasang</dt><span className="doc-leader" aria-hidden="true" /><dd>{detail.installation_date}</dd></div>}
+              {detail.installation_date && <div className="ui-spec"><dt>Tgl pasang</dt><dd>{detail.installation_date}</dd></div>}
               {leadTimeRisk(detail) && (
-                <div className="doc-row items-start">
+                <div className="ui-spec items-start">
                   <dt className="pt-0.5 text-amber-700">Lead time</dt>
-                  <span className="doc-leader mt-2.5" aria-hidden="true" />
+
                   <dd className="flex items-start justify-end gap-1.5 font-sans font-normal normal-case text-amber-800">
                     <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
                     <span>{leadTimeRisk(detail)}</span>
@@ -830,13 +838,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                * dirender sebagai berkas, sehingga staf melihat tautan
                * `href=""` yang memuat ulang halaman saat diklik. Kanal tanpa
                * materi kini baris informasi biasa, bukan tautan. */}
-              <div className="doc-row items-start">
+              <div className="ui-spec items-start">
                 <dt className="pt-0.5">
                   {detail.source_type === 'link'
                     ? 'Tautan'
                     : detail.source_type === 'upload' ? 'File' : 'Materi'}
                 </dt>
-                <span className="doc-leader mt-2.5" aria-hidden="true" />
+
                 <dd className="min-w-0 font-sans font-normal normal-case">
                   {detail.source_type === 'none' ? (
                     <span className="text-slate-900">
@@ -848,7 +856,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         href={detail.source_type === 'link' ? detail.link_url : detail.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="doc-link inline-flex items-center gap-1.5 break-all font-medium"
+                        className="underline underline-offset-[3px] inline-flex items-center gap-1.5 break-all font-medium"
                       >
                         <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                         {detail.source_type === 'link' ? detail.link_url : (detail.file_name || 'file')}
@@ -862,8 +870,8 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   )}
                 </dd>
               </div>
-              {detail.notes && <div className="doc-row items-start"><dt className="pt-0.5">Catatan tenant</dt><span className="doc-leader mt-2.5" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.notes}</dd></div>}
-              {detail.reviewed_by_name && <div className="doc-row"><dt>Direview oleh</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detail.reviewed_by_name}</dd></div>}
+              {detail.notes && <div className="ui-spec items-start"><dt className="pt-0.5">Catatan tenant</dt><dd className="font-sans font-normal normal-case">{detail.notes}</dd></div>}
+              {detail.reviewed_by_name && <div className="ui-spec"><dt>Direview oleh</dt><dd className="font-sans font-normal normal-case">{detail.reviewed_by_name}</dd></div>}
             </dl>
 
             {/* Snapshot harga hanya dimiliki pengajuan hasil form cetak.
@@ -873,17 +881,17 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
              * karena untuk media ber-`ppn_included` PPN sudah berada DI DALAM
              * subtotal sehingga penjumlahan itu keliru. */}
             {(detail.total_amount ?? 0) > 0 && (
-              <div className="mt-4 border border-[color:var(--rule-color)] border-t-2 border-t-[color:var(--rule-ink)] bg-[var(--surface-card)] px-3.5 py-3">
-                <p className="doc-plate-no">Perkiraan biaya</p>
+              <div className="mt-4 border border-[color:var(--rule-color)] border-t-2 border-t-[color:var(--rule-strong)] bg-[var(--surface-card)] px-3.5 py-3">
+                <p className="ui-label">Perkiraan biaya</p>
                 {/* Tiap baris adalah SATU simpul teks ("Subtotal Rp. ...") yang
                  * diratakan kanan, sehingga ekor nominalnya sejajar dan bisa
                  * dibandingkan sekilas. Ketiganya ditulis terpisah (bukan
                  * "subtotal + PPN = total") karena untuk media ber-`ppn_included`
                  * PPN sudah berada DI DALAM subtotal. */}
                 <div className="mt-2 text-right">
-                  <p className="doc-num border-b border-[color:var(--rule-color)] py-1 text-xs">{`Subtotal ${rupiah(detail.subtotal ?? 0)}`}</p>
-                  <p className="doc-num border-b border-[color:var(--rule-color)] py-1 text-xs">{`${detail.ppn_included ? 'Termasuk PPN' : 'PPN'} ${rupiah(detail.ppn_amount ?? 0)}`}</p>
-                  <p className="doc-num py-1 text-sm font-bold text-slate-900">{`Total ${rupiah(detail.total_amount ?? 0)}`}</p>
+                  <p className="ui-num border-b border-[color:var(--rule-color)] py-1 text-xs">{`Subtotal ${rupiah(detail.subtotal ?? 0)}`}</p>
+                  <p className="ui-num border-b border-[color:var(--rule-color)] py-1 text-xs">{`${detail.ppn_included ? 'Termasuk PPN' : 'PPN'} ${rupiah(detail.ppn_amount ?? 0)}`}</p>
+                  <p className="ui-num py-1 text-sm font-bold text-slate-900">{`Total ${rupiah(detail.total_amount ?? 0)}`}</p>
                 </div>
                 <p className="mt-1.5 border-t border-[color:var(--rule-color)] pt-1.5 text-xs ui-text-muted">
                   Angka perkiraan; pengajuan ini tidak melakukan penagihan.
@@ -900,13 +908,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             )}
             {!detailLoading && detailData && detailData.files.length > 0 && (
               <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
-                <p className="doc-plate-no">Versi materi</p>
+                <p className="ui-label">Versi materi</p>
                 <ul className="mt-1.5">
                   {detailData.files.map((f) => (
                     <li key={f.id} className="flex items-center justify-between gap-2 border-b border-[color:var(--rule-color)] py-1 text-xs last:border-b-0">
                       <span className="min-w-0">
-                        <span className="doc-num font-semibold text-slate-900">Versi {f.version}</span>
-                        <span className="doc-num ml-1.5 ui-text-muted">
+                        <span className="ui-num font-semibold text-slate-900">Versi {f.version}</span>
+                        <span className="ui-num ml-1.5 ui-text-muted">
                           {f.created_at ? new Date(f.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
                         </span>
                       </span>
@@ -919,7 +927,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                          * 20px ke tetangga terdekat; ini tautan kontrol berdiri
                          * sendiri di dalam baris daftar, bukan tautan inline di
                          * tengah kalimat, jadi pengecualian 2.5.8 tidak berlaku. */
-                        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-medium text-[color:var(--process)]"
+                        className="inline-flex min-h-11 shrink-0 items-center gap-1 font-medium text-[color:var(--action)]"
                       >
                         <ExternalLink className="h-3 w-3" aria-hidden="true" />
                         Buka
@@ -933,13 +941,13 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             {/* Riwayat status (FR-031, FR-037) - log tiket, satu baris per cap. */}
             {!detailLoading && detailData && detailData.history.length > 0 && (
               <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
-                <p className="doc-plate-no">Riwayat status</p>
+                <p className="ui-label">Riwayat status</p>
                 <ol className="mt-1.5">
                   {detailData.history.map((h) => (
                     <li key={h.id} className="border-b border-[color:var(--rule-color)] py-1.5 text-xs last:border-b-0">
                       <p className="font-semibold text-slate-900">
                         {STATUS_LABELS[h.to_status] ?? h.to_status}
-                        <span className="doc-num ml-1.5 font-normal ui-text-muted">
+                        <span className="ui-num ml-1.5 font-normal ui-text-muted">
                           {h.created_at ? new Date(h.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : ''}
                           {h.actor_type === 'admin' && h.actor_name ? ` · ${h.actor_name}` : ''}
                         </span>
@@ -954,46 +962,46 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             {/* Informasi pemasangan (FR-047) */}
             {!detailLoading && detailData?.installation && (
               <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
-                <p className="doc-plate-no">Informasi pemasangan</p>
-                <dl className="doc-rows mt-2">
-                  <div className="doc-row"><dt>Lokasi</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detailData.installation.media_location}</dd></div>
+                <p className="ui-label">Informasi pemasangan</p>
+                <dl className="ui-specs mt-2">
+                  <div className="ui-spec"><dt>Lokasi</dt><dd className="font-sans font-normal normal-case">{detailData.installation.media_location}</dd></div>
                   {(detailData.installation.start_date || detailData.installation.end_date) && (
-                    <div className="doc-row">
+                    <div className="ui-spec">
                       <dt>Periode</dt>
-                      <span className="doc-leader" aria-hidden="true" />
+
                       <dd>
                         {detailData.installation.start_date || '-'} s/d {detailData.installation.end_date || '-'}
                       </dd>
                     </div>
                   )}
-                  {detailData.installation.notes && <div className="doc-row items-start"><dt className="pt-0.5">Catatan</dt><span className="doc-leader mt-2.5" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detailData.installation.notes}</dd></div>}
+                  {detailData.installation.notes && <div className="ui-spec items-start"><dt className="pt-0.5">Catatan</dt><dd className="font-sans font-normal normal-case">{detailData.installation.notes}</dd></div>}
                   {/* Bukti tayang dua kanal (tautan + berkas unggahan). Sebelumnya
                    * hanya `proof_url` yang dirender, sehingga staf yang baru saja
                    * mengunggah berkas tidak melihat buktinya di tempat yang sama. */}
                   {installationProofViews(detailData.installation).map((p) => (
-                    <div key={p.kind} className="doc-row items-start">
+                    <div key={p.kind} className="ui-spec items-start">
                       <dt className="pt-0.5">{p.label}</dt>
-                      <span className="doc-leader mt-2.5" aria-hidden="true" />
+
                       <dd className="min-w-0 font-sans font-normal normal-case">
                         <a
                           href={p.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="doc-link inline-flex min-h-11 items-center gap-1.5 break-all font-medium"
+                          className="underline underline-offset-[3px] inline-flex min-h-11 items-center gap-1.5 break-all font-medium"
                         >
                           <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                           {p.linkLabel}
                         </a>
                         {p.fileName && <p className="break-all text-xs ui-text-muted">{p.fileName}</p>}
                         {(p.meta || p.uploaded) && (
-                          <p className="doc-num text-xs ui-text-muted">
+                          <p className="ui-num text-xs ui-text-muted">
                             {[p.meta, p.uploaded].filter(Boolean).join(' · ')}
                           </p>
                         )}
                       </dd>
                     </div>
                   ))}
-                  {detailData.installation.installed_by && <div className="doc-row"><dt>Dicatat oleh</dt><span className="doc-leader" aria-hidden="true" /><dd className="font-sans font-normal normal-case">{detailData.installation.installed_by}</dd></div>}
+                  {detailData.installation.installed_by && <div className="ui-spec"><dt>Dicatat oleh</dt><dd className="font-sans font-normal normal-case">{detailData.installation.installed_by}</dd></div>}
                 </dl>
               </div>
             )}
@@ -1033,7 +1041,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     href={wa}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                    className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--action)]"
                   >
                     <MessageCircle className="h-4 w-4" aria-hidden="true" />
                     Kirim pesan WA
@@ -1051,7 +1059,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                       : `Tautan: ${detail.source_type === 'link' ? detail.link_url : detail.file_url}`
                   }`,
                 ); }}
-                className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                className="ui-control inline-flex min-h-11 items-center gap-1.5 border border-[color:var(--rule-color)] px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--action)]"
               >
                 <Copy className="h-4 w-4" aria-hidden="true" />
                 Salin tautan
@@ -1063,18 +1071,18 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 menambah/menggantinya. */}
             {taxProofEnabled && Number(detail.ppn_rate) > 0 && (
               <div className="mt-4 border-t border-[color:var(--rule-color)] pt-3">
-                <p className="doc-plate-no">Bukti Pembayaran Pajak</p>
+                <p className="ui-label">Bukti Pembayaran Pajak</p>
                 {detailData?.submission?.tax_proof_file_url ? (
-                  <dl className="doc-rows mt-2">
-                    <div className="doc-row items-start">
+                  <dl className="ui-specs mt-2">
+                    <div className="ui-spec items-start">
                       <dt className="pt-0.5">Berkas</dt>
-                      <span className="doc-leader mt-2.5" aria-hidden="true" />
+
                       <dd className="min-w-0 font-sans font-normal normal-case">
                         <a
                           href={detailData.submission.tax_proof_file_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="doc-link inline-flex min-h-11 items-center gap-1.5 break-all font-medium"
+                          className="underline underline-offset-[3px] inline-flex min-h-11 items-center gap-1.5 break-all font-medium"
                         >
                           <ExternalLink className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                           Buka bukti pajak
@@ -1090,7 +1098,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 )}
                 {canManage && (
                   <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <label htmlFor="tax-proof-file" className="ui-control inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--process)]">
+                    <label htmlFor="tax-proof-file" className="ui-control inline-flex min-h-11 cursor-pointer items-center gap-1.5 border border-[color:var(--rule-color)] px-3 py-2 text-sm font-semibold text-slate-700 transition hover:text-[color:var(--action)]">
                       <Upload className="h-4 w-4" aria-hidden="true" />
                       {taxFile ? taxFile.name : 'Pilih berkas pajak'}
                       <input
@@ -1125,9 +1133,9 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
             )}
 
             {canManage ? (
-              <div className="mt-4 border-t-2 border-[color:var(--rule-ink)] pt-4">
+              <div className="mt-4 border-t border-[color:var(--rule-color)] pt-4">
                 <fieldset>
-                  <legend className="doc-plate-no mb-2 text-slate-900">
+                  <legend className="ui-label mb-2 ui-text-strong">
                     Ubah status
                   </legend>
                   {/* Hanya transisi yang sah dari status saat ini (PRD §8) -
@@ -1138,7 +1146,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         key={s}
                         className={`cursor-pointer border px-3 py-2 text-sm font-semibold transition ${
                           newStatus === s
-                            ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process-strong)]'
+                            ? 'border-[color:var(--action)] bg-[var(--action-soft)] text-[color:var(--action-strong)]'
                             : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                         }`}
                       >
@@ -1162,7 +1170,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                   )}
                 </fieldset>
 
-                <label htmlFor="review-notes" className="mb-1.5 mt-4 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <label htmlFor="review-notes" className="ui-label mb-1.5 mt-4 block">
                   Catatan Review <span className="text-xs font-normal normal-case tracking-normal ui-text-muted">
                     (wajib untuk Perlu Revisi dan Ditolak)
                   </span>
@@ -1186,7 +1194,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                 {/* Catat pemasangan - hanya bila materi boleh dipasang (FR-040). */}
                 {isInstallableStatus(detail.status) && (
                   <fieldset className="mt-4 border-t border-[color:var(--rule-color)] pt-4">
-                    <legend className="doc-plate-no mb-2 text-slate-900">
+                    <legend className="ui-label mb-2 ui-text-strong">
                       Catat pemasangan
                     </legend>
                     {/* Peringatan materi belum diterima - HANYA informasi, bukan
@@ -1214,7 +1222,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                     )}
                     <div className="grid gap-3 sm:grid-cols-2">
                       <div className="sm:col-span-2">
-                        <label htmlFor="install-location" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        <label htmlFor="install-location" className="ui-label mb-1 block">
                           Media / lokasi pemasangan <span className="text-red-600">*</span>
                         </label>
                         <input
@@ -1228,27 +1236,27 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         />
                       </div>
                       <div>
-                        <label htmlFor="install-start" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Tanggal mulai</label>
+                        <label htmlFor="install-start" className="ui-label mb-1 block">Tanggal mulai</label>
                         <input
                           id="install-start"
                           type="date"
                           value={installStart}
                           onChange={(e) => setInstallStart(e.target.value)}
-                          className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
+                          className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                         />
                       </div>
                       <div>
-                        <label htmlFor="install-end" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Tanggal berakhir</label>
+                        <label htmlFor="install-end" className="ui-label mb-1 block">Tanggal berakhir</label>
                         <input
                           id="install-end"
                           type="date"
                           value={installEnd}
                           onChange={(e) => setInstallEnd(e.target.value)}
-                          className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
+                          className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-sm text-slate-900"
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <label htmlFor="install-notes" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Catatan pemasangan</label>
+                        <label htmlFor="install-notes" className="ui-label mb-1 block">Catatan pemasangan</label>
                         <input
                           id="install-notes"
                           type="text"
@@ -1259,7 +1267,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         />
                       </div>
                       <div className="sm:col-span-2">
-                        <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                        <span className="ui-label mb-1 block">
                           Bukti pemasangan <span className="text-xs font-normal normal-case tracking-normal ui-text-muted">(opsional)</span>
                         </span>
                         <div className="flex gap-1.5" role="group" aria-label="Cara memberi bukti pemasangan">
@@ -1267,9 +1275,9 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                             type="button"
                             aria-pressed={proofKind === 'link'}
                             onClick={() => setProofKind('link')}
-                            className={`min-h-11 flex-1 border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                            className={`min-h-11 flex-1 border px-3 py-2 ui-label transition ${
                               proofKind === 'link'
-                                ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process-strong)]'
+                                ? 'border-[color:var(--action)] bg-[var(--action-soft)] text-[color:var(--action-strong)]'
                                 : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                             }`}
                           >
@@ -1279,9 +1287,9 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                             type="button"
                             aria-pressed={proofKind === 'upload'}
                             onClick={() => setProofKind('upload')}
-                            className={`min-h-11 flex-1 border px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] transition ${
+                            className={`min-h-11 flex-1 border px-3 py-2 ui-label transition ${
                               proofKind === 'upload'
-                                ? 'border-[color:var(--process)] bg-[var(--process-soft)] text-[color:var(--process-strong)]'
+                                ? 'border-[color:var(--action)] bg-[var(--action-soft)] text-[color:var(--action-strong)]'
                                 : 'border-[color:var(--rule-color)] text-slate-600 hover:bg-[var(--surface-hover)]'
                             }`}
                           >
@@ -1292,7 +1300,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
 
                       {proofKind === 'link' ? (
                         <div className="sm:col-span-2">
-                          <label htmlFor="install-proof" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          <label htmlFor="install-proof" className="ui-label mb-1 block">
                             Tautan bukti pemasangan
                           </label>
                           <input
@@ -1308,14 +1316,14 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
                         </div>
                       ) : (
                         <div className="sm:col-span-2">
-                          <label htmlFor="install-proof-file" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          <label htmlFor="install-proof-file" className="ui-label mb-1 block">
                             Berkas bukti (JPEG, PNG, PDF, atau MP4; maks 50MB)
                           </label>
                           <label
                             htmlFor="install-proof-file"
-                            className="flex cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-[color:var(--rule-strong)] bg-[var(--surface-offset)] p-4 text-xs font-medium text-slate-700 transition hover:border-[color:var(--process)]"
+                            className="flex cursor-pointer items-center justify-center gap-2 border-2 border-dashed border-[color:var(--rule-strong)] bg-[var(--surface-offset)] p-4 text-xs font-medium text-slate-700 transition hover:border-[color:var(--action)]"
                           >
-                            <Upload className="h-4 w-4 text-[color:var(--process)]" aria-hidden="true" />
+                            <Upload className="h-4 w-4 text-[color:var(--action)]" aria-hidden="true" />
                             {proofFile ? proofFile.name : 'Klik untuk memilih berkas bukti'}
                             <input
                               id="install-proof-file"
@@ -1522,7 +1530,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
    */
   const textInput = (label: string, field: keyof CatalogFormState, placeholder = '', multiline = false) => (
     <div>
-      <label htmlFor={`cf-${field}`} className="mb-1 block text-xs font-semibold text-slate-700 dark:text-slate-200">{label}</label>
+      <label htmlFor={`cf-${field}`} className="mb-1 block text-xs font-semibold text-slate-700">{label}</label>
       {multiline ? (
         <textarea
           id={`cf-${field}`}
@@ -1530,7 +1538,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           value={String(form?.[field] ?? '')}
           placeholder={placeholder}
           onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
-          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
         />
       ) : (
         <input
@@ -1539,7 +1547,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           value={String(form?.[field] ?? '')}
           placeholder={placeholder}
           onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
-          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
         />
       )}
     </div>
@@ -1548,11 +1556,11 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
   return (
     <div>
       {/* Kepala seksi dokumen: nomor plate, jumlah baris, dan aksi utama. */}
-      <div className="mb-4 flex flex-wrap items-center gap-3 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-900">
+      <div className="mb-4 flex flex-wrap items-center gap-3 border-b border-[color:var(--rule-strong)] pb-2.5">
+        <h2 className="ui-label" data-tone="strong">
           Katalog Media
         </h2>
-        <span className="doc-plate-no ml-auto">{rows.length} media</span>
+        <span className="ui-label ml-auto">{rows.length} media</span>
         {canManage && (
           <button
             type="button"
@@ -1600,43 +1608,43 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           <div className="overflow-x-auto">
             <table className="w-full min-w-[760px] text-left text-sm">
               <thead>
-                <tr className="border-b-2 border-[color:var(--rule-ink)]">
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Plate</th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Media</th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kategori</th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ukuran / tarif</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
+                <tr className="border-b border-[color:var(--rule-strong)]">
+                  <th className="ui-label px-3 py-2">Plate</th>
+                  <th className="ui-label px-3 py-2">Media</th>
+                  <th className="ui-label px-3 py-2">Kategori</th>
+                  <th className="ui-label px-3 py-2">Kanal</th>
+                  <th className="ui-label px-3 py-2">Status</th>
+                  <th className="ui-label px-3 py-2 text-right">Ukuran / tarif</th>
+                  <th className="ui-label px-3 py-2 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.map((m) => (
                   <tr key={m.id ?? m.slug} className="border-b border-[color:var(--rule-color)] transition hover:bg-[var(--surface-hover)]">
-                    <td className="doc-num px-3 py-3 text-xs ui-text-muted">
+                    <td className="ui-num px-3 py-3 text-xs ui-text-muted">
                       {String(m.sort_order ?? 0).padStart(2, '0')}
                     </td>
                     <td className="px-3 py-3">
                       <p className="truncate font-semibold text-slate-900">{m.name}</p>
-                      <p className="doc-num text-xs ui-text-muted">/{m.slug}</p>
+                      <p className="ui-num text-xs ui-text-muted">/{m.slug}</p>
                     </td>
                     <td className="px-3 py-3 text-xs ui-text-muted">{CATEGORY_LABELS[m.category] ?? m.category}</td>
                     <td className="px-3 py-3">
-                      <span className="doc-tag" data-tone={m.media_channel === 'cetak' ? 'process' : 'none'}>
+                      <span className="ui-tag" data-tone={m.media_channel === 'cetak' ? 'ink' : undefined}>
                         {CHANNEL_LABELS[m.media_channel ?? 'digital']}
                       </span>
                     </td>
                     {/* State nonaktif dibawa lencana "Nonaktif", bukan opacity-70:
                      * opacity menurunkan kontras SEMUA teks di dalam baris. */}
                     <td className="px-3 py-3">
-                      <span className="doc-tag" data-tone={m.is_active === false ? 'none' : 'process'}>
+                      <span className="ui-tag" data-tone={m.is_active === false ? undefined : 'ink'}>
                         {m.is_active === false ? 'Nonaktif' : 'Aktif'}
                       </span>
                     </td>
                     <td className="px-3 py-3 text-right">
-                      <p className="doc-num text-xs text-slate-800">{m.size_spec || '-'}</p>
+                      <p className="ui-num text-xs text-slate-800">{m.size_spec || '-'}</p>
                       {m.price_note && (
-                        <p className="doc-num mt-0.5 whitespace-pre-line text-xs ui-text-muted">{m.price_note}</p>
+                        <p className="ui-num mt-0.5 whitespace-pre-line text-xs ui-text-muted">{m.price_note}</p>
                       )}
                     </td>
                     <td className="px-3 py-3">
@@ -1659,7 +1667,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                               });
                               setFormError('');
                             }}
-                            className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                            className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--action)]"
                           >
                             Edit
                           </button>
@@ -1695,7 +1703,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {textInput('Slug (unik, huruf kecil)', 'slug', 'spanduk')}
               {textInput('Nama', 'name', 'Spanduk')}
               <div>
-                <label htmlFor="cf-category" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kategori</label>
+                <label htmlFor="cf-category" className="ui-label mb-1 block">Kategori</label>
                 <select
                   id="cf-category"
                   value={form.category}
@@ -1708,7 +1716,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                 </select>
               </div>
               <div>
-                <label htmlFor="cf-channel" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Kanal</label>
+                <label htmlFor="cf-channel" className="ui-label mb-1 block">Kanal</label>
                 <select
                   id="cf-channel"
                   value={form.media_channel}
@@ -1729,7 +1737,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                * pengingat periode berakhir. Seed hanya mengisinya sekali, jadi
                * staf harus bisa mengoreksi tanpa menyentuh DB. */}
               <div>
-                <label htmlFor="cf-price-amount" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <label htmlFor="cf-price-amount" className="ui-label mb-1 block">
                   Harga numerik (Rp)
                 </label>
                 <input
@@ -1739,9 +1747,9 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                   step="0.01"
                   value={form.price_amount}
                   onChange={(e) => setForm((f) => (f ? { ...f, price_amount: Number(e.target.value) || 0 } : f))}
-                  className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-right text-sm text-slate-900"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-right text-sm text-slate-900"
                 />
-                <p className="doc-num mt-1 text-xs ui-text-muted">0 = media gratis. Dipakai untuk menghitung PPN.</p>
+                <p className="ui-num mt-1 text-xs ui-text-muted">0 = media gratis. Dipakai untuk menghitung PPN.</p>
               </div>
               {textInput('Satuan harga', 'price_unit', 'hari')}
               <label className="flex items-center gap-2 text-sm text-slate-700 sm:col-span-2">
@@ -1750,7 +1758,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                   id="cf-ppn-included"
                   checked={form.ppn_included}
                   onChange={(e) => setForm((f) => (f ? { ...f, ppn_included: e.target.checked } : f))}
-                  className="h-4 w-4 accent-[var(--process)]"
+                  className="h-4 w-4 accent-[var(--action)]"
                 />
                 Harga sudah termasuk PPN
               </label>
@@ -1758,13 +1766,15 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               {/* Foto katalog - hanya untuk media yang sudah tersimpan, karena
                * unggahan butuh id. Media baru: simpan dulu, lalu ganti foto. */}
               <div>
-                <span className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Foto Katalog</span>
+                <span className="ui-label mb-1 block">Foto Katalog</span>
                 {form.id ? (
                   <div className="border border-[color:var(--rule-color)] p-3">
                     {form.image_path ? (
                       <img
                         src={form.image_path}
                         alt={`Pratinjau foto ${form.name || 'media'}`}
+                        loading="lazy"
+                        decoding="async"
                         className="mb-2.5 aspect-[4/3] w-full max-w-[220px] border border-[color:var(--rule-color)] object-cover"
                       />
                     ) : (
@@ -1812,19 +1822,19 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
               </div>
 
               <div>
-                <label htmlFor="cf-sort" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Urutan</label>
+                <label htmlFor="cf-sort" className="ui-label mb-1 block">Urutan</label>
                 <input
                   id="cf-sort"
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setForm((f) => (f ? { ...f, sort_order: parseInt(e.target.value, 10) || 0 } : f))}
-                  className="ui-control doc-num w-full border border-[color:var(--rule-color)] px-3 py-2 text-right text-sm text-slate-900"
+                  className="ui-control w-full border border-[color:var(--rule-color)] px-3 py-2 text-right text-sm text-slate-900"
                 />
               </div>
             </div>
 
             <div className="mt-3">
-              <label htmlFor="cf-rules" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Ketentuan (satu per baris)</label>
+              <label htmlFor="cf-rules" className="ui-label mb-1 block">Ketentuan (satu per baris)</label>
               <textarea
                 id="cf-rules"
                 rows={5}
@@ -1848,7 +1858,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
                 type="checkbox"
                 checked={form.is_active}
                 onChange={(e) => setForm((f) => (f ? { ...f, is_active: e.target.checked } : f))}
-                className="h-4 w-4 accent-[var(--process)]"
+                className="h-4 w-4 accent-[var(--action)]"
               />
               Aktif (tampil di halaman publik)
             </label>
@@ -1943,11 +1953,11 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
   return (
     <div>
       {/* Kepala seksi dokumen: jumlah akun + aksi utama. */}
-      <div className="mb-4 flex flex-wrap items-center gap-3 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-900">
+      <div className="mb-4 flex flex-wrap items-center gap-3 border-b border-[color:var(--rule-strong)] pb-2.5">
+        <h2 className="ui-label" data-tone="strong">
           Akun Staf
         </h2>
-        <span className="doc-plate-no ml-auto">{rows.length} akun</span>
+        <span className="ui-label ml-auto">{rows.length} akun</span>
         <button
           type="button"
           onClick={() => { setForm({ id: '', email: '', display_name: '', role: 'admin', password: '', is_active: true }); setFormError(''); }}
@@ -1989,12 +1999,12 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
-                <tr className="border-b-2 border-[color:var(--rule-ink)]">
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Nama</th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Email</th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Role</th>
-                  <th className="px-3 py-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Status</th>
-                  <th className="px-3 py-2 text-right text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Aksi</th>
+                <tr className="border-b border-[color:var(--rule-strong)]">
+                  <th className="ui-label px-3 py-2">Nama</th>
+                  <th className="ui-label px-3 py-2">Email</th>
+                  <th className="ui-label px-3 py-2">Role</th>
+                  <th className="ui-label px-3 py-2">Status</th>
+                  <th className="ui-label px-3 py-2 text-right">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -2003,10 +2013,10 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                     <td className="px-3 py-3 font-semibold text-slate-900">{u.display_name}</td>
                     <td className="break-all px-3 py-3 text-slate-700">{u.email}</td>
                     <td className="px-3 py-3">
-                      <span className="doc-tag">{u.role}</span>
+                      <span className="ui-tag">{u.role}</span>
                     </td>
                     <td className="px-3 py-3">
-                      <span className="doc-tag" data-tone={u.is_active ? 'process' : 'none'}>
+                      <span className="ui-tag" data-tone={u.is_active ? 'ink' : undefined}>
                         {u.is_active ? 'Aktif' : 'Nonaktif'}
                       </span>
                     </td>
@@ -2015,7 +2025,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                         <button
                           type="button"
                           onClick={() => { setForm({ id: u.id, email: u.email, display_name: u.display_name, role: u.role, password: '', is_active: u.is_active }); setFormError(''); }}
-                          className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--process)]"
+                          className="ui-control inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-2.5 py-1.5 text-xs font-semibold text-slate-700 transition hover:text-[color:var(--action)]"
                         >
                           Edit
                         </button>
@@ -2048,7 +2058,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
             <div className="space-y-3">
               {!form.id && (
                 <div>
-                  <label htmlFor="uf-email" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Email</label>
+                  <label htmlFor="uf-email" className="ui-label mb-1 block">Email</label>
                   <input
                     id="uf-email"
                     type="email"
@@ -2060,7 +2070,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                 </div>
               )}
               <div>
-                <label htmlFor="uf-name" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Nama</label>
+                <label htmlFor="uf-name" className="ui-label mb-1 block">Nama</label>
                 <input
                   id="uf-name"
                   type="text"
@@ -2071,7 +2081,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                 />
               </div>
               <div>
-                <label htmlFor="uf-role" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Role</label>
+                <label htmlFor="uf-role" className="ui-label mb-1 block">Role</label>
                 <select
                   id="uf-role"
                   value={form.role}
@@ -2082,7 +2092,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                 </select>
               </div>
               <div>
-                <label htmlFor="uf-password" className="mb-1 block text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                <label htmlFor="uf-password" className="ui-label mb-1 block">
                   {form.id ? 'Password baru (kosongkan bila tetap)' : 'Password (min. 8 karakter)'}
                 </label>
                 <input
@@ -2101,7 +2111,7 @@ function UsersTab({ onConfirmDelete }: { onConfirmDelete: (id: string, subject: 
                     type="checkbox"
                     checked={form.is_active}
                     onChange={(e) => setForm((f) => (f ? { ...f, is_active: e.target.checked } : f))}
-                    className="h-4 w-4 accent-[var(--process)]"
+                    className="h-4 w-4 accent-[var(--action)]"
                   />
                   Aktif (boleh login)
                 </label>
@@ -2159,10 +2169,10 @@ function SettingsTab({ canManage }: { canManage: boolean }) {
   }
 
   return (
-    <div className="doc-sheet p-5 sm:p-6">
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b-2 border-[color:var(--rule-ink)] pb-2.5">
-        <h2 className="text-xl font-extrabold uppercase tracking-wide text-slate-900 dark:text-white">Pengaturan</h2>
-        <span className="doc-plate-no ml-auto shrink-0">Bagian 04</span>
+    <div className="ui-card p-5 sm:p-6">
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2.5">
+        <h2 className="ui-title-section">Pengaturan</h2>
+        <span className="ui-label ml-auto shrink-0">Bagian 04</span>
       </div>
       <p className="ui-body ui-text-muted mt-3">
         Saklar fitur yang berlaku untuk seluruh pengajuan media cetak. Perubahan langsung aktif.
@@ -2182,10 +2192,10 @@ function SettingsTab({ canManage }: { canManage: boolean }) {
               checked={enabled}
               disabled={!canManage || saving}
               onChange={(e) => void toggle(e.target.checked)}
-              className="mt-0.5 h-4 w-4 accent-[var(--process)]"
+              className="mt-0.5 h-4 w-4 accent-[var(--action)]"
             />
             <span>
-              <span className="block text-sm font-semibold text-slate-800 dark:text-slate-100">
+              <span className="block text-sm font-semibold text-slate-800">
                 Bukti pembayaran pajak (media cetak)
               </span>
               <span className="mt-0.5 block text-xs ui-text-muted">
@@ -2247,6 +2257,11 @@ export default function AdminDashboardPage() {
     return list;
   }, [permissions.canManageUsers, permissions.canManage]);
 
+  // Judul dokumen mengikuti tab yang aktif (lihat useDocumentTitle). Sebelumnya
+  // seluruh rute berjudul sama, sehingga riwayat peramban tidak bisa dibedakan.
+  const tabLabel = tabs.find((t) => t.key === tab)?.label ?? '';
+  useDocumentTitle(tabLabel ? `Admin · ${tabLabel}` : 'Admin');
+
   /**
    * Panah kiri/kanan/Home/End pada tablist (pola ARIA "tabs with automatic
    * activation"). Sebelum ini `role="tablist"` dipasang tanpa dukungan panah,
@@ -2280,7 +2295,7 @@ export default function AdminDashboardPage() {
     return (
       <main className="ui-admin-page flex min-h-screen flex-col items-center justify-center gap-3 px-4 text-center">
         <Megaphone className="h-10 w-10 text-brand-primary-500" aria-hidden="true" />
-        <h1 className="text-sm font-semibold text-slate-800 dark:text-white">Sesi berakhir atau belum login.</h1>
+        <h1 className="text-sm font-semibold text-slate-800">Sesi berakhir atau belum login.</h1>
         <Link to="/login" className="ui-btn-primary rounded-md px-5 py-2.5 text-sm font-semibold transition">Login</Link>
       </main>
     );
@@ -2296,23 +2311,23 @@ export default function AdminDashboardPage() {
               <Megaphone className="h-5 w-5 text-white" aria-hidden="true" />
             </span>
             <div className="leading-tight">
-              <h1 className="ui-title-screen ui-admin-title text-slate-900 dark:text-white">Media Promosi Admin</h1>
+              <h1 className="ui-title-screen ui-admin-title text-slate-900">Media Promosi Admin</h1>
               <p className="text-xs ui-text-muted">Metropolitan Mall Bekasi</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
-              <p className="text-xs font-semibold text-slate-900 dark:text-white">{user.display_name}</p>
+              <p className="text-xs font-semibold text-slate-900">{user.display_name}</p>
               <p className="text-xs ui-text-muted">{user.role}</p>
             </div>
             {/* `min-h-11`: menyamakan dengan pola tautan lain di repo (mis.
              * "Kembali ke halaman publik" di /login). Tinggi 16px lolos
              * pengecualian jarak WCAG 2.5.8, tapi konsistensi target lebih baik. */}
-            <Link to="/" className="ui-focus-ring inline-flex min-h-11 items-center text-xs font-medium text-slate-600 transition hover:text-brand-primary-700 dark:text-slate-300">Beranda</Link>
+            <Link to="/" className="ui-focus-ring inline-flex min-h-11 items-center text-xs font-medium text-slate-600 transition hover:text-brand-primary-700">Beranda</Link>
             <button
               type="button"
               onClick={() => void logout()}
-              className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-red-600 dark:text-slate-200"
+              className="ui-control inline-flex min-h-11 items-center gap-1.5 rounded-md px-3 py-2 text-xs font-semibold text-slate-700 transition hover:text-red-600"
             >
               <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
               Logout
@@ -2344,7 +2359,7 @@ export default function AdminDashboardPage() {
               className={`min-h-11 rounded-md px-4 py-2 text-sm font-semibold transition ${
                 tab === t.key
                   ? 'bg-brand-primary-600 text-white'
-                  : 'ui-control text-slate-600 hover:text-brand-primary-700 dark:text-slate-300'
+                  : 'ui-control text-slate-600 hover:text-brand-primary-700'
               }`}
             >
               {t.key === 'users' && <UsersIcon className="mr-1.5 inline h-4 w-4" aria-hidden="true" />}

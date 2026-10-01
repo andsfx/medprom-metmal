@@ -20,18 +20,6 @@ import { getDeviceFingerprint } from '../../utils/fingerprint';
 import { MY_SUBMISSIONS_PAGE_SIZE } from '../../constants/promo';
 import type { MySubmissionRow } from '../../types/promo';
 
-/** Tanda potong di empat sudut lembar - murni dekoratif, jadi aria-hidden. */
-function CropMarks() {
-  return (
-    <>
-      <span className="doc-crop" data-corner="tl" aria-hidden="true" />
-      <span className="doc-crop" data-corner="tr" aria-hidden="true" />
-      <span className="doc-crop" data-corner="bl" aria-hidden="true" />
-      <span className="doc-crop" data-corner="br" aria-hidden="true" />
-    </>
-  );
-}
-
 export default function MySubmissionsPage() {
   const [rows, setRows] = useState<MySubmissionRow[]>([]);
   const [total, setTotal] = useState<number | null>(null);
@@ -100,16 +88,16 @@ export default function MySubmissionsPage() {
 
         <div>
             {loading && (
-              <div className="doc-sheet flex items-center justify-center gap-3 py-10" role="status">
+              <div className="ui-card flex items-center justify-center gap-3 py-10" role="status">
                 <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
                 <span className="text-sm ui-text-muted">Memuat riwayat…</span>
               </div>
             )}
 
             {!loading && loadError && (
-              <div className="doc-alert p-5" role="alert">
-                <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat riwayat pengajuan.</p>
-                <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+              <div className="ui-alert p-5" role="alert">
+                <p className="text-sm font-semibold text-red-800">Gagal memuat riwayat pengajuan.</p>
+                <p className="mt-1 text-xs text-red-700">
                   Riwayat Anda tidak hilang. Sambungan ke server sedang bermasalah. Muat ulang
                   halaman atau coba lagi sebentar.
                 </p>
@@ -122,8 +110,8 @@ export default function MySubmissionsPage() {
             )}
 
             {!loading && !loadError && rows.length === 0 && (
-              <div className="doc-sheet px-6 py-10">
-                <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Belum ada pengajuan dari perangkat ini.</p>
+              <div className="ui-card px-6 py-10">
+                <p className="text-sm font-semibold text-slate-700">Belum ada pengajuan dari perangkat ini.</p>
                 <p className="mt-1 text-xs ui-text-muted">Ajukan materi promosi pertama Anda. Pilih media yang sesuai, lalu kirim materinya.</p>
                 <div className="mt-4 flex flex-wrap justify-center gap-2">
                   <Link to="/ajukan" className="ui-btn-primary inline-flex min-h-11 items-center gap-2 px-4 py-2 text-sm font-semibold transition">
@@ -147,19 +135,18 @@ export default function MySubmissionsPage() {
               )}
               <ul className="space-y-4">
                 {rows.map((r) => (
-                  <li key={r.id} className="doc-sheet overflow-hidden">
-                    <CropMarks />
+                  <li key={r.id} className="ui-card overflow-hidden">
                     {/* Kepala tiket: nomor job monospace + stempel status. */}
                     <div className="px-7 pt-7 pb-4">
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0">
-                          <p className="doc-num text-xs font-bold tracking-wide text-slate-900">
+                          <p className="ui-num text-xs font-bold tracking-wide text-slate-900">
                             {r.submission_number}
                           </p>
                           <p className="ui-title-card mt-0.5 ui-text-strong">
                             {r.material_title || r.media_type_slug}
                           </p>
-                          <p className="doc-num mt-0.5 text-xs ui-text-muted">
+                          <p className="ui-num mt-0.5 text-xs ui-text-muted">
                             {r.created_at ? new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' }) : ''}
                           </p>
                         </div>
@@ -167,17 +154,16 @@ export default function MySubmissionsPage() {
                       </div>
                     </div>
 
-                    <div className="doc-perf" />
 
                     <div className="px-7 py-4">
                       {r.batch_number && (
                         <div className="border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-2.5">
-                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-700 dark:text-slate-200">
+                          <p className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-xs text-slate-700">
                             <Layers className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                             <span>Nomor batch:</span>
-                            <span className="doc-num font-bold tracking-wide">{r.batch_number}</span>
+                            <span className="ui-num font-bold tracking-wide">{r.batch_number}</span>
                           </p>
-                          <p className="mt-0.5 text-xs leading-relaxed text-slate-700 dark:text-slate-200">
+                          <p className="mt-0.5 text-xs leading-relaxed text-slate-700">
                             {typeof r.batch_item_count === 'number' && r.batch_item_count > 1
                               ? `Pengajuan ini bagian dari satu kirim berisi beberapa media (${r.batch_item_count} media dalam kiriman ini).`
                               : typeof r.batch_item_count === 'number' && r.batch_item_count === 1
@@ -187,7 +173,7 @@ export default function MySubmissionsPage() {
                           {r.batch_token && (
                             <Link
                               to={`/batch/${r.batch_token}`}
-                              className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                              className="mt-1.5 inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800"
                             >
                               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                               Lihat status batch
@@ -196,7 +182,7 @@ export default function MySubmissionsPage() {
                         </div>
                       )}
                       {r.review_notes && (
-                        <p className="mt-3 text-xs leading-relaxed text-slate-600 dark:text-slate-300">
+                        <p className="mt-3 text-xs leading-relaxed text-slate-600">
                           <span className="font-semibold">Catatan TR: </span>{r.review_notes}
                         </p>
                       )}
@@ -206,7 +192,7 @@ export default function MySubmissionsPage() {
                             href={r.source_type === 'link' ? r.link_url : r.file_url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-medium text-brand-primary-700 transition hover:text-brand-primary-800"
                           >
                             <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
                             {r.source_type === 'link' ? 'Buka tautan materi' : 'Lihat file materi'}
@@ -215,7 +201,7 @@ export default function MySubmissionsPage() {
                         {r.status_token && (
                           <Link
                             to={`/status/${r.status_token}`}
-                            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800 dark:text-brand-primary-300"
+                            className="inline-flex min-h-11 items-center gap-1.5 text-xs font-semibold text-brand-primary-700 transition hover:text-brand-primary-800"
                           >
                             Lihat status & kirim revisi
                           </Link>
@@ -237,7 +223,7 @@ export default function MySubmissionsPage() {
                     {loadingMore ? 'Memuat…' : 'Muat lagi'}
                   </button>
                   {moreError && (
-                    <p className="text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+                    <p className="text-xs font-medium text-red-600" role="alert">
                       Gagal memuat pengajuan berikutnya. Coba lagi sebentar.
                     </p>
                   )}

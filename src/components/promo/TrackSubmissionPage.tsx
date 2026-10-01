@@ -44,6 +44,11 @@ export default function TrackSubmissionPage() {
   const [captchaKey, setCaptchaKey] = useState(0);
   // Nomor yang menunggu token captcha berikutnya (muat ulang setelah revisi).
   const [pendingReload, setPendingReload] = useState<string | null>(null);
+  // Widget captcha gagal dipasang (mis. sitekey belum terdaftar di hostname
+  // ini → Cloudflare `110200`). Dibedakan dari "pengguna belum menyelesaikan
+  // captcha": yang pertama tak akan pernah berubah kalau pengguna menunggu,
+  // jadi tombol TIDAK boleh dikunci selamanya dan pesannya harus jujur.
+  const [captchaUnavailable, setCaptchaUnavailable] = useState(false);
   // Sitekey Turnstile; '' = captcha tidak dikonfigurasi (server pun melewatinya).
   const siteKey = String(
     (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined) || '',
@@ -117,7 +122,7 @@ export default function TrackSubmissionPage() {
     void search(pendingReload, captchaToken);
   }, [pendingReload, captchaToken, siteKey, search]);
 
-  const captchaBlocked = Boolean(siteKey) && !captchaToken;
+  const captchaBlocked = Boolean(siteKey) && !captchaToken && !captchaUnavailable;
   // Aksi captcha HARUS mengikuti permukaan yang dilindungi: server memverifikasi
   // `action: 'track-batch'` untuk `/batches/track` dan `action: 'track'` untuk
   // `/submissions/track` (turnstile.js menolak bila `result.action !== action`).
@@ -145,29 +150,24 @@ export default function TrackSubmissionPage() {
   return (
     <AppShell title="Lacak Pengajuan">
       <div className="mx-auto max-w-2xl px-4 py-5">
-        <div className="doc-sheet overflow-hidden">
-          <span className="doc-crop" data-corner="tl" aria-hidden="true" />
-          <span className="doc-crop" data-corner="tr" aria-hidden="true" />
-          <span className="doc-crop" data-corner="bl" aria-hidden="true" />
-          <span className="doc-crop" data-corner="br" aria-hidden="true" />
+        <div className="ui-card overflow-hidden">
           <div className="px-7 pt-7 pb-4">
-            <span className="doc-plate-no">Loket pelacakan</span>
+            <span className="ui-label">Loket pelacakan</span>
             <h2 className="ui-title-card mt-1 text-slate-900">Lacak dengan Nomor Pengajuan atau Batch</h2>
             <p className="mt-2 text-xs ui-text-muted">
               Masukkan nomor yang Anda terima setelah mengirim materi. Formatnya seperti
-              <span className="doc-num font-semibold"> MP-260918-A7K2QX</span> untuk pengajuan satu media, atau
-              <span className="doc-num font-semibold"> MPB-260918-A7K2QX</span> untuk batch media cetak.
+              <span className="ui-num font-semibold"> MP-260918-A7K2QX</span> untuk pengajuan satu media, atau
+              <span className="ui-num font-semibold"> MPB-260918-A7K2QX</span> untuk batch media cetak.
               Tidak perlu akun.
             </p>
           </div>
 
-          <div className="doc-perf" />
 
           <form
             onSubmit={(e) => { e.preventDefault(); void search(number, captchaToken); }}
             className="px-7 py-4"
           >
-            <label htmlFor="track-number" className="mb-1.5 block text-sm font-semibold text-slate-800 dark:text-slate-100">
+            <label htmlFor="track-number" className="mb-1.5 block text-sm font-semibold text-slate-800">
               Nomor Pengajuan
             </label>
             <input
@@ -181,20 +181,25 @@ export default function TrackSubmissionPage() {
               value={number}
               placeholder="MP-260918-A7K2QX atau MPB-260918-A7K2QX"
               onChange={(e) => { setNumber(e.target.value.toUpperCase()); setError(''); setInfo(''); }}
-              className="ui-control w-full rounded-md px-3 py-2.5 font-mono text-sm tracking-wide text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 dark:bg-slate-800 dark:text-slate-100"
+              className="ui-control w-full rounded-md px-3 py-2.5 font-mono text-sm tracking-wide text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
             />
 
-            <TurnstileWidget onToken={setCaptchaToken} resetKey={captchaKey} action={turnstileAction} />
+            <TurnstileWidget
+              onToken={setCaptchaToken}
+              resetKey={captchaKey}
+              action={turnstileAction}
+              onUnavailable={setCaptchaUnavailable}
+            />
 
             {error && (
-              <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-red-600 dark:text-red-400" role="alert">
+              <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-red-600" role="alert">
                 <X className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
                 {error}
               </p>
             )}
 
             {info && (
-              <p className="mt-2 text-xs font-medium text-amber-700 dark:text-amber-300" role="status">
+              <p className="mt-2 text-xs font-medium text-amber-700" role="status">
                 {info}
               </p>
             )}
@@ -224,12 +229,17 @@ export default function TrackSubmissionPage() {
                   : 'Selesaikan verifikasi captcha di atas untuk mengaktifkan tombol Lacak.'}
               </p>
             )}
+
+            {captchaUnavailable && (
+              <p className="mt-2 text-xs font-medium text-amber-700" role="status">
+                Verifikasi keamanan sedang tidak tersedia, jadi pencarian tetap dapat dicoba.
+              </p>
+            )}
           </form>
 
-          <div className="doc-perf" />
           <p className="px-7 py-3 text-xs ui-text-muted">
             Nomor juga tersimpan di{' '}
-            <Link to="/riwayat" className="font-semibold text-brand-primary-700 dark:text-brand-primary-300">
+            <Link to="/riwayat" className="font-semibold text-brand-primary-700">
               Riwayat
             </Link>{' '}
             pada perangkat ini.

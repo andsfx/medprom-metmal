@@ -32,17 +32,17 @@ function renderAt(path: string) {
 }
 
 describe('App — registrasi rute', () => {
-  it('/lacak → halaman pelacakan nomor, bukan redirect ke beranda', () => {
+  it('/lacak → halaman pelacakan nomor, bukan redirect ke beranda', async () => {
     renderAt('/lacak');
 
-    expect(screen.getByRole('heading', { name: 'Lacak Pengajuan' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Lacak Pengajuan' })).toBeInTheDocument();
     expect(screen.getByLabelText(/Nomor Pengajuan/i)).toBeInTheDocument();
   });
 
-  it('/riwayat → halaman riwayat perangkat', () => {
+  it('/riwayat → halaman riwayat perangkat', async () => {
     renderAt('/riwayat');
 
-    expect(screen.getByRole('heading', { name: 'Riwayat Pengajuan' })).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Riwayat Pengajuan' })).toBeInTheDocument();
   });
 
   it('/ajukan-cetak → form media promosi cetak (bukan redirect)', async () => {
@@ -59,10 +59,11 @@ describe('App — registrasi rute', () => {
     expect(await screen.findByRole('heading', { name: /Status Pengajuan Cetak/i })).toBeInTheDocument();
   });
 
-  it('tab bar memuat Lacak menuju /lacak', () => {
+  it('tab bar memuat Lacak menuju /lacak', async () => {
     renderAt('/lacak');
 
-    const nav = screen.getByRole('navigation', { name: 'Navigasi utama' });
+    // Tab bar berada di dalam halaman rute, yang kini dimuat malas.
+    const nav = await screen.findByRole('navigation', { name: 'Navigasi utama' });
     expect(within(nav).getByRole('link', { name: 'Lacak' })).toHaveAttribute('href', '/lacak');
     // Tiga tujuan lain tetap ada — jangan sampai tab ke-4 menggusur yang lama.
     for (const label of ['Katalog', 'Ajukan', 'Riwayat']) {

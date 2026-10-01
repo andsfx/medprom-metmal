@@ -1,5 +1,6 @@
-/* Base styles: arah "Lembar Spesifikasi & Tiket Pekerjaan"
- * (Archivo memimpin kerja & display; Spline Sans Mono memegang data). */
+/* Base styles: arah "Daftar Kerja Seluler"
+ * (Instrument Sans memimpin kerja & display; Spline Sans Mono memegang data).
+ * Kertas putih, garis rambut, angka sebagai elemen terbesar di barisnya. */
 
 /* Jaring pengaman anti-scroll-horizontal. `clip` (bukan `hidden`) dipakai
  * supaya `position: sticky`/`fixed` pada keturunan tetap bekerja: `hidden`
@@ -39,9 +40,13 @@ body {
 }
 
 .ui-control {
-  border: 1px solid var(--rule-color);
+  /* Tepi kontrol memakai `--rule-strong`, bukan `--rule-color`: WCAG 1.4.11
+   * menuntut batas komponen mencapai 3:1 terhadap sekitarnya. `--rule-color`
+   * (1,27:1) nyaris tak terlihat, dan pada input berlatar putih di atas halaman
+   * putih justru tepi itulah satu-satunya penanda bahwa ada kotak isian. */
+  border: 1px solid var(--rule-strong);
   border-radius: var(--radius-control);
-  background: var(--surface-card);
+  background: var(--surface-page);
   /* Target sentuh: satu aturan untuk seluruh kontrol (input, select, tombol
    * sekunder) agar tidak ada kontrol yang jatuh di bawah ambang. */
   min-height: var(--tap-min);
@@ -116,8 +121,11 @@ textarea:disabled {
   /* Radius dari token, bukan utilitas: tombol yang lupa membawa kelas radius
    * tetap seragam dengan kontrol lain. */
   border-radius: var(--radius-control);
-  background: var(--brand-tosca-600);
-  color: #fff;
+  /* Aksi = tinta penuh, bukan warna merek. Dunia ini akromatik: karakter
+   * datang dari tipografi dan skala, dan warna disisakan untuk stempel
+   * keadaan saja. */
+  background: var(--action);
+  color: var(--ink-invert);
   /* Target sentuh 44px (DESIGN.md). Sebelumnya hanya `.ui-control` yang
    * memikul aturan ini, sehingga CTA primer/sekunder: yang mengandalkan
    * padding per pemakaian: jatuh di 36-42px. Ditaruh di sini agar setiap
@@ -126,7 +134,7 @@ textarea:disabled {
 }
 
 .ui-btn-primary:hover {
-  background: var(--process-strong); /* lebih gelap: kontras naik, bukan turun */
+  background: var(--action-strong); /* lebih gelap: kontras naik, bukan turun */
 }
 
 .ui-btn-primary:focus-visible {
@@ -140,9 +148,10 @@ textarea:disabled {
 }
 
 .ui-btn-secondary {
-  border: 1px solid var(--rule-color);
+  border: 1px solid var(--rule-strong);
   border-radius: var(--radius-control);
-  color: var(--ink-secondary);
+  color: var(--ink-primary);
+  background: var(--surface-page);
   /* Target sentuh 44px (DESIGN.md): lihat catatan di `.ui-btn-primary`. */
   min-height: var(--tap-min);
 }
@@ -178,11 +187,20 @@ textarea:disabled {
 }
 
 /* Skala tipografi per peran
- * Mencegah nilai ad-hoc: satu peran, satu pemanggil. */
+ * Mencegah nilai ad-hoc: satu peran, satu pemanggil.
+ *
+ * Perbaikan D1 (audit 2026-09-30): dokumen lama menyatakan bobot 800 untuk
+ * judul layar/bagian, kodenya memakai 700, dan "kapital ber-track" yang
+ * didokumentasikan TIDAK ADA sama sekali di kelas ini. Dunia baru menetapkan
+ * satu aturan yang jelas: judul **tidak** kapital (kapital disisakan untuk
+ * label kecil seperti kepala kolom tabel), bobot **600**, dan tracking negatif
+ * yang mengeras seiring ukuran — itulah pengganti karakter yang dulu dibawa
+ * oleh warna aksen. */
 .ui-title-screen { /* h1: nama layar */
   font-family: var(--font-display);
   font-size: var(--text-screen);
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: var(--track-section);
   line-height: var(--leading-tight);
   /* `balance` mencegah baris judul menggantung satu kata (widow): diminta
    * ui-ux-pro-max (html-tailwind) dan baseline-ui. */
@@ -191,6 +209,20 @@ textarea:disabled {
    * panjang ("Feed Instagram/Fanpage/TikTok") alih-alih meluber keluar
    * viewport. `min-width: 0` melengkapi untuk saat kelas ini dipakai pada
    * flex/grid item, yang default-nya menolak menyusut di bawah min-content. */
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Judul hero halaman publik. Dipakai landing (D4): sebelumnya hero memakai
+ * `text-3xl sm:text-5xl` ad-hoc, sehingga `--text-sheet` tidak pernah terpakai
+ * dan ukurannya melompat 30px -> 48px di antara breakpoint. */
+.ui-title-hero { /* h1: judul hero (landing) */
+  font-family: var(--font-display);
+  font-size: var(--text-sheet);
+  font-weight: 600;
+  letter-spacing: var(--track-hero);
+  line-height: 1.08;
+  text-wrap: balance;
   overflow-wrap: anywhere;
   min-width: 0;
 }
@@ -209,7 +241,8 @@ textarea:disabled {
 .ui-title-section { /* h2: judul bagian */
   font-family: var(--font-display);
   font-size: var(--text-section);
-  font-weight: 700;
+  font-weight: 600;
+  letter-spacing: var(--track-section);
   line-height: var(--leading-tight);
   text-wrap: balance;
   /* Gate 51: lihat catatan di `.ui-title-screen`. */
@@ -221,6 +254,7 @@ textarea:disabled {
   font-family: var(--font-body);
   font-size: var(--text-title);
   font-weight: 600;
+  letter-spacing: var(--track-row);
   line-height: var(--leading-tight);
   text-wrap: balance;
   /* Gate 51: lihat catatan di `.ui-title-screen`. */
@@ -228,12 +262,33 @@ textarea:disabled {
   min-width: 0;
 }
 
+/* Label kecil: satu-satunya tempat kapital ber-track masih sah. Dipakai kepala
+ * kolom tabel, label form, dan cap pendek — 12px adalah batas bawah skala, jadi
+ * label tidak boleh lebih kecil lagi.
+ *
+ * Dua nada, karena label memang punya dua tingkat: metadata di atas permukaan
+ * tenang (redup) dan penanda bagian seperti `<legend>`/kepala seksi (tinta
+ * penuh). Keduanya tetap kapital ber-track supaya bentuk hurufnya seragam —
+ * yang berbeda hanya bobot dan warna. */
+.ui-label {
+  font-size: var(--text-meta);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-muted);
+}
+
+.ui-label[data-tone='strong'] {
+  font-weight: 600;
+  color: var(--ink-primary);
+}
+
 /* Jaring pengaman judul (Gate 51). Beberapa judul ukuran display di repo ini
- * memakai kelas Tailwind langsung (`font-display text-3xl sm:text-4xl` di
- * PromoLandingPage) alih-alih `.ui-title-*`, sehingga aturan di atas tidak
- * menjangkaunya. Terukur di peramban (320px, kata majemuk panjang pada H1/H2
- * beranda): `scrollWidth` 637px vs `clientWidth` 273px: teks meluber keluar
- * kotak dan terpotong oleh `overflow-x: clip` di `html`/`body`.
+ * memakai kelas Tailwind langsung (`text-3xl sm:text-4xl`) alih-alih
+ * `.ui-title-*`, sehingga aturan di atas tidak menjangkaunya. Terukur di
+ * peramban (320px, kata majemuk panjang pada H1/H2 beranda): `scrollWidth`
+ * 637px vs `clientWidth` 273px: teks meluber keluar kotak dan terpotong oleh
+ * `overflow-x: clip` di `html`/`body`.
  *
  * Ditaruh di `@layer base` supaya tetap berada di bawah lapisan `utilities`:
  * `overflow-wrap` tidak diatur Tailwind di sini, dan tidak ada kelas judul yang
@@ -340,14 +395,17 @@ summary:focus-visible,
   border-top: var(--rule);
 }
 
-/* Number XL (statistical / step counters)
- * Dunia ini membaca angka sebagai DATA, jadi monospace + tabular, bukan
- * serif display. Tetap satu tempat untuk semua angka statistik. */
+/* Angka (statistik / penghitung langkah).
+ * Dunia ini membaca angka sebagai DATA, jadi monospace + tabular. Bobot 500
+ * (bukan 700) dan warna tinta (bukan warna proses): angka memimpin baris
+ * karena UKURANNYA, bukan karena warnanya — dan warna sudah disisakan untuk
+ * stempel keadaan. */
 .ui-number {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-weight: 700;
-  color: var(--process);
+  font-weight: 500;
+  letter-spacing: var(--track-row);
+  color: var(--ink-primary);
 }
 
 /* Admin surfaces */
@@ -362,64 +420,21 @@ summary:focus-visible,
   background: var(--surface-card);
 }
 
+/* Angka besar satu layar (KPI konsol staf, total biaya). Angka terpenting di
+ * halamannya memakai peran ini supaya ukurannya tidak pernah turun di bawah
+ * label di sekitarnya. */
+.ui-figure {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-screen);
+  font-weight: 500;
+  letter-spacing: var(--track-section);
+  color: var(--ink-primary);
+  line-height: 1.1;
+}
+
 /* Mode gelap: "meja malam". Token gelap didefinisikan di theme.css; blok di
  * sini hanya memetakan kelas ke token, tanpa hex mentah. */
-
-.dark .ui-admin-page {
-  background: var(--surface-offset);
-}
-
-.dark .ui-admin-card {
-  border-color: var(--rule-color);
-  background: var(--surface-card);
-}
-
-.dark .ui-chrome {
-  border-color: var(--rule-color);
-  background: var(--surface-page);
-}
-
-.dark .ui-card {
-  border-color: var(--rule-color);
-  background: var(--surface-card);
-}
-
-.dark .ui-control {
-  border-color: var(--rule-strong);
-  background: var(--surface-card);
-}
-
-.dark .ui-empty {
-  border-color: var(--rule-strong);
-  background: var(--surface-offset);
-  color: var(--ink-muted);
-}
-
-.dark .ui-alert {
-  border-color: color-mix(in srgb, var(--stamp-no) 40%, transparent);
-  background: var(--stamp-no-soft);
-}
-
-.dark .ui-btn-secondary {
-  border-color: var(--rule-strong);
-  color: var(--ink-secondary);
-}
-
-.dark .ui-btn-secondary:hover {
-  background: var(--surface-hover);
-}
-
-.dark .ui-text-muted {
-  color: var(--ink-muted);
-}
-
-.dark .ui-text-strong {
-  color: var(--ink-primary);
-}
-
-.dark .ui-rule {
-  border-color: var(--rule-color);
-}
 
 /* App shell: kerangka aplikasi (bar, tab bar, sheet, FAB) */
 
@@ -496,7 +511,7 @@ summary:focus-visible,
 }
 
 .app-bar[data-elevated='true'] {
-  border-bottom-color: var(--rule-ink);
+  border-bottom-color: var(--rule-strong);
 }
 
 /* Bottom tab bar: navigasi utama di mobile. */
@@ -530,9 +545,10 @@ summary:focus-visible,
   gap: 0.125rem;
   min-height: var(--tap-min);
   font-size: var(--text-meta);
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  font-weight: 500;
+  /* Label navigasi memakai huruf biasa, bukan kapital ber-track: kapital
+   * sekarang disisakan untuk kepala kolom tabel (`.ui-label`). Kapital di
+   * navigasi membuat empat tab terbaca sebagai empat blok yang berteriak. */
   color: var(--ink-muted);
   border-top: 2px solid transparent;
   transition: color 150ms ease;
@@ -540,7 +556,7 @@ summary:focus-visible,
 
 .app-tab[aria-current='page'] {
   color: var(--ink-primary);
-  border-top-color: var(--process);
+  border-top-color: var(--ink-primary);
 }
 
 /* Navigasi utama versi desktop: di dalam app bar. Hanya ≥640px; di bawah itu
@@ -567,10 +583,9 @@ summary:focus-visible,
   padding-inline: 0.75rem;
   border-radius: 0;
   border-bottom: 2px solid transparent;
-  font-size: var(--text-meta);
-  font-weight: 700;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  font-size: var(--text-dense);
+  font-weight: 500;
+  letter-spacing: var(--track-control);
   color: var(--ink-muted);
   transition: color 150ms ease, border-color 150ms ease;
 }
@@ -582,21 +597,7 @@ summary:focus-visible,
 
 .app-nav-link[aria-current='page'] {
   color: var(--ink-primary);
-  border-bottom-color: var(--process);
-}
-
-.dark .app-nav-link {
-  color: var(--ink-muted);
-}
-
-.dark .app-nav-link:hover {
-  color: var(--ink-primary);
-  border-bottom-color: var(--rule-strong);
-}
-
-.dark .app-nav-link[aria-current='page'] {
-  color: var(--ink-primary);
-  border-bottom-color: var(--process-soft);
+  border-bottom-color: var(--ink-primary);
 }
 
 /* Umpan balik sentuh: pengganti :hover yang tidak ada di layar sentuh. */
@@ -664,7 +665,7 @@ summary:focus-visible,
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
-  border-top: 2px solid var(--rule-ink);
+  border-top: 1px solid var(--rule-color);
   padding-bottom: var(--safe-bottom);
   background: var(--surface-card);
 }
@@ -674,7 +675,7 @@ summary:focus-visible,
   width: 2.25rem;
   height: 0.25rem;
   margin: 0.625rem auto 0;
-  border-radius: 0;
+  border-radius: var(--radius-chip);
   background: var(--rule-strong);
 }
 
@@ -694,326 +695,423 @@ summary:focus-visible,
 }
 
 /* Mode gelap app shell (konsol staf). */
-.dark .app-shell {
-  background: var(--surface-page);
-}
-
-.dark .app-bar,
-.dark .app-tabbar {
-  border-color: var(--rule-color);
-  background: var(--surface-page);
-}
-
-.dark .app-sheet {
-  background: var(--surface-card);
-}
-
-.dark .app-sheet-grip {
-  background: var(--rule-strong);
-}
-
-.dark .ui-alert-panel {
-  border-color: color-mix(in srgb, var(--stamp-no) 40%, transparent);
-  background: var(--stamp-no-soft);
-}
-
-.dark .ui-empty-panel {
-  border-color: var(--rule-strong);
-  background: var(--surface-offset);
-  color: var(--ink-muted);
-}
-
 /* ==========================================================================
- * Perabot dunia "Lembar Spesifikasi & Tiket Pekerjaan"
+ * Perabot dunia "Daftar Kerja Seluler"
  *
- * Ini yang membuat halaman dikenali tanpa membaca satu kata pun: tanda potong
- * di sudut lembar, garis dimensi berpanah, tabel dengan titik penghubung,
- * nomor job monospace, stempel status, tepi perforasi pada tiket.
+ * Ini yang membuat halaman dikenali tanpa membaca satu kata pun: baris-baris
+ * yang dipisah garis rambut, dan ANGKA YANG SELALU LEBIH BESAR DARI LABELNYA.
+ * Tidak ada tanda potong, nomor plate, atau garis dimensi: perabot dunia cetak
+ * itu memakan ruang di layar 6 inci dan tidak memberi informasi kepada tenant.
  * ========================================================================== */
 
-/* Lembar: permukaan kerja yang lebih terang di atas meja. */
-.doc-sheet {
-  position: relative;
-  background: var(--surface-card);
-  border: var(--rule-2);
-  border-radius: var(--radius-card);
-}
-
-/* Tanda potong: dua garis 1px menyilang di tiap sudut. Murni dekoratif,
- * jadi tidak boleh ikut dibaca pembaca layar. */
-.doc-crop {
-  position: absolute;
-  width: 13px;
-  height: 13px;
-  pointer-events: none;
-}
-
-.doc-crop::before,
-.doc-crop::after {
-  content: "";
-  position: absolute;
-  background: var(--rule-strong);
-}
-
-.doc-crop::before {
-  width: 13px;
-  height: 1px;
-  top: 6px;
-  left: 0;
-}
-
-.doc-crop::after {
-  height: 13px;
-  width: 1px;
-  left: 6px;
-  top: 0;
-}
-
-.doc-crop[data-corner='tl'] { top: 10px; left: 10px; }
-.doc-crop[data-corner='tr'] { top: 10px; right: 10px; }
-.doc-crop[data-corner='bl'] { bottom: 10px; left: 10px; }
-.doc-crop[data-corner='br'] { bottom: 10px; right: 10px; }
-
-/* Nomor plate / nomor job: data, jadi monospace dan tabular. */
-.doc-plate-no {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--text-meta);
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  color: var(--ink-muted);
-}
-
-/* Garis dimensi: garis 1px dengan ujung tegak di kedua ujungnya. Dipakai
- * untuk mengukur sesuatu yang nyata (jumlah media, ukuran, periode). */
-.doc-dim {
+/* Baris kerja: perabot inti dunia ini.
+ *
+ * Dipakai katalog media, pilihan wizard, daftar riwayat, dan baris batch.
+ * Bentuknya: [thumbnail?] [nama + spec] [angka] dengan garis rambut sebagai
+ * pemisah — bukan kartu berbingkai. Empat belas kartu berbingkai terbaca
+ * sebagai empat belas kotak; satu daftar bergaris terbaca sebagai satu tabel.
+ */
+.ui-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 0.75rem;
-}
-
-.doc-dim > .doc-dim-line {
-  position: relative;
-  flex: 1;
-  height: 1px;
-  background: var(--ink-primary);
-}
-
-.doc-dim > .doc-dim-line::before,
-.doc-dim > .doc-dim-line::after {
-  content: "";
-  position: absolute;
-  top: -4px;
-  width: 1px;
-  height: 9px;
-  background: var(--ink-primary);
-}
-
-.doc-dim > .doc-dim-line::before { left: 0; }
-.doc-dim > .doc-dim-line::after { right: 0; }
-
-.doc-dim > .doc-dim-val {
-  font-family: var(--font-mono);
-  font-variant-numeric: tabular-nums;
-  font-size: var(--text-meta);
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-/* Tabel spesifikasi: label kiri, nilai kanan, dihubungkan titik-titik. */
-.doc-rows {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.doc-rows > .doc-row {
-  display: flex;
-  align-items: baseline;
-  gap: 0.375rem;
+  padding: 0.875rem 0;
+  border-bottom: var(--rule);
   min-width: 0;
 }
 
-.doc-row > dt {
-  color: var(--ink-muted);
-  font-size: var(--text-meta);
-  white-space: nowrap;
+.ui-row:last-child {
+  border-bottom: none;
 }
 
-.doc-row > .doc-leader {
+/* Thumbnail: pengenal visual media, bukan hiasan. Rasio dikunci supaya tinggi
+ * baris tidak melompat saat gambar tiba (CLS). */
+.ui-row-lead {
+  flex: none;
+  width: 4rem;
+  height: 4rem;
+  border-radius: var(--radius-thumb);
+  object-fit: cover;
+  background: var(--surface-tint);
+  display: block;
+}
+
+.ui-row-main {
   flex: 1;
-  min-width: 0.75rem;
-  border-bottom: 1px dotted var(--rule-strong);
-  transform: translateY(-3px);
+  min-width: 0;
 }
 
-.doc-row > dd {
-  margin: 0;
+/* Kepala baris: nama di kiri, angka di kanan. `baseline` menjaga nama dan
+ * angka duduk di garis yang sama meski ukurannya berbeda. Saat harganya bukan
+ * angka (`data-kind="text"`), kepala ini menjadi satu kolom dan harganya turun
+ * ke barisnya sendiri. */
+.ui-row-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.ui-row-head:has(.ui-row-num[data-kind='text']) {
+  display: block;
+}
+
+/* Di bawah 640px kepala baris SELALU ditumpuk, bukan hanya saat harganya teks.
+ *
+ * Terukur di 320px: harga `Rp. 6.700.000,-/sisi/bulan` butuh 168px dan
+ * `Rp. 288.000` + satuan butuh ~150px dari lebar baris ~272px (setelah
+ * thumbnail 64px + celah). Karena angka wajib `white-space: nowrap` dan
+ * `flex: none` — kalau ia boleh membungkus, nominalnya pecah dan tidak lagi
+ * bisa dibandingkan — yang mengalah adalah NAMA: "Digital Poster" terpepet
+ * sampai 12px dan membungkus satu huruf per baris. Ditumpuk, nama selalu dapat
+ * lebar penuh dan harga turun ke barisnya sendiri; hierarki "angka memimpin"
+ * tetap utuh karena ukurannya tidak berubah, hanya posisinya. */
+@media (max-width: 639px) {
+  .ui-row-head {
+    display: block;
+  }
+  .ui-row-num,
+  .ui-price-ladder {
+    margin-top: 0.25rem;
+  }
+}
+
+/* Nama media DI DALAM baris daftar: satu langkah di bawah harga, supaya
+ * aturan "angka memimpin" benar-benar berlaku (18px harga vs 16px nama).
+ * `.ui-title-card` (18px) tetap untuk judul panel/kartu, bukan baris. */
+.ui-title-row {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  font-weight: 600;
+  letter-spacing: var(--track-row);
+  line-height: 1.3;
+  color: var(--ink-primary);
+  text-wrap: pretty;
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+
+/* Angka baris: HARGA. Selalu mono, selalu tabular, dan ukurannya satu langkah
+ * di atas nama (`--text-title` 18px vs `--text-body` 16px) — itulah aturan
+ * "angka memimpin" yang membuat daftar ini bisa dipindai. */
+.ui-row-num {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
+  font-size: var(--text-title);
+  font-weight: 500;
+  letter-spacing: var(--track-row);
+  color: var(--ink-primary);
+  white-space: nowrap;
+  flex: none;
+}
+
+/* Tangga tarif multi-baris (mis. Videotron 4 durasi). Dipisah dari `.ui-row-num`
+ * karena ia bukan satu angka melainkan daftar: memaksanya ke kolom kanan akan
+ * menyisakan ~80px untuk nama. */
+.ui-price-ladder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  margin-top: 0.5rem;
+  min-width: 0;
+}
+
+/* Satuan di bawah angka, bukan di sampingnya.
+ *
+ * Di samping, "Rp 288.000 /hari/16 tiang" melebar ~203px dan menyisakan ~81px
+ * untuk nama — cukup sempit sehingga "Umbul-Umbul" membungkus ke dua baris.
+ * Ditumpuk, kolom kanan menyusut ke lebar angkanya saja (~119px), dan nama
+ * dapat ~165px. Angkanya juga jadi berdiri sendiri, sesuai aturan "angka
+ * memimpin": satuan hanya keterangan di bawahnya. */
+.ui-row-num small {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-meta);
+  font-weight: 400;
+  letter-spacing: 0;
+  color: var(--ink-muted);
+  margin-top: 0.0625rem;
+}
+
+/* Harga yang BUKAN angka ("Gratis", "Hubungi Marcom", "- (Belum tersedia)").
+ *
+ * Tidak ditaruh di kolom kanan: `price_note` deck bisa berupa kalimat
+ * ("Gratis (syarat: tenant baru atau peserta program promo)") yang akan
+ * memaksa kolom kanan selebar setengah baris. Ia turun ke barisnya sendiri
+ * di bawah nama, ukurannya tetap `--text-title` dan warnanya tetap tinta —
+ * "Gratis" adalah penawaran terkuat di katalog ini dan tidak boleh tampil
+ * sebagai catatan kaki kelabu. Yang berubah hanya rupanya (teks, bukan mono)
+ * dan kemampuannya membungkus. */
+.ui-row-num[data-kind='text'] {
+  display: block;
+  font-family: var(--font-body);
+  font-size: var(--text-title);
+  font-weight: 600;
+  letter-spacing: var(--track-row);
+  color: var(--ink-primary);
+  white-space: normal;
+  text-wrap: pretty;
+  margin-top: 0.25rem;
+}
+
+/* Baris spesifikasi: label redup di kiri, nilai di kanan. Menggantikan tabel
+ * titik penghubung — titik itu konvensi formulir cetak, dan nilai rata kanan
+ * sudah memberi keterbacaan yang sama tanpa derau. */
+.ui-specs {
+  display: grid;
+  gap: 0.125rem;
+  margin: 0;
+}
+
+.ui-spec {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.ui-spec > dt {
+  color: var(--ink-muted);
+  font-size: var(--text-dense);
+  flex: none;
+}
+
+.ui-spec > dd {
+  margin: 0;
   font-size: var(--text-dense);
   font-weight: 500;
   text-align: right;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
-/* Di bawah 640px tabel titik penghubung DITUMPUK: label di atas nilainya.
- * Pola satu baris (label kiri - titik - nilai kanan) hanya terbaca bila nilai
- * muat satu baris. Di layar ponsel nilai seperti "4 x 8m Horizontal
- * (Resolusi 1025 x 2000 Pixel)" membungkus sampai tiga baris sementara titik
- * penghubung menyusut jadi 12px, sehingga baris terbaca rusak ("Material
- * ..... Sticker di Impraboard"). Ditumpuk, label dan nilai sama-sama memakai
- * lebar penuh; titik penghubung disembunyikan karena tak lagi menghubungkan
- * apa pun. Spesifisitas disamakan dengan aturan dasar agar menang.
- * Aturan ini harus tinggal di sini, bukan sebagai utility Tailwind: Tailwind
- * v4 menaruh utility di @layer, sehingga kelas tak berlapis ini selalu menang. */
-@media (max-width: 639px) {
-  .doc-rows > .doc-row {
-    display: block;
-  }
-  .doc-rows > .doc-row > .doc-leader {
-    display: none;
-  }
-  .doc-rows > .doc-row > dd {
-    margin-top: 0.125rem;
-    text-align: left;
-    overflow-wrap: break-word;
-  }
-}
-
-/* Tepi perforasi: batas yang bisa "disobek" pada tiket. */
-.doc-perf {
-  height: 0;
-  border-top: 1px dashed var(--rule-strong);
-}
-
-/* Stempel status: keadaan pekerjaan, dicap miring seperti stempel karet. */
-.doc-stamp {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.25rem 0.5rem;
-  border: 2px solid currentColor;
-  border-radius: 2px;
-  font-family: var(--font-mono);
-  font-size: var(--text-meta);
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  white-space: nowrap;
-  transform: rotate(-2.5deg);
-}
-
-.doc-stamp[data-tone='ok'] { color: var(--stamp-ok); }
-.doc-stamp[data-tone='rev'] { color: var(--stamp-rev); }
-.doc-stamp[data-tone='no'] { color: var(--stamp-no); }
-.doc-stamp[data-tone='wait'] { color: var(--ink-secondary); }
-
-/* Lencana kanal: tegas, siku, tanpa pil. */
-.doc-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.1875rem 0.5rem;
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-chip);
-  font-family: var(--font-mono);
-  font-size: var(--text-meta);
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--ink-secondary);
-  white-space: nowrap;
-}
-
-.doc-tag[data-tone='process'] {
-  border-color: var(--process);
-  color: var(--process);
-}
-
-.doc-tag[data-tone='ink'] {
-  border-color: var(--rule-ink);
-  background: var(--rule-ink);
-  color: var(--ink-invert);
-}
-
-/* Semua angka yang dibaca sebagai data memakai tabular-nums. */
-.doc-num {
+/* Nilai berupa angka (tarif, periode, ukuran) memakai mono. */
+.ui-spec > dd[data-numeric='true'] {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
 }
 
-/* Blok perhitungan: subtotal / PPN / total pada satu bidang.
- * Dipisah dari isi sekitarnya oleh GARIS TINTA di atas dan bawah (bukan
- * border kiri berwarna - pola "side-tab" itu justru tell yang dilarang). */
-.doc-calc {
+/* Di bawah 640px nilai yang panjang tetap ditumpuk di bawah labelnya, karena
+ * satu baris label-nilai hanya terbaca bila nilainya muat sebaris. */
+@media (max-width: 639px) {
+  .ui-spec {
+    display: block;
+  }
+  .ui-spec > dd {
+    text-align: left;
+    margin-top: 0.125rem;
+  }
+}
+
+/* Angka apa pun yang dibaca sebagai data memakai tabular-nums. */
+.ui-num {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Lencana kanal/jenis: netral, kecil, tidak berteriak. */
+.ui-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.125rem 0.4375rem;
+  border-radius: var(--radius-chip);
+  background: var(--surface-tint);
+  color: var(--ink-secondary);
+  font-size: var(--text-meta);
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.ui-tag[data-tone='ink'] {
+  background: var(--ink-primary);
+  color: var(--ink-invert);
+}
+
+/* Lencana status (komponen `Stamp`). Nada ditentukan oleh `data-tone`, sama
+ * seperti lampu lalu lintas pekerjaan: menunggu = netral, disetujui = setuju,
+ * perlu revisi = revisi, ditolak = tolak. Latar lembut + teks sewarna; tanpa
+ * bingkai dan tanpa miring, supaya tidak berteriak di dalam daftar.
+ *
+ * `.ui-stamp` selalu dipasang bersama `.ui-tag` (lihat `Stamp.tsx`); aturan di
+ * bawah menambahkan bobot dan warna teks yang membedakannya dari tag kanal. */
+.ui-stamp {
+  font-weight: 600;
+}
+
+.ui-stamp[data-tone='wait'] {
+  background: var(--stamp-wait-soft);
+  color: var(--stamp-wait);
+}
+
+.ui-stamp[data-tone='ok'] {
+  background: var(--stamp-ok-soft);
+  color: var(--stamp-ok);
+}
+
+.ui-stamp[data-tone='rev'] {
+  background: var(--stamp-rev-soft);
+  color: var(--stamp-rev);
+}
+
+.ui-stamp[data-tone='no'] {
+  background: var(--stamp-no-soft);
+  color: var(--stamp-no);
+}
+
+/* Blok perhitungan: subtotal / PPN / total pada satu bidang tenang.
+ * Dipisah dari isi sekitarnya oleh GARIS PUNGUT di atas dan bawah, bukan
+ * "side-tab" berwarna (pola itu tell yang dilarang). */
+.ui-calc {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.75rem;
+  gap: 1.5rem;
   align-items: flex-end;
   padding: 1rem 1.125rem;
-  border-top: 1px solid var(--rule-ink);
-  border-bottom: 1px solid var(--rule-ink);
+  border-top: var(--rule);
+  border-bottom: var(--rule);
   background: var(--surface-offset);
   border-radius: 0;
 }
 
-.doc-calc .doc-calc-k {
-  font-family: var(--font-mono);
-  font-size: var(--text-meta);
-  font-weight: 600;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
+.ui-calc .ui-calc-k {
+  font-size: var(--text-dense);
   color: var(--ink-muted);
 }
 
-.doc-calc .doc-calc-v {
+.ui-calc .ui-calc-v {
+  margin-top: 0.1875rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-title);
+  font-weight: 500;
+  letter-spacing: var(--track-row);
+}
+
+/* Total: angka terbesar di layar. Sengaja memakai `.ui-figure` (24px) supaya
+ * tidak ada angka lain di halaman yang menyainginya. */
+.ui-calc .ui-calc-v[data-emphasis='true'] {
+  font-size: var(--text-screen);
+  font-weight: 500;
+  letter-spacing: var(--track-section);
+}
+
+/* Garis waktu riwayat: titik dan garis, bukan baris bertanggal.
+ * Versi sebelumnya memakai baris teks penuh per kejadian; bentuk waktu
+ * menunjukkan urutan dan posisi sekarang tanpa perlu dibaca. */
+.ui-timeline {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ui-timeline-item {
+  position: relative;
+  padding: 0 0 1.125rem 1.375rem;
+}
+
+.ui-timeline-item:last-child {
+  padding-bottom: 0;
+}
+
+/* Titik: lingkaran berisi tinta. Kejadian terakhir diberi titik berongga
+ * supaya "sekarang" terbaca tanpa warna tambahan. */
+.ui-timeline-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.3125rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--ink-primary);
+}
+
+.ui-timeline-item[data-current='true']::before {
+  background: var(--surface-page);
+  box-shadow: inset 0 0 0 2px var(--ink-primary);
+}
+
+/* Garis penghubung antar titik. Berhenti di item terakhir. */
+.ui-timeline-item:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 0.21875rem;
+  top: 0.9375rem;
+  bottom: 0.125rem;
+  width: 1px;
+  background: var(--rule-color);
+}
+
+.ui-timeline-item > b {
+  display: block;
+  font-size: var(--text-dense);
+  font-weight: 600;
+  letter-spacing: var(--track-control);
+}
+
+.ui-timeline-item time {
+  display: block;
+  margin-top: 0.125rem;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--text-meta);
+  color: var(--ink-muted);
+}
+
+.ui-timeline-item p {
+  margin: 0.375rem 0 0;
+  font-size: var(--text-dense);
+  color: var(--ink-secondary);
+}
+
+/* Angka besar satu blok (KPI konsol staf: jumlah per status).
+ * Label di atas, angka di bawah — kebalikan dari baris daftar, karena di sini
+ * angkanya berdiri sendiri dan labelnya hanya keterangan. */
+.ui-stat {
+  display: block;
+  min-width: 0;
+}
+
+.ui-stat-k {
+  display: block;
+  font-size: var(--text-meta);
+  color: var(--ink-muted);
+}
+
+.ui-stat-v {
+  display: block;
   margin-top: 0.25rem;
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: var(--text-section);
-  font-weight: 700;
-}
-
-.doc-calc .doc-calc-v[data-emphasis='true'] {
-  color: var(--process);
   font-size: var(--text-screen);
+  font-weight: 500;
+  letter-spacing: var(--track-section);
+  line-height: 1.1;
+  color: var(--ink-primary);
 }
-
-/* Blok peringatan/galat dokumen: BINGKAI PENUH, bukan garis kiri berwarna
- * (pola "side-tab" adalah tell yang dilarang detector dan craft floor).
- * Nada ditentukan oleh data-tone, sama seperti .doc-stamp. */
-.doc-alert {
-  border: 1px solid var(--rule-strong);
-  border-radius: var(--radius-card);
-  background: var(--surface-offset);
-}
-
-.doc-alert[data-tone='no'] {
-  border-color: color-mix(in srgb, var(--stamp-no) 45%, transparent);
-  background: var(--stamp-no-soft);
-}
-
-.doc-alert[data-tone='rev'] {
-  border-color: color-mix(in srgb, var(--stamp-rev) 45%, transparent);
-  background: var(--stamp-rev-soft);
-}
-
-.doc-alert[data-tone='ok'] {
-  border-color: color-mix(in srgb, var(--stamp-ok) 45%, transparent);
-  background: var(--stamp-ok-soft);
-}
-
 /* Permukaan browser yang ikut desain: seleksi, caret, scrollbar, dan
  * underline. Ini sinyal termurah bahwa halaman dibangun, bukan dirakit. */
 ::selection {
-  background: color-mix(in srgb, var(--process) 24%, transparent);
+  background: color-mix(in srgb, var(--action) 24%, transparent);
   color: var(--ink-primary);
 }
 
 html {
-  caret-color: var(--process);
+  caret-color: var(--action);
+  /* App bar lengket (`.app-bar`, z-30) menutupi tepi atas area gulir. Bila
+   * sesuatu menggulirkan target ke tepi atas - tautan jangkar (`#katalog`),
+   * `scrollIntoView({block:'start'})`, atau `element.focus()` tanpa
+   * `preventScroll` - target itu mendarat di balik bar dan tidak terbaca.
+   * `scroll-padding` menyisakan tinggi bar + safe area. Terukur 2026-09-30:
+   * `#katalog` mendarat di 136px sementara bar berakhir di 56px, jadi ini
+   * jaring pengaman untuk kasus yang belum ada, bukan perbaikan bug aktif
+   * (mitigasi kanonik WCAG 2.2 "Focus Not Obscured"). */
+  scroll-padding-top: calc(var(--app-bar-h) + var(--safe-top));
 }
 
 /* Scrollbar: tipis, siku, dari palet kertas-tinta. */
@@ -1043,15 +1141,13 @@ html {
 }
 
 /* Tautan dalam prosa: garis bawah yang tidak menempel di descender. */
-.ui-prose a,
-.doc-link {
-  color: var(--process);
+.ui-prose a {
+  color: var(--action);
   text-decoration-line: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
 }
 
-.ui-prose a:hover,
-.doc-link:hover {
+.ui-prose a:hover {
   text-decoration-thickness: 2px;
 }

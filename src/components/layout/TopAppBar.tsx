@@ -90,7 +90,7 @@ export default function TopAppBar({ title, back, backTo, onBack, actions, nav, s
         <button
           type="button"
           onClick={() => (onBack ? onBack() : backTo ? navigate(backTo) : navigate(-1))}
-          className="app-pressable ui-focus-ring -ml-1 inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-700 hover:bg-[var(--surface-hover)] dark:text-slate-200"
+          className="app-pressable ui-focus-ring -ml-1 inline-flex h-11 w-11 items-center justify-center rounded-full ui-text-strong hover:bg-[var(--surface-hover)]"
           aria-label="Kembali"
         >
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
@@ -99,9 +99,9 @@ export default function TopAppBar({ title, back, backTo, onBack, actions, nav, s
 
       <div className="min-w-0 flex-1">
         {title ? (
-          <h1 className="ui-title-screen truncate text-slate-900 dark:text-white">{title}</h1>
+          <h1 className="ui-title-screen ui-text-strong truncate">{title}</h1>
         ) : (
-          <span className="font-display text-base font-bold text-slate-900 dark:text-white">
+          <span className="font-display text-base font-bold ui-text-strong">
             Media Promosi
           </span>
         )}

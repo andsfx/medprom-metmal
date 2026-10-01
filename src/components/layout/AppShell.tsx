@@ -10,6 +10,7 @@ import BottomTabBar from './BottomTabBar';
 import TopAppBar from './TopAppBar';
 import TopNav from './TopNav';
 import { useMediaQuery } from './useMediaQuery';
+import { useDocumentTitle } from '../../hooks/useDocumentTitle';
 
 const SCROLL_ID = 'app-scroll';
 
@@ -45,6 +46,10 @@ export default function AppShell({
   // dirender agar tidak ada dua landmark `nav` bernama sama di DOM.
   const desktop = useMediaQuery(DESKTOP_QUERY);
   const showNav = !hideTabBar;
+
+  // Judul dokumen mengikuti judul layar (lihat useDocumentTitle). Layar tanpa
+  // judul - beranda - memakai nama produk saja.
+  useDocumentTitle(title ?? '');
 
   return (
     <div className="app-shell">

@@ -87,12 +87,12 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
       >
         <div className="app-sheet-grip" aria-hidden="true" />
 
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--rule-color)] px-4 py-3 dark:border-slate-700">
-          <h2 className="ui-title-card truncate text-slate-900 dark:text-white">{title}</h2>
+        <div className="flex items-center justify-between gap-3 border-b border-[var(--rule-color)] px-4 py-3">
+          <h2 className="ui-title-card ui-text-strong truncate">{title}</h2>
           <button
             type="button"
             onClick={onClose}
-            className="app-pressable ui-focus-ring -mr-1 inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-500 hover:bg-[var(--surface-hover)] dark:text-slate-400"
+            className="app-pressable ui-focus-ring -mr-1 inline-flex h-11 w-11 items-center justify-center rounded-full ui-text-muted hover:bg-[var(--surface-hover)]"
             aria-label="Tutup"
           >
             <X className="h-5 w-5" aria-hidden="true" />
@@ -102,7 +102,7 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
         <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{children}</div>
 
         {footer && (
-          <div className="border-t border-[var(--rule-color)] px-4 py-3 dark:border-slate-700">
+          <div className="border-t border-[var(--rule-color)] px-4 py-3">
             {footer}
           </div>
         )}

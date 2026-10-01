@@ -46,14 +46,14 @@ export function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, subj
   return (
     <Sheet open={isOpen} onClose={onClose} title={title}>
       <div className="mb-4 flex items-center gap-3">
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-          <AlertTriangle className="h-5 w-5 text-red-600 dark:text-red-400" aria-hidden="true" />
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-red-100">
+          <AlertTriangle className="h-5 w-5 text-red-600" aria-hidden="true" />
         </span>
-        <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">{message}</p>
+        <p className="text-sm leading-relaxed text-slate-600">{message}</p>
       </div>
 
       {subject && (
-        <p className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-800 dark:border-red-800/60 dark:bg-red-900/20 dark:text-red-200">
+        <p className="rounded-[var(--radius-control)] border border-red-200 bg-red-50 px-3.5 py-2.5 text-sm font-semibold text-red-800">
           {subject}
         </p>
       )}
@@ -63,7 +63,7 @@ export function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, subj
           type="button"
           onClick={onClose}
           disabled={isSubmitting}
-          className="ui-control app-pressable ui-focus-ring min-h-11 rounded-[var(--radius-control)] px-4 text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60 dark:text-slate-200"
+          className="ui-control app-pressable ui-focus-ring min-h-11 rounded-[var(--radius-control)] px-4 text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
         >
           {cancelLabel}
         </button>

@@ -51,17 +51,17 @@ export default function SubmissionStatusPage() {
     // Lihat `StatusPageTombolKembali.test.tsx`.
     <AppShell title="Status Pengajuan" back backTo="/">
       <div className="mx-auto max-w-2xl px-4 py-5">
-        {loading && (
-          <div className="doc-sheet flex items-center justify-center gap-3 p-10" role="status">
-            <Loader2 className="h-5 w-5 animate-spin text-brand-primary-600" aria-hidden="true" />
-            <span className="text-sm ui-text-muted">Memuat status pengajuan…</span>
+{loading && (
+          <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
+            <Loader2 className="h-5 w-5 animate-spin text-slate-500" aria-hidden="true" />
+            <span className="ui-dense ui-text-muted">Memuat status pengajuan...</span>
           </div>
         )}
 
         {!loading && loadError && (
-          <div className="doc-alert p-5" role="alert">
-            <p className="text-sm font-semibold text-red-800 dark:text-red-200">Gagal memuat status pengajuan.</p>
-            <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+          <div className="ui-alert p-5" role="alert">
+            <p className="ui-dense font-semibold text-red-800">Gagal memuat status pengajuan.</p>
+            <p className="ui-meta text-red-700 mt-1">
               Pengajuan Anda tidak hilang. Sambungan ke server sedang bermasalah. Coba lagi sebentar lagi.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">
@@ -80,9 +80,9 @@ export default function SubmissionStatusPage() {
         )}
 
         {!loading && notFound && (
-          <div className="doc-alert p-5" role="alert">
-            <p className="text-sm font-semibold text-red-800 dark:text-red-200">Pengajuan tidak ditemukan.</p>
-            <p className="mt-1 text-xs text-red-700 dark:text-red-300">
+          <div className="ui-alert p-5" role="alert">
+            <p className="ui-dense font-semibold text-red-800">Pengajuan tidak ditemukan.</p>
+            <p className="ui-meta text-red-700 mt-1">
               Periksa kembali tautan status Anda. Tautan ini hanya berlaku untuk satu pengajuan.
             </p>
             <div className="mt-4 flex flex-wrap gap-2">

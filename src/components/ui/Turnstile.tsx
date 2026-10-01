@@ -62,9 +62,19 @@ interface TurnstileWidgetProps {
   resetKey?: number;
   /** Nama permukaan yang dilindungi; server memverifikasi nilainya. */
   action: string;
+  /**
+   * Dipanggil saat widget TIDAK dapat dipasang (mis. sitekey belum terdaftar
+   * pada hostname ini - Cloudflare membalas `110200`).
+   *
+   * Tanpa sinyal ini halaman induk hanya tahu "belum ada token" dan tidak bisa
+   * membedakan "pengguna belum menyelesaikan captcha" dari "captcha memang
+   * tidak akan pernah muncul", sehingga ia menyuruh pengguna menunggu sesuatu
+   * yang tidak ada.
+   */
+  onUnavailable?: (unavailable: boolean) => void;
 }
 
-export default function TurnstileWidget({ onToken, resetKey = 0, action }: TurnstileWidgetProps) {
+export default function TurnstileWidget({ onToken, resetKey = 0, action, onUnavailable }: TurnstileWidgetProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [failed, setFailed] = useState(false);
   const [ready, setReady] = useState(false);
@@ -74,6 +84,8 @@ export default function TurnstileWidget({ onToken, resetKey = 0, action }: Turns
   // ulang saat induk merender dengan closure baru.
   const onTokenRef = useRef(onToken);
   onTokenRef.current = onToken;
+  const onUnavailableRef = useRef(onUnavailable);
+  onUnavailableRef.current = onUnavailable;
 
   useEffect(() => {
     if (!siteKey) return;
@@ -83,6 +95,9 @@ export default function TurnstileWidget({ onToken, resetKey = 0, action }: Turns
     // Token sebelumnya tidak berlaku lagi begitu widget dipasang ulang.
     onTokenRef.current('');
     setReady(false);
+    // Pemasangan ulang (mis. setelah "Coba lagi") dimulai dari keadaan bersih.
+    setFailed(false);
+    onUnavailableRef.current?.(false);
 
     loadTurnstileScript()
       .then(() => {
@@ -94,11 +109,30 @@ export default function TurnstileWidget({ onToken, resetKey = 0, action }: Turns
           language: 'auto',
           callback: (token: string) => onTokenRef.current(token),
           'expired-callback': () => onTokenRef.current(''),
-          'error-callback': () => onTokenRef.current(''),
+          // Turnstile memanggil ini saat widget TIDAK dapat dipasang - paling
+          // sering kode `110200` (hostname belum terdaftar untuk sitekey ini).
+          // Sebelumnya callback ini dibuang, sehingga widget gagal secara
+          // SENYAP: `ready` sudah true (placeholder hilang), tak ada pesan
+          // galat, dan halaman induk terus menyuruh pengguna "selesaikan
+          // verifikasi captcha di atas" - menunjuk ruang kosong yang tak akan
+          // pernah terisi. Terukur 2026-09-30 di produksi: `iframe` 0,
+          // `cf-turnstile` 0, token `''`, pesan galat tidak tampil.
+          'error-callback': () => {
+            onTokenRef.current('');
+            setFailed(true);
+            onUnavailableRef.current?.(true);
+            // `true` menandai galat sudah ditangani; Turnstile tidak perlu
+            // mencetak peringatannya sendiri.
+            return true;
+          },
         });
         setReady(true);
       })
-      .catch(() => { if (!cancelled) setFailed(true); });
+      .catch(() => {
+        if (cancelled) return;
+        setFailed(true);
+        onUnavailableRef.current?.(true);
+      });
 
     return () => {
       cancelled = true;
@@ -110,9 +144,13 @@ export default function TurnstileWidget({ onToken, resetKey = 0, action }: Turns
 
   if (failed) {
     return (
-      <p className="mt-3 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300" role="alert">
+      <p
+        className="ui-alert ui-meta mt-3 flex items-start gap-1.5 p-3 font-medium text-[color:var(--stamp-no)]"
+        role="alert"
+      >
         <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-        Gagal memuat verifikasi captcha. Periksa koneksi lalu muat ulang halaman.
+        Verifikasi keamanan tidak dapat dimuat. Coba muat ulang halaman; bila tetap gagal, hubungi
+        Tenant Relations.
       </p>
     );
   }
