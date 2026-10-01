@@ -51,10 +51,10 @@ export default function SubmissionStatusPage() {
     // Lihat `StatusPageTombolKembali.test.tsx`.
     <AppShell title="Status Pengajuan" back backTo="/">
       <div className="mx-auto max-w-2xl px-4 py-5">
-{loading && (
+        {loading && (
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-slate-500" aria-hidden="true" />
-          <span className="ui-dense ui-text-muted">Memuat status pengajuan…</span>
+            <span className="ui-dense ui-text-muted">Memuat status pengajuan…</span>
           </div>
         )}
 
