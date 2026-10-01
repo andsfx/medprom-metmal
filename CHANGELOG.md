@@ -9,8 +9,9 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   light-only (`#ffffff`) karena aplikasi belum memiliki dark mode; override
   dark dihapus. Loading katalog diumumkan lewat `role="status"`,
   `aria-live="polite"`, dan teks ellipsis untuk pembaca layar. Skip link
-  keyboard ditambahkan sebelum navigasi, target main dapat menerima fokus,
-  dan field relevan mendapat `name` tanpa kehilangan `id` sehingga label serta
+  keyboard ditambahkan sebelum navigasi tenant dan dashboard admin; target
+  `main#app-scroll` serta `main#admin-content` dapat menerima fokus. Field
+  autofill relevan mendapat `name` tanpa kehilangan `id` sehingga label serta
   pesan error tetap tertaut. `ConfirmDialog` memakai `transition-colors`,
   typo `hover:` diperbaiki, dan pola focus tanpa replacement diganti ke
   `focus-visible` atau dihapus.

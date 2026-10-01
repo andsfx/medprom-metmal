@@ -2303,6 +2303,9 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="ui-admin-page min-h-screen">
+      <a href="#admin-content" className="skip-link">
+        Lewati ke konten utama
+      </a>
       {/* Header */}
       <header className="ui-chrome sticky top-0 z-40 border-b">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-4 py-3">
@@ -2370,7 +2373,7 @@ export default function AdminDashboardPage() {
       </nav>
 
       {/* Content */}
-      <main className="mx-auto max-w-6xl px-4 py-5">
+      <main id="admin-content" tabIndex={-1} className="mx-auto max-w-6xl px-4 py-5">
         <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
           {tab === 'submissions' && <SubmissionsTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
           {tab === 'catalog' && <CatalogTab canManage={permissions.canManage} onConfirmDelete={onConfirmDelete} />}
