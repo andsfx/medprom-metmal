@@ -53,6 +53,9 @@ export default function AppShell({
 
   return (
     <div className="app-shell">
+      <a href={`#${SCROLL_ID}`} className="skip-link">
+        Lewati ke konten utama
+      </a>
       <TopAppBar
         title={title}
         back={back}
@@ -63,7 +66,7 @@ export default function AppShell({
         scrollTargetId={SCROLL_ID}
       />
 
-      <main id={SCROLL_ID} className="app-scroll" data-tabbar={showNav ? 'on' : 'off'}>
+      <main id={SCROLL_ID} tabIndex={-1} className="app-scroll" data-tabbar={showNav ? 'on' : 'off'}>
         {children}
       </main>
 

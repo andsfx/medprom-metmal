@@ -495,7 +495,7 @@ function SubmissionsTab({ canManage, onConfirmDelete }: { canManage: boolean; on
               onClick={() => setPengingatTerbuka((v) => !v)}
               aria-expanded={pengingatTerbuka}
               aria-controls="pengingat-daftar"
-              className="ui-label ui-control mt-2 inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-3 py-2 transition hover:" data-tone="strong"
+              className="ui-label ui-control mt-2 inline-flex min-h-11 items-center border border-[color:var(--rule-color)] px-3 py-2 transition-colors hover:bg-[var(--surface-hover)]" data-tone="strong"
             >
               {pengingatTerbuka
                 ? 'Sembunyikan'
@@ -1538,7 +1538,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           value={String(form?.[field] ?? '')}
           placeholder={placeholder}
           onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
-          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
+          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary-600"
         />
       ) : (
         <input
@@ -1547,7 +1547,7 @@ function CatalogTab({ canManage, onConfirmDelete }: { canManage: boolean; onConf
           value={String(form?.[field] ?? '')}
           placeholder={placeholder}
           onChange={(e) => setForm((f) => (f ? { ...f, [field]: e.target.value } : f))}
-          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
+          className="ui-control w-full rounded-md px-3 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary-600"
         />
       )}
     </div>

@@ -172,6 +172,7 @@ export default function TrackSubmissionPage() {
             </label>
             <input
               id="track-number"
+              name="submission_number"
               type="text"
               inputMode="text"
               autoCapitalize="characters"
@@ -181,7 +182,7 @@ export default function TrackSubmissionPage() {
               value={number}
               placeholder="MP-260918-A7K2QX atau MPB-260918-A7K2QX"
               onChange={(e) => { setNumber(e.target.value.toUpperCase()); setError(''); setInfo(''); }}
-              className="ui-control w-full rounded-md px-3 py-2.5 font-mono text-sm tracking-wide text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
+              className="ui-control w-full rounded-md px-3 py-2.5 font-mono text-sm tracking-wide text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary-600"
             />
 
             <TurnstileWidget

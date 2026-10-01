@@ -593,7 +593,7 @@ export default function PromoUploadWizard() {
         {loading && (
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-[color:var(--ink-secondary)]" aria-hidden="true" />
-            <span className="ui-dense ui-text-muted">Memuat katalog media...</span>
+            <span className="ui-dense ui-text-muted">Memuat katalog media…</span>
           </div>
         )}
         {loadError && (
@@ -612,7 +612,7 @@ export default function PromoUploadWizard() {
             {step === 1 && (
               <div className="p-5 sm:p-6">
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus:outline-none">Pilih Jenis Media Promosi</h2>
+                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section">Pilih Jenis Media Promosi</h2>
                   <span className="ui-meta ui-text-muted ml-auto shrink-0">{mediaTypesNonCetak.length} media</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">Pilih media tempat materi Anda akan dipasang.</p>
@@ -752,7 +752,7 @@ export default function PromoUploadWizard() {
             {step === 2 && (
               <div className="p-5 sm:p-6">
                 <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 border-b border-[color:var(--rule-strong)] pb-2">
-                  <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section focus:outline-none">Data Tenant &amp; PIC</h2>
+                <h2 ref={stepHeadingRef} tabIndex={-1} className="ui-title-section">Data Tenant &amp; PIC</h2>
                   <span className="ui-meta ui-text-muted ml-auto shrink-0">Bagian 02</span>
                 </div>
                 <p className="ui-body ui-text-muted mt-3">
@@ -785,6 +785,7 @@ export default function PromoUploadWizard() {
                       </label>
                       <input
                         id="pic-name"
+                        name="pic_name"
                         type="text"
                         value={picName}
                         maxLength={100}
@@ -804,6 +805,7 @@ export default function PromoUploadWizard() {
                       </label>
                       <input
                         id="pic-phone"
+                        name="pic_phone"
                         type="tel"
                         inputMode="tel"
                         value={picPhone}
@@ -934,6 +936,7 @@ export default function PromoUploadWizard() {
                       </label>
                       <input
                         id="media-target"
+                        name="media_target"
                         type="text"
                         value={mediaTarget}
                         maxLength={200}
@@ -1124,6 +1127,7 @@ export default function PromoUploadWizard() {
                     </p>
                     <input
                       id="link-input"
+                      name="material_link"
                       type="url"
                       inputMode="url"
                       value={linkUrl}

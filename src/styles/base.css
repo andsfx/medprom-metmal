@@ -436,6 +436,28 @@ summary:focus-visible,
 /* Mode gelap: "meja malam". Token gelap didefinisikan di theme.css; blok di
  * sini hanya memetakan kelas ke token, tanpa hex mentah. */
 
+.skip-link {
+  position: fixed;
+  top: 0.75rem;
+  left: 0.75rem;
+  z-index: 60;
+  transform: translateY(-200%);
+  border: 1px solid var(--rule-strong);
+  border-radius: var(--radius-control);
+  background: var(--action);
+  color: var(--ink-invert);
+  padding: 0.625rem 0.875rem;
+  font-size: var(--text-dense);
+  font-weight: 600;
+  transition: transform 150ms ease-out;
+}
+
+.skip-link:focus-visible {
+  transform: translateY(0);
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 2px;
+}
+
 /* App shell: kerangka aplikasi (bar, tab bar, sheet, FAB) */
 
 /* Kanvas app: mengunci tinggi viewport agar hanya area konten yang menggulir,

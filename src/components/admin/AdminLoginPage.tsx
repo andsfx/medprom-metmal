@@ -61,11 +61,12 @@ export default function AdminLoginPage() {
               <label htmlFor="email" className="mb-1.5 block text-sm font-semibold text-slate-800">Email</label>
               <input
                 id="email"
+                name="email"
                 type="email"
                 autoComplete="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
+                className="ui-control w-full rounded-md px-3 py-2.5 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary-600"
                 placeholder="nama@metmal.co.id"
                 required
               />
@@ -75,11 +76,12 @@ export default function AdminLoginPage() {
               <div className="relative">
                 <input
                   id="password"
+                  name="password"
                   type={showPw ? 'text' : 'password'}
                   autoComplete="current-password"
                   value={pw}
                   onChange={(e) => setPw(e.target.value)}
-                  className="ui-control w-full rounded-md px-3 py-2.5 pr-12 text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-primary-600"
+                  className="ui-control w-full rounded-md px-3 py-2.5 pr-12 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary-600"
                   required
                 />
                 <button

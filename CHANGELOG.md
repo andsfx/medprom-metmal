@@ -4,6 +4,16 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Diperbaiki
+- **Kepatuhan Web Interface Guidelines diperbaiki.** `theme-color` kini
+  light-only (`#ffffff`) karena aplikasi belum memiliki dark mode; override
+  dark dihapus. Loading katalog diumumkan lewat `role="status"`,
+  `aria-live="polite"`, dan teks ellipsis untuk pembaca layar. Skip link
+  keyboard ditambahkan sebelum navigasi, target main dapat menerima fokus,
+  dan field relevan mendapat `name` tanpa kehilangan `id` sehingga label serta
+  pesan error tetap tertaut. `ConfirmDialog` memakai `transition-colors`,
+  typo `hover:` diperbaiki, dan pola focus tanpa replacement diganti ke
+  `focus-visible` atau dihapus.
 ### Ditambahkan
 - **Unggah bukti pembayaran pajak untuk media cetak, dengan saklar on/off
   dari dashboard.** Fitur opsional (tidak menghalangi pengiriman) yang bisa

@@ -69,7 +69,7 @@ export default function BatchStatusPage() {
 {loading && (
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
             <Loader2 className="h-5 w-5 animate-spin text-slate-500" aria-hidden="true" />
-            <span className="ui-dense ui-text-muted">Memuat status batch...</span>
+            <span className="ui-dense ui-text-muted">Memuat status batch…</span>
           </div>
         )}
 

@@ -219,7 +219,8 @@ export default function PromoLandingPage() {
        * justru dipakai deck. Kanal tetap dipakai sebagai TAG di setiap baris. */}
       <section id="katalog" className="mx-auto max-w-5xl scroll-mt-20 px-4 pb-12">
         {loading && (
-          <div aria-label="Memuat katalog">
+          <div role="status" aria-live="polite" aria-label="Memuat katalog">
+            <span className="sr-only">Memuat katalog…</span>
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="ui-row" aria-hidden="true">
                 <div className="ui-row-lead animate-pulse" />

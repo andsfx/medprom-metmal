@@ -63,7 +63,7 @@ export function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, subj
           type="button"
           onClick={onClose}
           disabled={isSubmitting}
-          className="ui-control app-pressable ui-focus-ring min-h-11 rounded-[var(--radius-control)] px-4 text-sm font-semibold text-slate-700 transition disabled:cursor-not-allowed disabled:opacity-60"
+          className="ui-control app-pressable ui-focus-ring min-h-11 rounded-[var(--radius-control)] px-4 text-sm font-semibold text-slate-700 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
         >
           {cancelLabel}
         </button>
@@ -71,7 +71,7 @@ export function ConfirmDialog({ isOpen, onClose, onConfirm, title, message, subj
           type="button"
           onClick={handleConfirm}
           disabled={isSubmitting}
-          className="app-pressable ui-focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-red-600 px-4 text-sm font-semibold text-white transition hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
+          className="app-pressable ui-focus-ring inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-control)] bg-red-600 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isSubmitting ? 'Memproses…' : confirmLabel}
         </button>

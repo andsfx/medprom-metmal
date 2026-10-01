@@ -715,6 +715,7 @@ export default function PromoCetakWizard() {
                       </label>
                       <input
                         id={`cetak-target-${basis}`}
+                        name={`media_target_${basis}`}
                         type="text"
                         value={row.media_target}
                         maxLength={200}
@@ -966,6 +967,7 @@ export default function PromoCetakWizard() {
                       <p className="mb-1.5 text-xs ui-text-muted">Nama badan usaha atau perorangan yang mengajukan.</p>
                       <input
                         id="cetak-non-tenant"
+                        name="non_tenant_name"
                         type="text"
                         value={nonTenantName}
                         maxLength={100}
@@ -987,6 +989,7 @@ export default function PromoCetakWizard() {
                       </label>
                       <input
                         id="cetak-pic"
+                        name="pic_name"
                         type="text"
                         value={picName}
                         maxLength={100}
@@ -1006,6 +1009,7 @@ export default function PromoCetakWizard() {
                       </label>
                       <input
                         id="cetak-phone"
+                        name="pic_phone"
                         type="tel"
                         inputMode="tel"
                         value={picPhone}

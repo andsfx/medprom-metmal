@@ -157,7 +157,7 @@ export function TenantSearchSelect({ id, value, onTenantSelect, onManualModeChan
           value={query}
           autoComplete="off"
           placeholder={manualMode ? 'Nama tenant Anda' : 'Ketik nama tenant min. 2 huruf, pilih dari daftar'}
-          className={`ui-control w-full rounded-md py-2.5 pl-9 ${selectedIdRef.current || query ? 'pr-9' : 'pr-3'} text-sm text-slate-900 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-primary-600 ${error ? 'border-red-300' : ''}`}
+          className={`ui-control w-full rounded-md py-2.5 pl-9 ${selectedIdRef.current || query ? 'pr-9' : 'pr-3'} text-sm text-slate-900 placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary-600 ${error ? 'border-red-300' : ''}`}
           onChange={(e) => {
             const next = e.target.value;
             if (manualMode) {
