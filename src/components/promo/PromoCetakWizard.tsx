@@ -661,7 +661,10 @@ export default function PromoCetakWizard() {
            * `<label>` hanya menerima konten phrasing, sedangkan harga bisa
            * dirender sebagai tangga tarif (`<div>`). */}
           <div className="ui-row-head">
-            <label htmlFor={`cetak-media-${m.slug}`} className="min-w-0 cursor-pointer">
+            {/* Target tap = tinggi penuh kepala baris (44px, `min-h-11`), bukan
+             * hanya teks nama (21px) - konvensi yang sama dipakai
+             * AdminDashboardPage untuk WCAG 2.2 AA `target-size`. */}
+            <label htmlFor={`cetak-media-${m.slug}`} className="flex min-h-11 min-w-0 cursor-pointer items-center">
               <span className="ui-title-row">{m.name}</span>
             </label>
             <MediaPriceTag media={m} />

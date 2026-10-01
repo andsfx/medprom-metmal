@@ -649,9 +649,15 @@ export default function PromoUploadWizard() {
                         <div className="ui-row-main">
                           <div className="ui-row-head">
                             <div className="flex min-w-0 items-center gap-2">
+                              {/* Target tap = tinggi penuh baris (44px, `min-h-11`),
+                               * bukan hanya teks nama (21px). Konvensi yang sama
+                               * dipakai AdminDashboardPage untuk WCAG 2.2 AA
+                               * `target-size`. Label tetap membungkus radio + nama
+                               * saja: tombol "Ketentuan pemasangan" ada di luar
+                               * label supaya tidak ada kontrol bersarang. */}
                               <label
                                 htmlFor={`media-${i}`}
-                                className="flex cursor-pointer items-start gap-2.5"
+                                className="flex min-h-11 flex-1 cursor-pointer items-center gap-2.5"
                               >
                                 <input
                                   id={`media-${i}`}
@@ -661,7 +667,7 @@ export default function PromoUploadWizard() {
                                   checked={terpilih}
                                   onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
                                   aria-describedby={fieldErrors.media ? 'err-media' : undefined}
-                                  className="mt-1 h-4 w-4 shrink-0 rounded-none accent-[var(--ink-primary)]"
+                                  className="h-4 w-4 shrink-0 rounded-none accent-[var(--ink-primary)]"
                                 />
                                 {/* `overflow-wrap: anywhere`: nama media bisa memuat
                                  * kata majemuk tanpa titik putus (mis. "Feed
