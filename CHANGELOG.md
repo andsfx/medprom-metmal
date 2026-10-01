@@ -124,6 +124,16 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
     dari 19,9:1 ke 5,8:1).
   - Nilai `data-tone` mati (`"process"`, `"none"` pada `.ui-tag`) diganti ke
     `"ink"`/absen; sebelumnya atribut itu tidak punya aturan CSS sama sekali.
+  - **Target tap pemilihan media dinaikkan ke 44px.** Label pemilihan di kedua
+    wizard hanya setinggi teks nama (**21px**, terukur di 375px). Secara WCAG
+    2.2 AA 2.5.8 ini masih lolos lewat pengecualian jarak - tidak ada target
+    lain dalam 24px - tetapi proyek ini sudah memakai konvensi 44px
+    (`min-h-11`, dengan komentar axe di `AdminDashboardPage`), dan 21px terlalu
+    kecil untuk aksi utama wizard di ponsel 6 inci. Kini 223x44px
+    (`PromoUploadWizard`) dan 197x44px (`PromoCetakWizard`). Label tetap
+    membungkus kontrol + nama saja; tombol "Ketentuan pemasangan" dan checkbox
+    persetujuan tetap di luar label sehingga tidak ada kontrol bersarang
+    (0 `label label`).
 - **`DESIGN.md` ditulis ulang untuk arah "Daftar Kerja Seluler".** Dunia "Lembar
   Spesifikasi & Tiket Pekerjaan" (kertas abu-netral, tanda potong, nomor plate,
   garis dimensi, process blue) dinilai memakan ruang dan terbaca sebagai noise

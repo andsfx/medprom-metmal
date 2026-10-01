@@ -395,6 +395,24 @@ Konsekuensinya, ukuran media menjadi **baris spesifikasi**, bukan chip di
 samping nama: chip `shrink-0` mengambil ~130px dan mengembalikan persoalan yang
 sama. Wizard cetak sudah memakai bentuk ini sejak awal.
 
+#### Target tap pemilihan
+
+**44px (`min-h-11`), bukan setinggi teks.** Label pemilihan media di kedua
+wizard semula hanya membungkus teks nama, jadi tingginya **21px** — terukur di
+375px. Secara WCAG 2.2 AA 2.5.8 ini sebenarnya masih lolos lewat *pengecualian
+jarak*: tidak ada target lain dalam 24px, dan radio itu berada di dalam baris
+yang dipisah garis rambut. Tetapi memilih media adalah aksi utama wizard ini di
+ponsel, dan proyek sudah punya konvensi 44px — `AdminDashboardPage` memakainya
+dengan komentar yang menyebut `target-size` secara eksplisit. Jadi label
+dinaikkan ke tinggi penuh baris (223x44px di `PromoUploadWizard`, 197x44px di
+`PromoCetakWizard`).
+
+Yang **tidak** berubah: label tetap membungkus kontrol dan nama saja. Tombol
+"Ketentuan pemasangan" dan checkbox persetujuan tetap di luar label, supaya
+tidak ada kontrol bersarang di dalam label (diverifikasi: 0 `label label`).
+Radio 16px yang terlihat di dalam label itu benar — targetnya label, bukan
+lingkarannya.
+
 CTA sticky di kaki layar: satu tombol utama tinta penuh + satu tombol sekunder.
 
 ### Wizard `/ajukan` dan `/ajukan-cetak`
