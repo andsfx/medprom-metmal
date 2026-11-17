@@ -2,10 +2,13 @@
  * Landing publik - daftar kerja katalog media promosi + kontak TR.
  * Data dari GET /promo/media-types; ketentuan pemasangan bisa dibuka (pola FAQ).
  *
- * Dunia visual: "Daftar Kerja Seluler". Setiap media satu BARIS daftar:
- * thumbnail, nama, harga sebagai angka terbesar di barisnya, lalu spesifikasi
- * dan lokasi sebagai label redup. Katalog dikelompokkan per KATEGORI deck
- * (outdoor/indoor/social), bukan per kanal - lihat catatan di bawah.
+ * Dunia visual: "Airbnb Rausch". Di ponsel setiap media satu BARIS daftar
+ * (thumbnail, nama, harga sebagai angka terbesar di barisnya, lalu
+ * spesifikasi dan lokasi sebagai label redup). Di layar >=640px baris itu
+ * berubah menjadi KARTU kisi lewat `.catalog-grid` (lihat `base.css`): foto
+ * memimpin, isi mengalir vertikal, aksi dipatok ke dasar kartu. Katalog
+ * dikelompokkan per KATEGORI deck (outdoor/indoor/social), bukan per kanal -
+ * lihat catatan di bawah.
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -72,8 +75,9 @@ function MediaRow({ media }: { media: PromoMediaType }) {
         )}
 
         {/* Baris aksi: ketentuan di kiri, tautan ajukan di kanan. Digabung
-         * supaya dua aksi tidak memakan dua baris 44px berturut-turut. */}
-        <div className="mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-0">
+         * supaya dua aksi tidak memakan dua baris 44px berturut-turut.
+         * `.catalog-actions` memakukan baris ini ke dasar kartu di >=640px. */}
+        <div className="catalog-actions mt-1 flex flex-wrap items-center justify-between gap-x-3 gap-y-0">
           {media.rules ? (
             <button
               type="button"
@@ -160,7 +164,7 @@ export default function PromoLandingPage() {
     >
       {/* Kepala: judul, satu paragraf, lalu tiga fakta. Yang meyakinkan di sini
        * adalah ketepatan angka katalog, bukan foto atau badge. */}
-      <section className="mx-auto max-w-5xl px-4 pt-8 pb-6 sm:pt-12">
+      <section className="mx-auto max-w-5xl px-4 pt-8 pb-6 sm:pt-12 sm:pb-8">
         <h1 className="ui-title-hero">
           Ajukan Materi Promosi Tenant Anda
         </h1>
@@ -219,7 +223,7 @@ export default function PromoLandingPage() {
        * justru dipakai deck. Kanal tetap dipakai sebagai TAG di setiap baris. */}
       <section id="katalog" className="mx-auto max-w-5xl scroll-mt-20 px-4 pb-12">
         {loading && (
-          <div role="status" aria-live="polite" aria-label="Memuat katalog">
+          <div className="catalog-grid" role="status" aria-live="polite" aria-label="Memuat katalog">
             <span className="sr-only">Memuat katalog…</span>
             {[0, 1, 2, 3].map((i) => (
               <div key={i} className="ui-row" aria-hidden="true">
@@ -254,7 +258,7 @@ export default function PromoLandingPage() {
                   {items.length} media
                 </span>
               </div>
-              <div>
+              <div className="catalog-grid">
                 {items.map((m) => <MediaRow key={m.slug} media={m} />)}
               </div>
             </div>
@@ -272,10 +276,10 @@ export default function PromoLandingPage() {
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {CONTACTS.map((c) => (
-              <div key={c.label} className="rounded-[var(--radius-card)] border border-[color:var(--rule-color)] p-5">
+              <div key={c.label} className="flex h-full flex-col rounded-[var(--radius-card)] border border-[color:var(--rule-color)] p-5">
                 <p className="ui-dense font-semibold ui-text-strong">{c.label}</p>
                 <p className="ui-dense ui-text-muted mt-1">{c.people}</p>
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className="mt-auto flex flex-wrap gap-2 pt-4">
                   {c.wa.map((wa) => (
                     <a
                       key={wa}

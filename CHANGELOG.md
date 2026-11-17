@@ -5,6 +5,17 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diubah
+- **Tata letak landing: katalog jadi kartu kisi di layar lebar.** Di ponsel
+  katalog tetap daftar baris, tetapi mulai 640px setiap media menjadi kartu
+  (2 kolom; 3 kolom dari 1024px) lewat `.catalog-grid`: foto 4:3 memimpin,
+  nama → harga → spesifikasi mengalir vertikal, dan baris aksi
+  (`.catalog-actions`) dipatok ke dasar kartu sehingga tombol "Ajukan Materi"
+  sebaris antar kartu. Daftar satu kolom sebelumnya menyisakan celah ~990px
+  antara nama dan harga. Judul hero naik ke 40px di ≥640px, dan tombol
+  WhatsApp di kartu kontak kini menempel di dasar kartu (`mt-auto`) sehingga
+  sejajar walau isi berbeda. Skeleton pemuatan ikut berbentuk kartu.
+  Seluruh perubahan hanya berlaku di landing; baris di wizard, riwayat, dan
+  batch tidak tersentuh.
 - **Redesign penuh ke arah "Airbnb Rausch".** Dunia visual "Daftar Kerja
   Seluler" (akromatik, garis rambut, tanpa bayangan) diganti dengan kontrak
   DESIGN.md Airbnb: kanvas putih bersih, tinta `#222222`, dan satu warna

@@ -68,7 +68,7 @@ terpisah.
 
 | Token | Ukuran | Konteks |
 |---|---|---|
-| `--text-sheet` | 32px | Judul hero (khusus landing) |
+| `--text-sheet` | 32px (40px di ≥640px) | Judul hero (khusus landing) |
 | `--text-screen` | 24px | h1 layar (`.ui-title-screen`), total biaya |
 | `--text-section` | 20px | h2 bagian (`.ui-title-section`) |
 | `--text-title` | 18px | Judul kartu, harga baris |
@@ -145,8 +145,14 @@ teks/latar terukur AA (≥4,5:1):
 
 - **`.ui-card`** — putih, hairline 1px, radius 14px. Hover (pointer halus)
   memakai tier bayangan tunggal — satu-satunya bayangan kartu di sistem.
-- **Baris daftar (`.ui-row`)** — tetap bergaris hairline, bukan kartu
-  berbingkai: daftar katalog terbaca sebagai tabel, tidak sebagai 14 kotak.
+- **Baris daftar (`.ui-row`)** — di ponsel tetap bergaris hairline, bukan
+  kartu berbingkai: 14 kotak berbingkai di layar 6 inci terbaca sebagai
+  dinding. Baris yang sama dipakai pemilih wizard, riwayat, dan batch.
+- **Katalog landing (`.catalog-grid`)** — di `>=640px` baris katalog berubah
+  menjadi **kartu kisi** (2 kolom; 3 kolom di `>=1024px`): foto 4:3 memimpin,
+  nama → harga → spesifikasi mengalir vertikal, aksi dipatok ke dasar kartu
+  (`.catalog-actions`) sehingga tombol sebaris antar kartu. Hover memakai tier
+  `--elevation-bar`. Hanya landing yang memakai grid ini.
 
 ### Bar & navigasi
 

@@ -290,6 +290,15 @@ textarea:disabled {
   min-width: 0;
 }
 
+/* Di layar lebar judul hero naik satu langkah: 32px terbaca tenang di ponsel,
+ * tetapi di desktop ia duduk setara judul bagian dan kehilangan kehadiran
+ * display. 40px menjaga jarak satu langkah di atas `--text-screen`. */
+@media (min-width: 640px) {
+  .ui-title-hero {
+    font-size: 2.5rem;
+  }
+}
+
 /* Judul nama layar di header konsol staf turun satu langkah skala di bawah
  * 640px: "Media Promosi - Admin" membungkus tiga baris di layar sempit dan
  * mendorong app bar setinggi ~130px. Sengaja TIDAK diterapkan ke semua
@@ -908,6 +917,82 @@ summary:focus-visible,
   gap: 0.125rem;
   margin-top: 0.5rem;
   min-width: 0;
+}
+
+/* Katalog media: di ponsel tetap daftar baris — 14 kotak berbingkai di layar
+ * 6 inci terbaca sebagai dinding dan memakan ruang yang dibutuhkan nama serta
+ * harga. Di layar lebar, daftar satu kolom justru menyisakan celah panjang
+ * antara nama dan harga (terukur: baris membentang ~990px), jadi baris
+ * berubah menjadi KARTU kisi — bahasa marketplace Airbnb. Foto memimpin,
+ * nama -> harga -> spesifikasi mengalir vertikal seperti kartu listing.
+ *
+ * Hanya katalog landing yang memakai kelas ini; baris wizard, riwayat, dan
+ * batch tetap baris daftar (di sana baris memang pemilih, bukan pameran). */
+@media (min-width: 640px) {
+  .catalog-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem 1.25rem;
+  }
+
+  .catalog-grid .ui-row,
+  .catalog-grid .ui-row:last-child {
+    flex-direction: column;
+    gap: 0;
+    padding: 0;
+    border: var(--rule);
+    border-radius: var(--radius-card);
+    background: var(--surface-card);
+    overflow: hidden;
+    transition: box-shadow 150ms ease;
+  }
+
+  /* Foto memenuhi lebar kartu; rasio 4:3 sama dengan berkas asli (800x600)
+   * sehingga tidak ada pemotongan dan tinggi kartu seragam. */
+  .catalog-grid .ui-row-lead {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 4 / 3;
+    border-radius: 0;
+  }
+
+  .catalog-grid .ui-row-main {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    padding: 0.875rem 1rem 1rem;
+  }
+
+  /* Nama dan harga ditumpuk: lebar kartu ~300px tidak cukup untuk nama
+   * media + nominal bersebelahan ("Videotron Integrasia" + "Rp. 35.000.000"
+   * akan saling menghimpit). Harga tetap satu langkah lebih besar. */
+  .catalog-grid .ui-row-head {
+    display: block;
+  }
+
+  .catalog-grid .ui-row-num,
+  .catalog-grid .ui-price-ladder {
+    margin-top: 0.25rem;
+  }
+
+  /* Aksi (ketentuan + ajukan) menempel di dasar kartu, sehingga tombol
+   * lintas kartu tetap sebaris walau tinggi isi berbeda. */
+  .catalog-grid .catalog-actions {
+    margin-top: auto;
+    padding-top: 0.75rem;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .catalog-grid .ui-row:hover {
+    box-shadow: var(--elevation-bar);
+  }
+}
+
+@media (min-width: 1024px) {
+  .catalog-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }
 
 /* Satuan di bawah angka, bukan di sampingnya.
