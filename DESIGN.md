@@ -68,7 +68,8 @@ terpisah.
 
 | Token | Ukuran | Konteks |
 |---|---|---|
-| `--text-sheet` | 32px (40px di ≥640px) | Judul hero (khusus landing) |
+| `--text-sheet` | 32px | Judul hero (khusus landing) |
+| `--text-hero-lg` | 40px | Judul hero di `>=640px` |
 | `--text-screen` | 24px | h1 layar (`.ui-title-screen`), total biaya |
 | `--text-section` | 20px | h2 bagian (`.ui-title-section`) |
 | `--text-title` | 18px | Judul kartu, harga baris |

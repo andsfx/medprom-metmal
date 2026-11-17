@@ -290,12 +290,13 @@ textarea:disabled {
   min-width: 0;
 }
 
-/* Di layar lebar judul hero naik satu langkah: 32px terbaca tenang di ponsel,
- * tetapi di desktop ia duduk setara judul bagian dan kehilangan kehadiran
- * display. 40px menjaga jarak satu langkah di atas `--text-screen`. */
+/* Di layar lebar judul hero naik satu langkah lewat token `--text-hero-lg`.
+ * Ini bukan ad-hoc seperti lompatan 30px -> 48px yang dulu ditolak (ukuran
+ * itu melewati skala); 40px tetap di dalam tangga peran (32 -> 40) dan
+ * diturunkan dari token, bukan nilai karangan di komponen. */
 @media (min-width: 640px) {
   .ui-title-hero {
-    font-size: 2.5rem;
+    font-size: var(--text-hero-lg);
   }
 }
 

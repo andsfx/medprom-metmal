@@ -33,6 +33,10 @@
   --text-section: 1.25rem; /* 20px: judul bagian (h2) */
   --text-screen: 1.5rem;   /* 24px: nama layar & total biaya */
   --text-sheet: 2rem;      /* 32px: judul hero (landing) */
+  /* Hero di layar lebar: satu langkah di atas `--text-sheet`, tetap lewat
+   * token (bukan ukuran ad-hoc seperti lompatan 30px -> 48px yang dulu
+   * ditolak karena melewati skala). */
+  --text-hero-lg: 2.5rem;  /* 40px: hero >=640px */
 
   /* Tracking: negatif untuk judul besar, netral untuk teks isi. */
   --track-hero: -0.035em;

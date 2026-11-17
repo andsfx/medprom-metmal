@@ -74,6 +74,23 @@ function MediaRow({ media }: { media: PromoMediaType }) {
           </p>
         )}
 
+        {/* Ketentuan yang terbuka berada SEBELUM baris aksi: kalau diletakkan
+         * sesudahnya, daftar aturan mendorong CTA naik dan kartu itu
+         * kehilangan aksi di dasarnya (terukur: aksi kartu terbuka di 600px,
+         * tetangganya 665px). */}
+        {media.rules && rulesOpen && (
+          <ul className="mb-1 mt-1 space-y-1.5">
+            {media.rules.split('\n').filter(Boolean).map((line, i) => (
+              <li key={i} className="ui-dense ui-text-muted flex items-start gap-2">
+                <span aria-hidden="true" className="ui-num shrink-0 font-medium">
+                  {String(i + 1).padStart(2, '0')}
+                </span>
+                <span>{line}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {/* Baris aksi: ketentuan di kiri, tautan ajukan di kanan. Digabung
          * supaya dua aksi tidak memakan dua baris 44px berturut-turut.
          * `.catalog-actions` memakukan baris ini ke dasar kartu di >=640px. */}
@@ -112,19 +129,6 @@ function MediaRow({ media }: { media: PromoMediaType }) {
             <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
         </div>
-
-        {media.rules && rulesOpen && (
-          <ul className="mb-1 space-y-1.5">
-            {media.rules.split('\n').filter(Boolean).map((line, i) => (
-              <li key={i} className="ui-dense ui-text-muted flex items-start gap-2">
-                <span aria-hidden="true" className="ui-num shrink-0 font-medium">
-                  {String(i + 1).padStart(2, '0')}
-                </span>
-                <span>{line}</span>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
     </article>
   );

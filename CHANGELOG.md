@@ -10,12 +10,15 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   (2 kolom; 3 kolom dari 1024px) lewat `.catalog-grid`: foto 4:3 memimpin,
   nama → harga → spesifikasi mengalir vertikal, dan baris aksi
   (`.catalog-actions`) dipatok ke dasar kartu sehingga tombol "Ajukan Materi"
-  sebaris antar kartu. Daftar satu kolom sebelumnya menyisakan celah ~990px
-  antara nama dan harga. Judul hero naik ke 40px di ≥640px, dan tombol
-  WhatsApp di kartu kontak kini menempel di dasar kartu (`mt-auto`) sehingga
-  sejajar walau isi berbeda. Skeleton pemuatan ikut berbentuk kartu.
-  Seluruh perubahan hanya berlaku di landing; baris di wizard, riwayat, dan
-  batch tidak tersentuh.
+  sebaris untuk kartu-kartu **dalam satu baris grid**. Antar baris tinggi
+  kartu mengikuti isinya (bukan dipaksa sama). Daftar satu kolom sebelumnya
+  menyisakan celah ~990px antara nama dan harga. Daftar ketentuan yang dibuka
+  kini tampil **di atas** baris aksi — sebelumnya ia mendorong CTA naik dari
+  dasar kartu. Judul hero naik ke 40px di ≥640px lewat token baru
+  `--text-hero-lg`, dan tombol WhatsApp di kartu kontak menempel di dasar
+  kartu (`mt-auto`) sehingga sejajar walau isi berbeda. Skeleton pemuatan
+  ikut berbentuk kartu. Seluruh perubahan hanya berlaku di landing; baris di
+  wizard, riwayat, dan batch tidak tersentuh.
 - **Redesign penuh ke arah "Airbnb Rausch".** Dunia visual "Daftar Kerja
   Seluler" (akromatik, garis rambut, tanpa bayangan) diganti dengan kontrak
   DESIGN.md Airbnb: kanvas putih bersih, tinta `#222222`, dan satu warna
