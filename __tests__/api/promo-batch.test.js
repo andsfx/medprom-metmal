@@ -77,12 +77,23 @@ function mediaCetak(slug, over = {}) {
   };
 }
 
+/* Tanggal fixture DIHITUNG dari "hari ini" saat test berjalan, bukan tanggal
+ * beku: handler menghitung ulang lead time dari `toIsoDate()` sungguhan, jadi
+ * tanggal lampau yang membeku (pernah '2026-10-01') membuat pengajuan sah
+ * ditolak 400 begitu kalender melewatinya — time-bomb test. Durasi 7 hari
+ * tetap dipertahankan agar asersi PPN (700.000 × 7 + 11%) tidak berubah. */
+function isoPlusDays(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+}
+
 const ITEM_SPANDUK = {
   media_type_slug: 'spanduk',
   media_target: 'Sisi Pintu Tol Bekasi Barat',
-  air_start_date: '2026-10-01',
-  air_end_date: '2026-10-07',
-  installation_date: '2026-10-01',
+  air_start_date: isoPlusDays(1),
+  air_end_date: isoPlusDays(7),
+  installation_date: isoPlusDays(1),
 };
 
 const BASE = {
@@ -91,7 +102,7 @@ const BASE = {
   unit_number: 'L1-05',
   pic_name: 'Andi',
   pic_phone: '081234567890',
-  submission_date: '2026-09-20',
+  submission_date: isoPlusDays(-7),
   notes: '',
   terms_accepted: true,
   device_fingerprint: 'fp-batch-1',
@@ -154,7 +165,7 @@ describe('POST /promo/submit-batch — validasi', () => {
 
   it('periode kurang dari 7 hari → 400 dan tidak menulis apa pun', async () => {
     const res = await call('/submit-batch', 'post', {
-      body: { ...BASE, items: [{ ...ITEM_SPANDUK, air_end_date: '2026-10-03' }] },
+      body: { ...BASE, items: [{ ...ITEM_SPANDUK, air_end_date: isoPlusDays(3) }] },
     });
     expect(res.statusCode).toBe(400);
     expect(res.body.errors.some((e) => /Minimal sewa.*7 hari/.test(e))).toBe(true);

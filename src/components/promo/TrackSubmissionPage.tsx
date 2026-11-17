@@ -175,6 +175,7 @@ export default function TrackSubmissionPage() {
               name="submission_number"
               type="text"
               inputMode="text"
+              enterKeyHint="search"
               autoCapitalize="characters"
               autoComplete="off"
               spellCheck={false}

@@ -10,12 +10,37 @@
 html,
 body {
   overflow-x: clip;
+  /* Lapisan platform mobile (skill mobile-native): flash abu saat tap adalah
+   * sinyal "ini situs" yang paling keras — dimatikan global (diwarisi semua
+   * kontrol) dan diganti umpan balik :active per kontrol. iOS juga
+   * menggelembungkan font saat orientasi berubah; metrik app shell dikunci
+   * di sini, jadi inflasi teks peramban dimatikan. */
+  -webkit-tap-highlight-color: transparent;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Lantai platform mobile: tanpa ini halaman terasa "situs di peramban" —
+ * click tertahan menunggu ambang double-tap-zoom, dan tekanan lama ikut
+ * menyeleksi teks tombol. `touch-action: manipulation` menembakkan click
+ * langsung; `user-select` hanya pada kontrol — teks konten (nomor
+ * pengajuan, alamat, pesan galat) TETAP bisa disalin. */
+button,
+a,
+[role='button'] {
+  touch-action: manipulation;
+}
+
+button,
+[role='button'] {
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .font-display {
@@ -54,10 +79,12 @@ body {
 
 /* Safari iOS memperbesar halaman saat input difokuskan bila font-size-nya di
  * bawah 16px: keyboard muncul dengan halaman sudah ter-zoom, lalu tidak
- * kembali. Dinaikkan hanya pada layar kecil, dan hanya untuk kontrol isian
- * (bukan tombol/tautan ber-`.ui-control`), supaya kepadatan desktop tetap.
- * Pinch-zoom tidak diblokir: memakai `maximum-scale=1` akan melanggar WCAG. */
-@media (max-width: 639px) {
+ * kembali. Dinaikkan pada layar kecil DAN perangkat pointer kasar (ponsel
+ * landscape hingga 932px dan iPad tetap tercakup — lebar saja meleset),
+ * hanya untuk kontrol isian (bukan tombol/tautan ber-`.ui-control`), supaya
+ * kepadatan desktop ber-mouse tetap. Pinch-zoom tidak diblokir: memakai
+ * `maximum-scale=1` akan melanggar WCAG. */
+@media (max-width: 639px), (pointer: coarse) {
   input.ui-control,
   select.ui-control,
   textarea.ui-control {
@@ -133,8 +160,10 @@ textarea:disabled {
   min-height: var(--tap-min);
 }
 
-.ui-btn-primary:hover {
-  background: var(--action-strong); /* lebih gelap: kontras naik, bukan turun */
+@media (hover: hover) and (pointer: fine) {
+  .ui-btn-primary:hover {
+    background: var(--action-strong); /* lebih gelap: kontras naik, bukan turun */
+  }
 }
 
 .ui-btn-primary:focus-visible {
@@ -156,8 +185,28 @@ textarea:disabled {
   min-height: var(--tap-min);
 }
 
-.ui-btn-secondary:hover {
-  background: var(--surface-hover);
+@media (hover: hover) and (pointer: fine) {
+  .ui-btn-secondary:hover {
+    background: var(--surface-hover);
+  }
+}
+
+/* Umpan balik tekan: respons pada :active (jari mendarat), bukan hanya pada
+ * click (jari dilepas) — itulah yang membuat tombol native terasa instan.
+ * Properti transisi dieja eksplisit: aturan tak berlapis ini menimpa utility
+ * `transition` Tailwind pada elemen yang membawanya, jadi daftarnya harus
+ * mencakup semua yang berubah di kedua kelas (latar, border, warna teks,
+ * opacity disabled) — bukan hanya transform. Skala 0.97 mengikuti pola
+ * `.app-pressable`. */
+.ui-btn-primary,
+.ui-btn-secondary {
+  transition: transform 120ms ease, background-color 150ms ease,
+    border-color 150ms ease, color 150ms ease, opacity 150ms ease;
+}
+
+.ui-btn-primary:active:not(:disabled),
+.ui-btn-secondary:active:not(:disabled) {
+  transform: scale(0.97);
 }
 
 /* Text utilities */
@@ -612,9 +661,11 @@ summary:focus-visible,
   transition: color 150ms ease, border-color 150ms ease;
 }
 
-.app-nav-link:hover {
-  color: var(--ink-primary);
-  border-bottom-color: var(--rule-strong);
+@media (hover: hover) and (pointer: fine) {
+  .app-nav-link:hover {
+    color: var(--ink-primary);
+    border-bottom-color: var(--rule-strong);
+  }
 }
 
 .app-nav-link[aria-current='page'] {
@@ -624,7 +675,6 @@ summary:focus-visible,
 
 /* Umpan balik sentuh: pengganti :hover yang tidak ada di layar sentuh. */
 .app-pressable {
-  -webkit-tap-highlight-color: transparent;
   transition: transform 120ms ease, background-color 150ms ease;
 }
 
@@ -651,7 +701,9 @@ summary:focus-visible,
     transition-duration: 0.001ms !important;
   }
 
-  .app-pressable:active {
+  .app-pressable:active,
+  .ui-btn-primary:active:not(:disabled),
+  .ui-btn-secondary:active:not(:disabled) {
     transform: none;
   }
   /* Animasi berulang dimatikan: status tetap terbaca karena setiap spinner
@@ -1170,6 +1222,8 @@ html {
   text-underline-offset: 3px;
 }
 
-.ui-prose a:hover {
-  text-decoration-thickness: 2px;
+@media (hover: hover) and (pointer: fine) {
+  .ui-prose a:hover {
+    text-decoration-thickness: 2px;
+  }
 }

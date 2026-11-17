@@ -5,6 +5,32 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Diperbaiki
+- **Aplikasi terasa lebih native di ponsel (lapisan platform, skill
+  mobile-native).** Flash abu saat tap dimatikan global
+  (`-webkit-tap-highlight-color` + umpan balik `:active` skala 0.97 pada
+  tombol primer/sekunder dan kontrol yang sudah memakai `.app-pressable`);
+  click tidak tertunda ambang double-tap (`touch-action: manipulation` pada
+  `button/a/[role=button]`); tekanan lama tidak lagi menyeleksi teks tombol
+  (`user-select` hanya pada kontrol — nomor pengajuan tetap bisa disalin);
+  empat aturan `:hover` CSS (tombol primer/sekunder, tautan nav admin, tautan
+  prosa) digerbangi `@media (hover:hover) and (pointer:fine)` sehingga tidak
+  ada hover "menempel" setelah tap di layar sentuh; font tidak menggelembung
+  saat rotasi (`-webkit-text-size-adjust: 100%`); input `ui-control` kini
+  16px pada pointer kasar apa pun lebar layarnya (`(pointer: coarse)` ikut
+  digate — ponsel landscape dan iPad tidak lagi memicu zoom fokus iOS);
+  keyboard Android kini menyusutkan viewport alih-alih menimpa UI
+  (`interactive-widget=resizes-content`); isi Sheet tidak meneruskan pantulan
+  gulirnya ke halaman di belakangnya (`overscroll-contain`); tombol enter di
+  halaman lacak kini berlabel "cari"; `theme_color` manifest PWA diselaraskan
+  `#09090b` → `#ffffff` (chrome app terpasang = permukaan terang aplikasi;
+  CACHE_VERSION service worker naik `v13` → `v14` mengikuti aturan pin).
+- **10 test API batch cetak yang membeku di tanggal lampau tidak lagi
+  meledak seiring waktu.** Fixture `2026-10-01` di lima berkas
+  (`promo-batch`, `-quantity`, `-terms`, `cetak-batch-limits`, `tax-proof`)
+  membuat handler yang benar menolak pengajuan sah dengan 400 begitu tanggal
+  sistem melewatinya; tanggal kini dihitung relatif terhadap hari ini
+  (`isoPlusDays`), durasi 7 hari tetap dipertahankan agar asersi PPN tak
+  berubah.
 - **Kepatuhan Web Interface Guidelines diperbaiki.** `theme-color` kini
   light-only (`#ffffff`) karena aplikasi belum memiliki dark mode; override
   dark dihapus. Loading katalog diumumkan lewat `role="status"`,

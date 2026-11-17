@@ -108,12 +108,21 @@ function mediaCetak(slug, over = {}) {
   };
 }
 
+/* Tanggal fixture relatif terhadap "hari ini" (lihat catatan di promo-batch:
+ * handler menghitung lead time dari tanggal sungguhan; tanggal beku lama
+ * menjadi time-bomb yang menolak pengajuan sah dengan 400). */
+function isoPlusDays(offset) {
+  const d = new Date();
+  d.setDate(d.getDate() + offset);
+  return [d.getFullYear(), String(d.getMonth() + 1).padStart(2, '0'), String(d.getDate()).padStart(2, '0')].join('-');
+}
+
 const ITEM_SPANDUK = {
   media_type_slug: 'spanduk',
   media_target: 'Sisi Pintu Tol Bekasi Barat',
-  air_start_date: '2026-10-01',
-  air_end_date: '2026-10-07',
-  installation_date: '2026-10-01',
+  air_start_date: isoPlusDays(1),
+  air_end_date: isoPlusDays(7),
+  installation_date: isoPlusDays(1),
 };
 
 const BASE = {
@@ -122,7 +131,7 @@ const BASE = {
   unit_number: 'L1-05',
   pic_name: 'Andi',
   pic_phone: '081234567890',
-  submission_date: '2026-09-20',
+  submission_date: isoPlusDays(-7),
   notes: '',
   terms_accepted: true,
   device_fingerprint: 'fp-batas-1',

@@ -99,7 +99,8 @@ export default function Sheet({ open, onClose, title, children, footer }: SheetP
           </button>
         </div>
 
-        <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4">{children}</div>
+        {/* overscroll-contain: pantulan di akhir gulir sheet tidak diteruskan ke halaman di belakang scrim. */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-4">{children}</div>
 
         {footer && (
           <div className="border-t border-[var(--rule-color)] px-4 py-3">

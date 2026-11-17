@@ -2,11 +2,15 @@
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <!-- interactive-widget=resizes-content: keyboard Android menyusutkan viewport,
+         bukan menimpa UI — footer wizard dan isi sheet tetap terlihat saat mengetik -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content" />
     <title>Media Promosi Metropolitan Mall Bekasi</title>
     <meta name="description" content="Ajukan dan unggah materi media promosi tenant Anda ke Tim Tenant Relations Metropolitan Mall Bekasi. Spanduk, LED, videotron, hingga media sosial, tertata dalam satu platform." />
 
-    <!-- Theme color: tinta saat terpasang sebagai app (status bar ikut warna aksi) -->
+    <!-- Theme color: putih, satu-satunya nilai (keputusan audit 2026-10-01:
+         aplikasi belum punya dark mode; manifest PWA diselaraskan di sini
+         sejak lapisan platform mobile 2026-11-17) -->
     <meta name="theme-color" content="#ffffff" />
 
     <!-- PWA -->
