@@ -1,105 +1,113 @@
 /*
- * Design tokens: medprom-metmal (arah "Daftar Kerja Seluler").
+ * Design tokens: medprom-metmal (arah "Airbnb Rausch" — 2026-11-17).
  *
- * Dunia: daftar kerja untuk ponsel. Kertas putih, tinta hampir hitam, pemisah
- * garis rambut, dan ANGKA SELALU ELEMEN TERBESAR DI BARISNYA. Produk ini
- * akromatik: tidak ada warna aksen, aksi utama memakai tinta penuh, dan warna
- * hanya muncul untuk menyatakan keadaan pekerjaan.
+ * Dunia: kanvas putih bersih (#ffffff) dengan tinta nyaris hitam (#222222)
+ * dan SATU warna tegangan: Rausch (#ff385c). Kontrak mengikuti DESIGN.md
+ * Airbnb dari awesome-design-md: CTA primer, orb pencarian, dan tautan merek
+ * memakai Rausch; selebihnya halaman 90% putih + tinta.
  *
- * Karakter datang dari tipografi (Instrument Sans, tracking negatif) dan skala
- * ukuran, bukan dari hue.
+ * Bentuk lunak: tombol 8px, kartu ~14px, pencarian pil penuh, tanpa sudut
+ * keras. Elevasi hanya SATU tier bayangan — kedalaman datang dari foto,
+ * pemisahan putih-di-atas-putih, dan pembulatan, bukan bayangan berlapis.
+ *
+ * Kontras: #ff385c hanya 4,0:1 di atas putih (di bawah AA untuk teks kecil),
+ * jadi --action memakai #e00b41 (Rausch Active, 5,7:1) dan --action-strong
+ * #b30026. Identitas Rausch tetap terbaca tanpa CTA gagal WCAG.
  */
 
 :root {
-  /* Tipografi — dua rupa: Instrument Sans (kerja + display) & Spline Sans Mono
-   * (data). Menggantikan Archivo, yang dinilai terlalu netral. */
-  --font-display: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-body: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
+  /* Tipografi — satu rupa: Inter (substitusi resmi Airbnb untuk Cereal VF
+   * yang berlisensi). Angka tetap tabular lewat `font-variant-numeric`,
+   * bukan font mono terpisah. */
+  --font-display: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Inter", ui-monospace, "SFMono-Regular", monospace;
 
-  /* Skala teks per PERAN (bukan per angka): 12-14-16-18-20-24-32.
-   * Satu peran = satu ukuran, sehingga judul tidak bisa lebih kecil dari isi. */
+  /* Skala teks per PERAN: 12-14-16-18-20-24-32 (dipertahankan dari dunia
+   * lama; proporsi Airbnb — display sederhana 22-28px, bobot 500-600 —
+   * diterjemahkan ke skala aplikasi ini). */
   --text-meta: 0.75rem;    /* 12px: label, cap; batas bawah */
   --text-dense: 0.875rem;  /* 14px: baris data & lencana */
   --text-body: 1rem;       /* 16px: dasar teks isi */
-  --text-title: 1.125rem;  /* 18px: judul kartu, HARGA baris */
+  --text-title: 1.125rem;  /* 18px: judul kartu, harga baris */
   --text-section: 1.25rem; /* 20px: judul bagian (h2) */
   --text-screen: 1.5rem;   /* 24px: nama layar & total biaya */
   --text-sheet: 2rem;      /* 32px: judul hero (landing) */
 
-  /* Tracking: makin besar ukurannya, makin rapat. Bagian dari rupa, bukan
-   * hiasan — inilah yang memberi karakter tanpa warna. */
+  /* Tracking: negatif untuk judul besar, netral untuk teks isi. */
   --track-hero: -0.035em;
-  --track-section: -0.03em;
-  --track-row: -0.02em;
-  --track-control: -0.01em;
+  --track-section: -0.02em;
+  --track-row: -0.01em;
+  --track-control: 0;
 
-  --leading-tight: 1.15;
+  --leading-tight: 1.25;
   --leading-body: 1.5;
 
   /* Lebar baca nyaman: ~65 karakter. */
   --measure: 68ch;
 
-  /* Permukaan: kertas putih, dibedakan oleh GARIS bukan kecerahan bertingkat.
-   * `--surface-card` tetap berarti permukaan KARTU (seperti di dunia lama),
-   * supaya 12 pemanggil lamanya tidak berubah arti. */
-  --surface-page: #ffffff;   /* lembar: latar utama */
-  --surface-card: #ffffff;   /* permukaan kartu/lembar */
-  --surface-offset: #fafafa; /* blok tenang: catatan, baris terpilih, kepala tabel */
-  --surface-tint: #f4f4f5;   /* blok isian: placeholder foto, lencana netral */
-  --surface-hover: #f4f4f5;  /* hover baris/opsi */
+  /* Permukaan: putih bersih + dua tingkatan abu sangat terang. */
+  --surface-page: #ffffff;   /* kanvas: latar utama */
+  --surface-card: #ffffff;   /* permukaan kartu */
+  --surface-offset: #f7f7f7; /* blok tenang: catatan, baris terpilih */
+  --surface-tint: #f2f2f2;   /* blok isian: placeholder foto, lencana netral */
+  --surface-hover: #f2f2f2;  /* hover baris/opsi */
 
-  /* Tinta */
-  --ink-primary: #09090b;
-  --ink-secondary: #52525b;
-  /* Muted #65656e dipilih dengan mengukur, bukan mengira: nilai pratinjau
-   * #71717a hanya mencapai 4,40:1 di atas blok isian (#f4f4f5), di bawah
-   * ambang AA 4,5:1, padahal kelas ini dipakai untuk label di dalam baris
-   * terpilih. Nilai ini 5,77:1 / 5,53:1 / 5,25:1. */
-  --ink-muted: #65656e;
+  /* Tinta: #222222 untuk judul/isi, #3f3f3f sekunder, #6a6a6a muted. */
+  --ink-primary: #222222;
+  --ink-secondary: #3f3f3f;
+  /* #6a6a6a = 5,6:1 di atas putih dan 5,0:1 di atas #f2f2f2 — lolos AA. */
+  --ink-muted: #6a6a6a;
   --ink-invert: #ffffff;
-  --ink-invert-2: #d4d4d8;
+  --ink-invert-2: #dddddd;
 
-  /* Garis: alat kedalaman utama, hanya dua bobot. */
-  --rule-color: #e4e4e7;  /* pemisah baris/daftar — dekoratif (1,27:1) */
-  --rule-strong: #8a8a90; /* tepi kontrol — WAJIB >=3:1 (WCAG 1.4.11); 3,43:1 */
+  /* Garis: hairline-soft #ebebeb (pemisah editorial), hairline #dddddd,
+   * border-strong #929292 untuk tepi kontrol — TERUKUR 3,11:1 di atas putih,
+   * melewati ambang 1.4.11 (>=3:1) dan dipakai `.ui-control`/`.ui-btn-secondary`. */
+  --rule-color: #ebebeb;
+  --rule-strong: #929292;
   --rule: 1px solid var(--rule-color);
   --rule-2: 1px solid var(--rule-strong);
 
-  /* Aksi: bukan warna merek. Tinta penuh (gaya paling modern yang tersisa
-   * setelah aksen tosca dan process blue ditolak). */
-  --action: #09090b;
-  --action-strong: #27272a;
-  --action-soft: #f4f4f5;
+  /* Aksi: Rausch. `--action` = #e00b41 (Rausch Active; kontras AA untuk teks
+   * putih di atasnya), `--action-strong` = #b30026 (tekan/hover), soft =
+   * Rausch Disabled #ffd1da untuk latar tenang. */
+  --action: #e00b41;
+  --action-strong: #b30026;
+  --action-soft: #ffd1da;
 
-  /* Stempel: keadaan pekerjaan, bukan dekorasi. Warna inilah satu-satunya
-   * kroma di produk ini. Nilai revisi digelapkan dari pratinjau #a16207
-   * (4,48:1 di atas blok isian) agar lolos AA. */
-  --stamp-ok: #0d6b3f;
-  --stamp-ok-soft: #f1f8f3;
-  --stamp-rev: #8a5a0a;
-  --stamp-rev-soft: #fbf6ec;
-  --stamp-no: #b91c1c;
-  --stamp-no-soft: #fdf3f3;
-  --stamp-wait: #52525b;
-  --stamp-wait-soft: #f4f4f5;
+  /* Stempel: keadaan pekerjaan (kebenaran produk, dipertahankan). Nilai
+   * diselaraskan ke nada Airbnb dan SEMUA pasangan teks/latar TERUKUR AA
+   * (>=4,5:1): ok #007204/#e8f5e9 = 5,48; rev #92600a/#fef3c7 = 4,84;
+   * no #b02a0c/#fdecea = 5,77; wait #545454/#f2f2f2 = 6,76. */
+  --stamp-ok: #007204;
+  --stamp-ok-soft: #e8f5e9;
+  --stamp-rev: #92600a;
+  --stamp-rev-soft: #fef3c7;
+  --stamp-no: #b02a0c;
+  --stamp-no-soft: #fdecea;
+  --stamp-wait: #545454;
+  --stamp-wait-soft: #f2f2f2;
 
-  /* Focus */
-  --focus-ring-color: var(--ink-primary);
+  /* Focus: tinta, bukan Rausch — indikator fokus harus netral di atas kartu
+   * berfoto. */
+  --focus-ring-color: #222222;
 
-  /* Radius: membulat sedang. 2-6px siku cetak terbaca sebagai noise di ponsel;
-   * pil penuh terbaca sebagai template. */
-  --radius-card: 12px;
-  --radius-control: 10px;
-  --radius-thumb: 10px;
-  --radius-chip: 6px;
-  --radius-sheet: 16px;
+  /* Radius: bahasa bentuk lunak Airbnb — tombol 8px, kartu ~14px, sheet
+   * 20px, chip pil penuh, thumb 12px. */
+  --radius-card: 14px;
+  --radius-control: 8px;
+  --radius-thumb: 12px;
+  --radius-chip: 9999px;
+  --radius-sheet: 20px;
 
-  /* Elevasi: dunia ini tidak memakai bayangan sama sekali. Token dipertahankan
-   * agar pemanggil lama tidak pecah, tetapi bernilai `none`. */
-  --elevation-bar: none;
-  --elevation-sheet: none;
-  --elevation-fab: none;
+  /* Elevasi: SATU tier bayangan persis kontrak Airbnb
+   * (rgba(0,0,0,.02) ring + .04/.1 lift). Sheet memakai varian lift lebih
+   * panjang pada tier yang sama — modal harus terbaca di atas scrim; ini
+   * bukan tier progresif kedua. */
+  --elevation-bar: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px, rgba(0, 0, 0, 0.1) 0 4px 8px;
+  --elevation-sheet: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px, rgba(0, 0, 0, 0.12) 0 8px 24px;
+  --elevation-fab: rgba(0, 0, 0, 0.02) 0 0 0 1px, rgba(0, 0, 0, 0.04) 0 2px 6px, rgba(0, 0, 0, 0.1) 0 4px 8px;
 
   /* Metrik app shell */
   --app-bar-h: 3.5rem;
@@ -112,130 +120,123 @@
 }
 
 @theme {
-  /* Aksi memakai tinta. Ramp `brand-primary` DIPERTAHANKAN sebagai nama karena
-   * ratusan utilitas `text-brand-primary-700` di komponen lama menunjuknya,
-   * tetapi skalanya kini abu netral — bukan biru. Hierarki terang->gelap
-   * dipertahankan supaya hover/active tetap terbaca. */
-  --color-brand-primary: #09090b;
-  --color-brand-primary-50: #f4f4f5;
-  --color-brand-primary-100: #e4e4e7;
-  --color-brand-primary-200: #d4d4d8;
-  --color-brand-primary-300: #a1a1aa;
-  --color-brand-primary-400: #71717a;
-  --color-brand-primary-500: #52525b;
-  --color-brand-primary-600: #27272a;
-  --color-brand-primary-700: #09090b;
-  --color-brand-primary-800: #000000;
-  --color-brand-primary-900: #000000;
-  --color-brand-primary-950: #000000;
-  --color-brand-soft: #f4f4f5;
+  /* Aksi memakai Rausch. Ramp `brand-primary` DIPERTAHANKAN sebagai nama
+   * karena ratusan utilitas `text-brand-primary-*` menunjuknya; skalanya kini
+   * ramp Rausch (terang->gelap). 700+ cukup gelap untuk teks kecil. */
+  --color-brand-primary: #e00b41;
+  --color-brand-primary-50: #fff0f3;
+  --color-brand-primary-100: #ffd1da;
+  --color-brand-primary-200: #ffa3b5;
+  --color-brand-primary-300: #ff6b87;
+  --color-brand-primary-400: #ff385c;
+  --color-brand-primary-500: #e00b41;
+  --color-brand-primary-600: #c70033;
+  --color-brand-primary-700: #b30026;
+  --color-brand-primary-800: #8f001e;
+  --color-brand-primary-900: #6b0016;
+  --color-brand-primary-950: #3d000c;
+  --color-brand-soft: #ffd1da;
 
   /* Permukaan & tinta (nama lama dipertahankan; nilai mengikuti dunia baru). */
   --color-surface-page: #ffffff;
-  --color-surface-offset: #fafafa;
-  --color-surface-hover: #f4f4f5;
-  --color-rule: #e4e4e7;
-  --color-ink-primary: #09090b;
+  --color-surface-offset: #f7f7f7;
+  --color-surface-hover: #f2f2f2;
+  --color-rule: #ebebeb;
+  --color-ink-primary: #222222;
 
-  /* Skala netral: MEMETAKAN ULANG slate/stone ke tinta dunia ini, sehingga
-   * seluruh utilitas lama (text-slate-900, bg-slate-800, ...) otomatis memakai
-   * palet baru tanpa menyentuh berkas komponen. */
-  --color-slate-50: #fafafa;
-  --color-slate-100: #f4f4f5;
-  --color-slate-200: #e4e4e7;
-  --color-slate-300: #d4d4d8;
-  /* 400/500 dipakai untuk teks kecil (nomor langkah, penanda urutan), jadi
-   * keduanya harus lolos AA 4,5:1 di ketiga permukaan. */
-  --color-slate-400: #65656e;
-  --color-slate-500: #65656e;
-  --color-slate-600: #52525b;
-  --color-slate-700: #3f3f46;
-  --color-slate-800: #27272a;
-  --color-slate-900: #09090b;
-  --color-slate-950: #000000;
+  /* Skala netral: MEMETAKAN ULANG slate/stone ke netral Airbnb (#f7f7f7 ..
+   * #222222), sehingga utilitas lama otomatis memakai palet baru. */
+  --color-slate-50: #f7f7f7;
+  --color-slate-100: #f2f2f2;
+  --color-slate-200: #ebebeb;
+  --color-slate-300: #dddddd;
+  /* 400/500 dipakai untuk teks kecil; harus lolos AA 4,5:1. */
+  --color-slate-400: #6a6a6a;
+  --color-slate-500: #6a6a6a;
+  --color-slate-600: #545454;
+  --color-slate-700: #3f3f3f;
+  --color-slate-800: #2e2e2e;
+  --color-slate-900: #222222;
+  --color-slate-950: #111111;
 
-  --color-stone-50: #fafafa;
-  --color-stone-100: #f4f4f5;
-  --color-stone-200: #e4e4e7;
-  --color-stone-300: #d4d4d8;
-  --color-stone-400: #65656e;
-  --color-stone-500: #65656e;
-  --color-stone-600: #52525b;
-  --color-stone-700: #3f3f46;
-  --color-stone-800: #27272a;
-  --color-stone-900: #09090b;
+  --color-stone-50: #f7f7f7;
+  --color-stone-100: #f2f2f2;
+  --color-stone-200: #ebebeb;
+  --color-stone-300: #dddddd;
+  --color-stone-400: #6a6a6a;
+  --color-stone-500: #6a6a6a;
+  --color-stone-600: #545454;
+  --color-stone-700: #3f3f3f;
+  --color-stone-800: #2e2e2e;
+  --color-stone-900: #222222;
 
   /* Font untuk utilitas Tailwind (font-sans / font-mono). */
-  --font-sans: "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
-  --font-mono: "Spline Sans Mono", ui-monospace, "SFMono-Regular", monospace;
+  --font-sans: "Inter", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: "Inter", ui-monospace, "SFMono-Regular", monospace;
 
-  /* Skala semantik: MEMETAKAN ULANG red/amber/green/emerald ke ramp stempel
-   * dunia ini. Komponen lama memakai ratusan utilitas `text-red-600`,
-   * `bg-amber-50`, `text-green-800` untuk galat/peringatan/sukses; tanpa
-   * pemetaan ini warnanya melawan palet tinta. Sekarang ketiganya diderivasi
-   * dari warna stempel yang sama dengan komponen `Stamp`. */
-  --color-red-50: #fdf3f3;
-  --color-red-100: #fbe9e9;
-  --color-red-200: #f3c6c6;
-  --color-red-300: #e79d9d;
-  --color-red-400: #d76a6a;
-  --color-red-500: #c94343;
-  --color-red-600: #b91c1c;
-  --color-red-700: #9c1717;
-  --color-red-800: #821414;
-  --color-red-900: #6b1111;
-  --color-red-950: #3d0a0a;
+  /* Skala semantik: MEMETAKAN ULANG red/amber/green/emerald ke nada Airbnb.
+   * Komponen lama memakai ratusan utilitas `text-red-600`, `bg-amber-50`,
+   * `text-green-800` untuk galat/peringatan/sukses; ramp di bawah
+   * menyelaraskan semuanya dengan stempel baru tanpa menyentuh komponen. */
+  --color-red-50: #fdecea;
+  --color-red-100: #fbd9d4;
+  --color-red-200: #f6b2a9;
+  --color-red-300: #ef8a7c;
+  --color-red-400: #e5654f;
+  --color-red-500: #d44128;
+  --color-red-600: #b02a0c;
+  --color-red-700: #a12d12;
+  --color-red-800: #83260f;
+  --color-red-900: #6a1f0d;
+  --color-red-950: #3a1007;
 
-  --color-amber-50: #fbf6ec;
-  --color-amber-100: #f5ead4;
-  --color-amber-200: #ead3a5;
-  --color-amber-300: #dbb96e;
-  --color-amber-400: #c69a3e;
-  --color-amber-500: #a87c1a;
-  --color-amber-600: #8a5a0a;
-  --color-amber-700: #714a0a;
-  --color-amber-800: #5b3c09;
-  --color-amber-900: #4a3108;
-  --color-amber-950: #2a1b04;
+  --color-amber-50: #fef3c7;
+  --color-amber-100: #fde68a;
+  --color-amber-200: #fcd34d;
+  --color-amber-300: #fbbf24;
+  --color-amber-400: #f59e0b;
+  --color-amber-500: #b45309;
+  --color-amber-600: #92600a;
+  --color-amber-700: #92400e;
+  --color-amber-800: #78350f;
+  --color-amber-900: #642f0e;
+  --color-amber-950: #3a1a06;
 
-  --color-green-50: #f1f8f3;
-  --color-green-100: #e0f0e6;
-  --color-green-200: #b9e0c8;
-  --color-green-300: #88c9a2;
-  --color-green-400: #4fac78;
-  --color-green-500: #258a56;
-  --color-green-600: #0d6b3f;
-  --color-green-700: #0a5633;
-  --color-green-800: #0a462b;
-  --color-green-900: #093a25;
-  --color-green-950: #032015;
+  --color-green-50: #e8f5e9;
+  --color-green-100: #c8e6c9;
+  --color-green-200: #a5d6a7;
+  --color-green-300: #81c784;
+  --color-green-400: #4caf50;
+  --color-green-500: #2e9e33;
+  --color-green-600: #007204;
+  --color-green-700: #005c04;
+  --color-green-800: #0a5d03;
+  --color-green-900: #084a03;
+  --color-green-950: #032801;
 
-  --color-emerald-50: #f1f8f3;
-  --color-emerald-100: #e0f0e6;
-  --color-emerald-200: #b9e0c8;
-  --color-emerald-300: #88c9a2;
-  --color-emerald-400: #4fac78;
-  --color-emerald-500: #258a56;
-  --color-emerald-600: #0d6b3f;
-  --color-emerald-700: #0a5633;
-  --color-emerald-800: #0a462b;
-  --color-emerald-900: #093a25;
-  --color-emerald-950: #032015;
+  --color-emerald-50: #e8f5e9;
+  --color-emerald-100: #c8e6c9;
+  --color-emerald-200: #a5d6a7;
+  --color-emerald-300: #81c784;
+  --color-emerald-400: #4caf50;
+  --color-emerald-500: #2e9e33;
+  --color-emerald-600: #007204;
+  --color-emerald-700: #005c04;
+  --color-emerald-800: #0a5d03;
+  --color-emerald-900: #084a03;
+  --color-emerald-950: #032801;
 
-  /* Radius: MEMETAKAN ULANG skala Tailwind ke radius membulat sedang, supaya
+  /* Radius: MEMETAKAN ULANG skala Tailwind ke bentuk lunak Airbnb, supaya
    * seluruh utilitas rounded-* di komponen lama ikut tanpa disentuh. */
-  --radius-md: 6px;
-  --radius-lg: 8px;
-  --radius-xl: 10px;
-  --radius-2xl: 12px;
-  --radius-3xl: 16px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 20px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
 }
 
 /*
- * Mode gelap DIHAPUS, bukan dinonaktifkan. Dunia ini akromatik dan bergantung
- * pada kontras tinta-terhadap-kertas; membalik kontras menuntut audit tersendiri
- * (bukan inversi token), dan sebelumnya blok `.dark` tidak pernah aktif karena
- * tidak ada kode yang memasang kelasnya — sementara 192 utilitas `dark:` di
- * komponen jadi kode mati. Bila mode gelap diinginkan, itu keputusan produk
- * baru yang membawa audit kontrasnya sendiri.
+ * Mode gelap TIDAK ADA — kanvas Airbnb publik juga tidak punya dark mode.
+ * Keputusan produk baru bila diinginkan; membalik kontras putih/tinta
+ * menuntut audit tersendiri.
  */

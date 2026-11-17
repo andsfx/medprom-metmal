@@ -33,27 +33,27 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
 
-    <!-- Fonts: Instrument Sans (kerja + display) + Spline Sans Mono (data/angka) -->
+    <!-- Font: Inter (substitusi resmi Airbnb Cereal VF; arah Rausch 2026-11-17) -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" />
-    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Spline+Sans+Mono:wght@400;500;600&display=swap" /></noscript>
+    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'" />
+    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
 
     <style>
       /* Critical CSS: skeleton sebelum JS mount (root.render menggantikan #root).
        * Nilai di sini HARUS cocok dengan token di src/styles/theme.css: skeleton
        * tampil sebelum CSS itu termuat, jadi ia tidak bisa memakai var(). */
       #root > .app-skeleton { display: block; }
-      .app-skeleton { background: #ffffff; min-height: 100vh; color: #65656e; }
-      .app-skeleton .sk-nav { height: 56px; border-bottom: 1px solid #e4e4e7; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
-      .app-skeleton .sk-brand { width: 140px; height: 20px; border-radius: 10px; background: #f4f4f5; }
-      .app-skeleton .sk-hero { height: 240px; background: #ffffff; display: flex; align-items: center; padding: 0 32px; border-bottom: 1px solid #e4e4e7; }
+      .app-skeleton { background: #ffffff; min-height: 100vh; color: #6a6a6a; }
+      .app-skeleton .sk-nav { height: 56px; border-bottom: 1px solid #ebebeb; display: flex; align-items: center; padding: 0 24px; gap: 12px; }
+      .app-skeleton .sk-brand { width: 140px; height: 20px; border-radius: 10px; background: #f2f2f2; }
+      .app-skeleton .sk-hero { height: 240px; background: #ffffff; display: flex; align-items: center; padding: 0 32px; border-bottom: 1px solid #ebebeb; }
       .app-skeleton .sk-hero-inner { width: min(520px, 80%); display: flex; flex-direction: column; gap: 14px; }
-      .app-skeleton .sk-title { height: 28px; border-radius: 10px; background: #e4e4e7; width: 70%; }
-      .app-skeleton .sk-sub { height: 16px; width: 50%; border-radius: 10px; background: #f4f4f5; }
+      .app-skeleton .sk-title { height: 28px; border-radius: 10px; background: #ebebeb; width: 70%; }
+      .app-skeleton .sk-sub { height: 16px; width: 50%; border-radius: 10px; background: #f2f2f2; }
       .app-skeleton .sk-grid { display: grid; gap: 16px; padding: 24px 32px; }
-      .app-skeleton .sk-card { height: 88px; border-radius: 12px; background: #ffffff; border: 1px solid #e4e4e7; }
+      .app-skeleton .sk-card { height: 88px; border-radius: 14px; background: #ffffff; border: 1px solid #ebebeb; }
       @media (prefers-reduced-motion: no-preference) {
         .app-skeleton .sk-brand, .app-skeleton .sk-title, .app-skeleton .sk-sub, .app-skeleton .sk-card { animation: sk-pulse 1.6s ease-in-out infinite; }
         @keyframes sk-pulse { 0%, 100% { opacity: 1; } 50% { opacity: .55; } }

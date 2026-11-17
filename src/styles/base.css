@@ -62,6 +62,14 @@ button,
   border-radius: var(--radius-card);
   border: var(--rule);
   background: var(--surface-card);
+  /* Airbnb: kartu tidak berbayang saat diam; hover = satu-satunya tier
+   * bayangan sistem (lift). Hanya untuk pointer yang bisa hover. */
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ui-card:hover {
+    box-shadow: var(--elevation-bar);
+  }
 }
 
 .ui-control {
@@ -75,6 +83,14 @@ button,
   /* Target sentuh: satu aturan untuk seluruh kontrol (input, select, tombol
    * sekunder) agar tidak ada kontrol yang jatuh di bawah ambang. */
   min-height: var(--tap-min);
+  transition: border-color 150ms ease;
+}
+
+/* Airbnb text-input: saat fokus, tepi berubah ke tinta — tanpa glow, tanpa
+ * ring tambahan. Cincin fokus keyboard tetap dijamin jaring pengaman global
+ * di `@layer base` (Gate 26), jadi tidak diduplikasi di sini. */
+.ui-control:focus {
+  border-color: var(--ink-primary);
 }
 
 /* Safari iOS memperbesar halaman saat input difokuskan bila font-size-nya di
@@ -148,15 +164,12 @@ textarea:disabled {
   /* Radius dari token, bukan utilitas: tombol yang lupa membawa kelas radius
    * tetap seragam dengan kontrol lain. */
   border-radius: var(--radius-control);
-  /* Aksi = tinta penuh, bukan warna merek. Dunia ini akromatik: karakter
-   * datang dari tipografi dan skala, dan warna disisakan untuk stempel
-   * keadaan saja. */
+  /* Aksi = Rausch (kontrak Airbnb): CTA primer adalah momen warna tunggal
+   * di atas kanvas putih. `--action` sudah digelapkan ke #e00b41 supaya
+   * teks putih di atasnya lolos AA. */
   background: var(--action);
   color: var(--ink-invert);
-  /* Target sentuh 44px (DESIGN.md). Sebelumnya hanya `.ui-control` yang
-   * memikul aturan ini, sehingga CTA primer/sekunder: yang mengandalkan
-   * padding per pemakaian: jatuh di 36-42px. Ditaruh di sini agar setiap
-   * CTA patuh secara sistemik, bukan ditambal `min-h-11` per instance. */
+  /* Target sentuh 44px (DESIGN.md). */
   min-height: var(--tap-min);
 }
 
@@ -177,11 +190,12 @@ textarea:disabled {
 }
 
 .ui-btn-secondary {
-  border: 1px solid var(--rule-strong);
+  /* Airbnb button-secondary: isi putih, outline TINTA (bukan abu). */
+  border: 1px solid var(--ink-primary);
   border-radius: var(--radius-control);
   color: var(--ink-primary);
   background: var(--surface-page);
-  /* Target sentuh 44px (DESIGN.md): lihat catatan di `.ui-btn-primary`. */
+  /* Target sentuh 44px (DESIGN.md). */
   min-height: var(--tap-min);
 }
 
@@ -564,9 +578,9 @@ summary:focus-visible,
   padding-bottom: var(--safe-bottom);
 }
 
-/* Top app bar: sticky, permukaan penuh, dipisah GARIS (bukan blur/bayangan).
- * Dunia ini tidak memakai bayangan: bar yang terangkat tetap dibaca dari
- * garis bawah yang menguat, bukan dari blur. */
+/* Top app bar: sticky, permukaan penuh. Airbnb: bar memakai SATU tier
+ * bayangan sistem (lift) — tidak ada garis bawah keras; pemisahan datang
+ * dari bayangan lembut di atas kanvas putih. */
 .app-bar {
   position: sticky;
   top: 0;
@@ -577,15 +591,18 @@ summary:focus-visible,
   height: calc(var(--app-bar-h) + var(--safe-top));
   padding-top: var(--safe-top);
   padding-inline: 0.75rem;
-  border-bottom: var(--rule);
   background: var(--surface-page);
+  box-shadow: var(--elevation-bar);
 }
 
+/* Saat konten menggulir di bawah bar, lift naik satu tingkat (token sheet):
+ * elevasi di sini mengomunikasikan "ada konten lewat di bawahnya". */
 .app-bar[data-elevated='true'] {
-  border-bottom-color: var(--rule-strong);
+  box-shadow: var(--elevation-sheet);
 }
 
-/* Bottom tab bar: navigasi utama di mobile. */
+/* Bottom tab bar: navigasi utama di mobile. Lift halus ke atas; tanpa garis
+ * keras — kertas di atas kertas, sesuai tier bayangan tunggal. */
 .app-tabbar {
   position: fixed;
   inset-inline: 0;
@@ -596,8 +613,8 @@ summary:focus-visible,
   grid-auto-columns: 1fr;
   height: calc(var(--app-tabbar-h) + var(--safe-bottom));
   padding-bottom: var(--safe-bottom);
-  border-top: var(--rule);
   background: var(--surface-page);
+  box-shadow: 0 -1px 0 rgba(0, 0, 0, 0.02), 0 -2px 6px rgba(0, 0, 0, 0.04);
 }
 
 /* Tab bar bawah hanya untuk mobile. Aturan ini ada di CSS (bukan `sm:hidden`
@@ -626,8 +643,9 @@ summary:focus-visible,
 }
 
 .app-tab[aria-current='page'] {
-  color: var(--ink-primary);
-  border-top-color: var(--ink-primary);
+  /* Tab aktif = momen Rausch: satu-satunya titik warna navigasi. */
+  color: var(--action);
+  border-top-color: var(--action);
 }
 
 /* Navigasi utama versi desktop: di dalam app bar. Hanya ≥640px; di bawah itu
@@ -739,9 +757,10 @@ summary:focus-visible,
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-sheet) var(--radius-sheet) 0 0;
-  border-top: 1px solid var(--rule-color);
   padding-bottom: var(--safe-bottom);
   background: var(--surface-card);
+  /* Elevasi sheet: tier bayangan + ring 1px; mengambang di atas kanvas. */
+  box-shadow: var(--elevation-sheet);
 }
 
 /* Pegangan geser: penanda visual bahwa sheet bisa ditutup. */
@@ -985,12 +1004,12 @@ summary:focus-visible,
   font-variant-numeric: tabular-nums;
 }
 
-/* Lencana kanal/jenis: netral, kecil, tidak berteriak. */
+/* Lencana kanal/jenis: pil lembut di atas abu paling terang. */
 .ui-tag {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.125rem 0.4375rem;
+  padding: 0.1875rem 0.5625rem;
   border-radius: var(--radius-chip);
   background: var(--surface-tint);
   color: var(--ink-secondary);
@@ -1035,19 +1054,17 @@ summary:focus-visible,
   color: var(--stamp-no);
 }
 
-/* Blok perhitungan: subtotal / PPN / total pada satu bidang tenang.
- * Dipisah dari isi sekitarnya oleh GARIS PUNGUT di atas dan bawah, bukan
- * "side-tab" berwarna (pola itu tell yang dilarang). */
+/* Blok perhitungan: subtotal / PPN / total pada satu bidang tenang dengan
+ * sudut lunak — Airbnb tidak memakai side-tab berwarna. */
 .ui-calc {
   display: flex;
   flex-wrap: wrap;
   gap: 1.5rem;
   align-items: flex-end;
   padding: 1rem 1.125rem;
-  border-top: var(--rule);
-  border-bottom: var(--rule);
+  border: var(--rule);
   background: var(--surface-offset);
-  border-radius: 0;
+  border-radius: var(--radius-card);
 }
 
 .ui-calc .ui-calc-k {
@@ -1106,8 +1123,8 @@ summary:focus-visible,
 }
 
 .ui-timeline-item[data-current='true']::before {
-  background: var(--surface-page);
-  box-shadow: inset 0 0 0 2px var(--ink-primary);
+  background: var(--action);
+  box-shadow: 0 0 0 4px var(--action-soft);
 }
 
 /* Garis penghubung antar titik. Berhenti di item terakhir. */

@@ -667,7 +667,7 @@ export default function PromoUploadWizard() {
                                   checked={terpilih}
                                   onChange={() => { setSelectedSlug(m.slug); setRulesOpen(false); setFile(null); setFileError(''); }}
                                   aria-describedby={fieldErrors.media ? 'err-media' : undefined}
-                                  className="h-4 w-4 shrink-0 rounded-none accent-[var(--ink-primary)]"
+                                  className="h-4 w-4 shrink-0 rounded-none accent-[var(--action)]"
                                 />
                                 {/* `overflow-wrap: anywhere`: nama media bisa memuat
                                  * kata majemuk tanpa titik putus (mis. "Feed

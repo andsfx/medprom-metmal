@@ -4,6 +4,31 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Diubah
+- **Redesign penuh ke arah "Airbnb Rausch".** Dunia visual "Daftar Kerja
+  Seluler" (akromatik, garis rambut, tanpa bayangan) diganti dengan kontrak
+  DESIGN.md Airbnb: kanvas putih bersih, tinta `#222222`, dan satu warna
+  tegangan Rausch untuk setiap CTA primer, tab aktif, dan titik "sekarang".
+  - **Token** (`theme.css`): palet baru + ramp Tailwind di-remap (utilitas
+    `slate`/`stone`/`red`/`amber`/`green`/`emerald` lama otomatis mengikuti);
+    radius berjenjang (8px kontrol, 14px kartu, 20px sheet, pil chip);
+    satu tier bayangan persis Airbnb (sheet memakai varian lift lebih panjang,
+    bukan tier progresif).
+  - **Kontras diukur, bukan dikira**: `--action` `#e00b41` (4,9:1 di atas
+    putih, bukan `#ff385c` 3,5:1); `--rule-strong` `#929292` (3,11:1, WCAG
+    1.4.11); empat pasangan stempel semuanya ≥4,5:1.
+  - **Font**: Instrument Sans + Spline Sans Mono diganti **Inter**
+    (substitusi resmi Airbnb Cereal VF); angka tetap tabular-nums.
+  - **Komponen** (`base.css`): tombol primer Rausch + sekunder outline tinta;
+    bar & tabbar memakai tier bayangan, bukan garis; tab aktif Rausch; kartu
+    hover terangkat; sheet berbayang; input fokus membalik border ke tinta;
+    timeline "sekarang" memakai titik Rausch berhalo; status `data-elevated`
+    app bar dihidupkan kembali dengan lift tier sheet saat konten menggulir.
+  - **Ikon PWA** diregenerasi ke Rausch (`public/icon.svg` `#ff385c` untuk
+    grafis — nilai teks tetap `#e00b41` yang lolos AA; PNG 192/512/maskable/
+    apple-touch ikut dibuat ulang lewat `scripts/gen-icons.mjs`).
+  - `DESIGN.md` ditulis ulang; `CACHE_VERSION` service worker `v14` → `v15`
+    dan pin hash aset shell diperbarui (`1784fe03…` — ikon berubah).
 ### Diperbaiki
 - **Aplikasi terasa lebih native di ponsel (lapisan platform, skill
   mobile-native).** Flash abu saat tap dimatikan global
