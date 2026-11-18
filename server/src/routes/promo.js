@@ -637,12 +637,20 @@ router.get('/summary', async (req, res, next) => {
     // 3) Periode hampir berakhir: disetujui/siap/terpasang dengan tanggal
     //    akhir masih aktif, terdekat dulu. LIMIT 6 membatasi muatan respons
     //    tanpa menebak ambang hari di server (itu urusan tampilan).
+    //    `air_end_date` bertipe TEXT (schema.sql) — perbandingan LEXIKOGRAFIK
+    //    terhadap `to_char(CURRENT_DATE,'YYYY-MM-DD')` aman untuk format ISO
+    //    (YYYY-MM-DD mengurut sama dengan tanggal), tidak melempar
+    //    "operator does not exist: text >= date" seperti cast langsung, dan
+    //    tetap memakai index (status, air_end_date). Nilai kosong dibuang;
+    //    format non-ISO tidak lolos gerbang karena kolom ini hanya ditulis
+    //    dari DATE_RE di /submit dan /submit-batch.
     const { rows: expiringRows } = await db.query(
       `SELECT submission_number, status_token, status, media_type_slug,
               material_title, air_end_date
          FROM promo_submissions
         WHERE device_fingerprint = $1 AND status = ANY($2::text[])
-          AND air_end_date IS NOT NULL AND air_end_date >= CURRENT_DATE
+          AND air_end_date <> ''
+          AND air_end_date >= to_char(CURRENT_DATE, 'YYYY-MM-DD')
         ORDER BY air_end_date ASC
         LIMIT 6`,
       [fingerprint, ACTIVE_STATUSES],

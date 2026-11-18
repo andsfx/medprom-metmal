@@ -23,8 +23,10 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 - **API `GET /promo/summary?fingerprint=`.** Ringkasan beranda per perangkat
   dalam satu panggilan: `by_status` (satu `GROUP BY`, angka konsisten),
   `total`, `needing_action` (menunggu review/perlu revisi terbaru), dan
-  `expiring_soon` (disetujui/siap/terpasang dengan `air_end_date >=
-  CURRENT_DATE`, terdekat dulu, maks 6). Batas kepercayaan sama dengan
+  `expiring_soon` (disetujui/siap/terpasang dengan `air_end_date` masih
+  aktif — dibandingkan leksikografis terhadap `to_char(CURRENT_DATE,
+  'YYYY-MM-DD')` karena kolom itu bertipe TEXT, terdekat dulu, maks 6).
+  Batas kepercayaan sama dengan
   `/promo/submissions/mine` (fingerprint; respons memuat `status_token`) dan
   rate limit 60/15 mnt/IP. Semua angka dihitung server.
 - **FAB "Ajukan" di tab bar mobile** — tombol bulat tinta di tengah

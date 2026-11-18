@@ -139,12 +139,16 @@ describe('GET /promo/summary — ringkasan beranda', () => {
     expect(bindAction[1]).toEqual(['menunggu_review', 'perlu_revisi']);
   });
 
-  it('periode hampir berakhir hanya status aktif + air_end_date >= CURRENT_DATE', async () => {
+  it('periode hampir berakhir: status aktif + air_end_date (TEXT) dibanding leksikografis', async () => {
     const res = await call('/summary', 'get', { query: { fingerprint: 'fp1' } });
 
     expect(res.statusCode).toBe(200);
     const sql = sqlPerCall()[2];
-    expect(sql).toContain('air_end_date >= CURRENT_DATE');
+    // air_end_date bertipe TEXT: perbandingan leksikografis terhadap
+    // to_char(CURRENT_DATE), bukan cast date (melempar operator error).
+    expect(sql).toContain("air_end_date <> ''");
+    expect(sql).toContain("air_end_date >= to_char(CURRENT_DATE, 'YYYY-MM-DD')");
+    expect(sql).not.toMatch(/>=\s*CURRENT_DATE/i);
     expect(sql).toMatch(/ORDER BY air_end_date ASC/i);
     expect(sql).toMatch(/LIMIT 6/i);
     const bind = mockedQuery.mock.calls[2][1];
