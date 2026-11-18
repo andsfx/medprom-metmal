@@ -129,6 +129,32 @@ describe('BerandaPage', () => {
     expect(screen.getByRole('link', { name: /Spanduk — Ramadan Ekstra/i })).toHaveAttribute('href', '/status/tok-2');
   });
 
+  it('label sel Selesai memuat tahun berjalan', async () => {
+    mockedSummary.mockResolvedValue(DASAR);
+    renderPage();
+
+    const region = await screen.findByRole('region', { name: 'Ringkasan status pengajuan' });
+    expect(region).toHaveTextContent(`Selesai ${new Date().getFullYear()}`);
+  });
+
+  it('blok periode hampir berakhir menampilkan hint perpanjangan 7 hari', async () => {
+    mockedSummary.mockResolvedValue({
+      ...DASAR,
+      expiring_soon: [{
+        submission_number: 'MP-261101-ABC234',
+        status_token: 'tok-2',
+        status: 'disetujui',
+        media_type_slug: 'spanduk',
+        material_title: 'Spanduk — Ramadan Ekstra',
+        air_end_date: isoHariIniPlus(3),
+      }],
+    });
+    renderPage();
+
+    expect(await screen.findByRole('heading', { name: 'Periode hampir berakhir' })).toBeInTheDocument();
+    expect(screen.getByText(/Perpanjangan diajukan paling lambat 7 hari sebelum berakhir/)).toBeInTheDocument();
+  });
+
   it('pengajuan terbaru merender baris dari riwayat perangkat', async () => {
     mockedSummary.mockResolvedValue(DASAR);
     vi.mocked(fetchMySubmissions).mockResolvedValue({

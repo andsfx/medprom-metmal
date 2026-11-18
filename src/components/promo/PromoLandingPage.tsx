@@ -2,17 +2,18 @@
  * Landing publik - daftar kerja katalog media promosi + kontak TR.
  * Data dari GET /promo/media-types; ketentuan pemasangan bisa dibuka (pola FAQ).
  *
- * Dunia visual: "Airbnb Rausch". Di ponsel setiap media satu BARIS daftar
- * (thumbnail, nama, harga sebagai angka terbesar di barisnya, lalu
- * spesifikasi dan lokasi sebagai label redup). Di layar >=640px baris itu
- * berubah menjadi KARTU kisi lewat `.catalog-grid` (lihat `base.css`): foto
- * memimpin, isi mengalir vertikal, aksi dipatok ke dasar kartu. Katalog
- * dikelompokkan per KATEGORI deck (outdoor/indoor/social), bukan per kanal -
- * lihat catatan di bawah.
+ * Dunia visual: "Akromatik Tinta" - kertas putih, garis rambut tipis, dan
+ * tinta #222222 sebagai aksen tunggal (lihat `DESIGN.md`). Di ponsel setiap
+ * media satu BARIS daftar (thumbnail, nama, harga sebagai angka terbesar di
+ * barisnya, lalu spesifikasi dan lokasi sebagai label redup). Di layar
+ * >=640px baris itu berubah menjadi KARTU kisi lewat `.catalog-grid` (lihat
+ * `base.css`): foto memimpin, isi mengalir vertikal, aksi dipatok ke dasar
+ * kartu. Katalog dikelompokkan per KATEGORI deck (outdoor/indoor/social),
+ * bukan per kanal - lihat catatan di bawah.
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ChevronDown, ArrowRight, AlertTriangle } from 'lucide-react';
+import { ChevronDown, ArrowRight, AlertTriangle, Search } from 'lucide-react';
 import { fetchMediaTypes } from '../../utils/promoApi';
 import { parseLeadTime, describeLeadTime } from '../../utils/leadTime';
 import AppShell from '../layout/AppShell';
@@ -21,6 +22,11 @@ import { mediaPrice } from '../../utils/mediaPrice';
 import MediaPriceTag from './MediaPriceTag';
 import { MIN_DURATION_DAYS } from '../../utils/pricing';
 import type { PromoMediaType } from '../../types/promo';
+
+// Nilai filter "tampilkan semua media". Bukan `null` supaya tidak ambigu
+// dengan "belum memilih", dan bukan string kosong yang mudah tertukar dengan
+// `falsy` (pola FILTER_SEMUA di MySubmissionsPage).
+const FILTER_SEMUA = 'all';
 
 const CONTACTS = [
   { label: 'Tenant Relations (Media Promosi Cetak)', people: 'Bapak Ade · Ibu Ervita', wa: ['https://wa.me/6287785749386', 'https://wa.me/6281316759616'] },
@@ -60,10 +66,12 @@ function MediaRow({ media }: { media: PromoMediaType }) {
         {spec && <p className="ui-dense ui-text-muted mt-1">{spec}</p>}
         {/* Kanal ditulis sebagai teks, bukan chip tersendiri: informasinya
          * penting (siapa yang menangani), tetapi chip memakan satu baris penuh
-         * di layar 392px untuk satu kata. */}
+         * di layar 392px untuk satu kata. Teks ini memuat nama handler
+         * ("Cetak · Tenant Relations" / "Digital · Marcom"), jadi siapa yang
+         * menangani langsung terlihat di kartu. */}
         <p className="ui-meta ui-text-muted mt-0.5">
           {media.location_note && <>{media.location_note} · </>}
-          {isCetak ? `Cetak, min. ${MIN_DURATION_DAYS} hari` : 'Digital'}
+          {isCetak ? 'Cetak · Tenant Relations' : 'Digital · Marcom'}
         </p>
         {/* Lead time diturunkan dari teks `rules` (bukan dari kategori) -
          * ketentuan deck tidak seragam, jadi media tanpa aturan tidak
@@ -135,6 +143,8 @@ function MediaRow({ media }: { media: PromoMediaType }) {
 }
 
 export default function PromoLandingPage() {
+  const [query, setQuery] = useState('');
+  const [catFilter, setCatFilter] = useState<string>(FILTER_SEMUA);
   const [mediaTypes, setMediaTypes] = useState<PromoMediaType[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);
@@ -154,6 +164,21 @@ export default function PromoLandingPage() {
     const teks = p.mode === 'single' ? p.text : (p.lines[0] ?? '');
     return teks.toLowerCase().startsWith('gratis');
   }).length;
+
+  // Filter murni sisi-klien: katalog kecil (14 slug) dimuat sekali, jadi
+  // pencarian/pemfilteran tidak menambah panggilan. `aktif` menjadi dasar
+  // hitungan per chip dan total; `visible` adalah hasil saringan yang dirender.
+  const aktif = mediaTypes.filter((m) => m.is_active !== false);
+  const kata = query.trim().toLowerCase();
+  const visible = aktif.filter((m) => {
+    const haystack = [m.name, m.slug, m.location_note, m.size_spec, m.material_spec]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return (catFilter === FILTER_SEMUA || m.category === catFilter)
+      && (kata === '' || haystack.includes(kata));
+  });
+  const totalKatalog = aktif.length;
 
   return (
     <AppShell
@@ -224,7 +249,12 @@ export default function PromoLandingPage() {
        * Bukan per kanal: hanya 3 dari 14 slug berkanal `cetak`, jadi
        * mengelompokkan per kanal akan memecah katalog menjadi "3 cetak" dan
        * "11 sisanya" sekaligus menghapus struktur outdoor/indoor/social yang
-       * justru dipakai deck. Kanal tetap dipakai sebagai TAG di setiap baris. */}
+       * justru dipakai deck. Kanal kini dipakai sebagai teks meta dengan nama
+       * handler di setiap kartu, bukan sebagai TAG. Di atas grid ada kotak
+       * cari, sabuk chip filter kategori, dan catatan jumlah: semuanya
+       * penyaringan sisi-klien atas katalog yang sudah termuat (lihat
+       * konstanta `FILTER_SEMUA` dan komentar logika filter di badan
+       * komponen). */}
       <section id="katalog" className="mx-auto max-w-5xl scroll-mt-20 px-4 pb-12">
         {loading && (
           <div className="catalog-grid" role="status" aria-live="polite" aria-label="Memuat katalog">
@@ -251,23 +281,84 @@ export default function PromoLandingPage() {
           </div>
         )}
 
-        {!loading && !loadError && CATEGORY_ORDER.map((cat) => {
-          const items = mediaTypes.filter((m) => m.category === cat);
-          if (items.length === 0) return null;
-          return (
-            <div key={cat} className="mb-10">
-              <div className="flex items-baseline justify-between gap-4 border-b border-[color:var(--rule-strong)] pb-2">
-                <h2 className="ui-title-section">{CATEGORY_LABELS[cat] ?? cat}</h2>
-                <span className="ui-meta ui-text-muted">
-                  {items.length} media
-                </span>
-              </div>
-              <div className="catalog-grid">
-                {items.map((m) => <MediaRow key={m.slug} media={m} />)}
-              </div>
+        {!loading && !loadError && (
+          <>
+            {/* Cari: mempersempit grid tanpa panggilan baru; ikon kiri memberi
+             * posisi visual yang familier pada kontrol isian `ui-control`. */}
+            <div className="relative">
+              <label htmlFor="catalog-search" className="sr-only">Cari media</label>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 ui-text-muted" aria-hidden="true" />
+              <input
+                id="catalog-search"
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Cari media, lokasi, atau ukuran"
+                className="ui-control w-full pl-9 pr-3 text-sm text-slate-900 placeholder:text-slate-400"
+              />
             </div>
-          );
-        })}
+
+            {/* Sabuk chip kategori (pola filter status MySubmissionsPage). */}
+            <div
+              role="group"
+              aria-label="Filter kategori"
+              className="mt-3 flex gap-2 overflow-x-auto pb-1"
+              style={{ scrollbarWidth: 'none' }}
+            >
+              <button
+                type="button"
+                aria-pressed={catFilter === FILTER_SEMUA}
+                onClick={() => setCatFilter(FILTER_SEMUA)}
+                className="ui-tag min-h-11 px-3 py-2 text-sm"
+                data-tone={catFilter === FILTER_SEMUA ? 'ink' : undefined}
+              >
+                {`Semua ${totalKatalog}`}
+              </button>
+              {CATEGORY_ORDER.map((cat) => {
+                const n = aktif.filter((m) => m.category === cat).length;
+                if (n === 0) return null;
+                return (
+                  <button
+                    key={cat}
+                    type="button"
+                    aria-pressed={catFilter === cat}
+                    onClick={() => setCatFilter(cat)}
+                    className="ui-tag min-h-11 px-3 py-2 text-sm"
+                    data-tone={catFilter === cat ? 'ink' : undefined}
+                  >
+                    {`${CATEGORY_LABELS[cat] ?? cat} ${n}`}
+                  </button>
+                );
+              })}
+            </div>
+
+            <p className="ui-meta ui-text-muted mt-4" role="status">
+              Menampilkan {visible.length} dari {totalKatalog} media.
+            </p>
+
+            {visible.length === 0 ? (
+              <p className="ui-empty px-6 py-10 text-sm font-semibold">Tidak ada media yang cocok.</p>
+            ) : (
+              CATEGORY_ORDER.map((cat) => {
+                const items = visible.filter((m) => m.category === cat);
+                if (items.length === 0) return null;
+                return (
+                  <div key={cat} className="mb-10">
+                    <div className="flex items-baseline justify-between gap-4 border-b border-[color:var(--rule-strong)] pb-2">
+                      <h2 className="ui-title-section">{CATEGORY_LABELS[cat] ?? cat}</h2>
+                      <span className="ui-meta ui-text-muted">
+                        {items.length} media
+                      </span>
+                    </div>
+                    <div className="catalog-grid">
+                      {items.map((m) => <MediaRow key={m.slug} media={m} />)}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </>
+        )}
       </section>
 
       {/* Kontak */}

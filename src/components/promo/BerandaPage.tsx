@@ -14,7 +14,7 @@
  */
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowRight, CalendarClock, Clock, Grid3X3, History, Loader2 } from 'lucide-react';
+import { ArrowRight, CalendarClock, Clock, Grid3X3, History, Info, Loader2 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import Stamp from './Stamp';
 import MediaPriceTag from './MediaPriceTag';
@@ -129,7 +129,7 @@ export default function BerandaPage() {
                   { kode: 'menunggu_review', label: 'Menunggu Review' },
                   { kode: 'perlu_revisi', label: 'Perlu Revisi' },
                   { kode: 'siap_dipasang', label: 'Siap Dipasang' },
-                  { kode: 'selesai', label: 'Selesai' },
+                  { kode: 'selesai', label: `Selesai ${new Date().getFullYear()}` },
                 ].map(({ kode, label }) => (
                   <div key={kode} className="ui-card px-2 py-3 text-center">
                     <span className="ui-number block text-xl">{summary.by_status[kode] ?? 0}</span>
@@ -223,6 +223,10 @@ export default function BerandaPage() {
                     );
                   })}
                 </ul>
+                <p className="ui-meta ui-text-muted mt-3 flex items-start gap-1.5">
+                  <Info className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                  Perpanjangan diajukan paling lambat 7 hari sebelum berakhir.
+                </p>
               </section>
             )}
 

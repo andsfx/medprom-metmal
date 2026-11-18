@@ -45,6 +45,7 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
     VERBATIM (`mediaPrice`; tangga tarif ditampilkan semua barisnya), tanpa
     total hitung karena deck digital tidak mengatur prorata/qty — perhitungan
     presisi hanya sah untuk kanal cetak.
+- **Katalog & beranda: enam gap paritas prototype ditutup.** Kotak cari katalog ("Cari media, lokasi, atau ukuran"), sabuk chip filter kategori dengan jumlah (Semua/Outdoor/Indoor/Media Sosial), catatan "Menampilkan N dari N media", nama handler kanal di kartu media ("Cetak · Tenant Relations" / "Digital · Marcom"), hint "Perpanjangan diajukan paling lambat 7 hari sebelum berakhir" di blok periode hampir berakhir, dan tahun berjalan pada label sel "Selesai". Pencarian dan filter murni sisi-klien di atas katalog yang sudah termuat; tanpa perubahan server.
 
 ### Diubah
 - **Dunia visual berganti ke "Akromatik Tinta".** Arah "Airbnb Rausch"
