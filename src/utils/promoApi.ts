@@ -309,6 +309,12 @@ export interface ActionItem {
   media_type_slug: string;
   material_title: string;
   review_notes: string;
+  /** Waktu pengajuan dikirim (dipakai label "Dikirim" untuk menunggu review). */
+  created_at: string;
+  /** Waktu admin meminta revisi (dipakai label "Diminta" untuk perlu revisi). */
+  reviewed_at: string | null;
+  /** Nama admin yang meninjau (mis. "Marcom"); kosong bila belum ditinjau. */
+  reviewed_by_name: string;
 }
 
 /** Satu periode tayang aktif yang segera berakhir. */

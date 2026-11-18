@@ -564,13 +564,19 @@ router.get('/submissions/mine', async (req, res, next) => {
     // daftar pengajuan per perangkat, bukan isi batch, sehingga tenant dengan
     // lebih dari 50 pengajuan tetap melihat angka yang benar (klien dulu
     // menghitung dari baris yang termuat saja, jadi bisa kurang dari kenyataan).
+    // `image_path` di-join dari katalog media supaya baris "Pengajuan terbaru"
+    // di beranda bisa menampilkan foto contoh tanpa panggilan katalog kedua.
+    // LEFT JOIN (bukan INNER) agar baris pengajuan yang slug medianya sudah
+    // dihapus dari katalog tetap muncul, hanya tanpa gambar.
     const { rows } = await db.query(
       `SELECT ${SUBMISSION_PUBLIC_COLUMNS_S}, s.status_token,
               b.batch_number, b.batch_token,
               (SELECT count(*)::int FROM promo_submissions x WHERE x.batch_id = s.batch_id)
-                AS batch_item_count
+                AS batch_item_count,
+              m.image_path AS image_path
        FROM promo_submissions s
        LEFT JOIN promo_submission_batches b ON b.id = s.batch_id
+       LEFT JOIN promo_media_types m ON m.slug = s.media_type_slug
        WHERE s.device_fingerprint = $1
        ORDER BY s.created_at DESC
        LIMIT 50 OFFSET ${offset}`,
@@ -624,12 +630,20 @@ router.get('/summary', async (req, res, next) => {
     }
 
     // 2) Perlu tindakan: pengajuan TERBARU yang menunggu review/revisi.
+    //    Ikut memuat aktor + waktu terakhir (reviewed_by_name/reviewed_at) dan
+    //    waktu kirim (created_at) supaya beranda bisa menampilkan "Diminta
+    //    Marcom · 16 Nov 2026, 14:32" alih-alih nomor pengajuan. Alias `s`
+    //    wajib: `created_at` ada di `users` maupun `promo_submissions`, jadi
+    //    tanpa kualifikasi Postgres menolak query (42702 ambiguous).
     const { rows: actionRows } = await db.query(
-      `SELECT submission_number, status_token, status, media_type_slug,
-              material_title, review_notes
-         FROM promo_submissions
-        WHERE device_fingerprint = $1 AND status = ANY($2::text[])
-        ORDER BY created_at DESC
+      `SELECT s.submission_number, s.status_token, s.status, s.media_type_slug,
+              s.material_title, s.review_notes,
+              s.created_at, s.reviewed_at,
+              u.display_name AS reviewed_by_name
+         FROM promo_submissions s
+         LEFT JOIN users u ON u.id = s.reviewed_by
+        WHERE s.device_fingerprint = $1 AND s.status = ANY($2::text[])
+        ORDER BY s.created_at DESC
         LIMIT 1`,
       [fingerprint, ACTION_STATUSES],
     );

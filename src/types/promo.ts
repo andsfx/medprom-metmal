@@ -146,6 +146,8 @@ export interface MySubmissionRow {
   /** Hanya terisi pada /promo/submissions/mine (akses digerbangi fingerprint). */
   status_token?: string;
   media_type_slug: string;
+  /** Foto contoh media dari katalog; terisi pada /promo/submissions/mine. */
+  image_path?: string;
   tenant_name: string;
   unit_number: string;
   material_title: string;

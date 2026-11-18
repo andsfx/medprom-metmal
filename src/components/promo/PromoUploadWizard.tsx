@@ -109,7 +109,8 @@ function FileIcon({ mime }: { mime: string }) {
 }
 
 /**
- * Blok "Ringkasan biaya" langkah 3 wizard digital.
+ * Blok "Ringkasan biaya" wizard digital - dirender DI DALAM kotak mengambang
+ * (`.wizard-pricebox`) di langkah 3, melayang di atas bar aksi tetap.
  *
  * Menampilkan TARIF KATALOG VERBATIM, bukan total hitungan: deck digital
  * tidak mengatur prorata/qty, jadi menghitung harga × qty × hari + PPN di sini
@@ -126,7 +127,7 @@ function RingkasanBiaya({ media }: { media: PromoMediaType }) {
   const price = mediaPrice(media);
 
   return (
-    <div className="mt-4">
+    <div>
       <p className="ui-label">Ringkasan biaya</p>
       <div className="ui-calc mt-2.5">
         {price.mode === 'ladder' ? (
@@ -778,16 +779,6 @@ export default function PromoUploadWizard() {
                 <div className="ui-helper-slot mt-3">
                   {fieldErrors.media && <p id="err-media" role="alert" className="ui-meta font-medium text-[color:var(--stamp-no)]">{fieldErrors.media}</p>}
                 </div>
-
-                <button
-                  type="button"
-                  onClick={goStep2}
-                  disabled={!selectedSlug}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 ui-dense font-semibold"
-                >
-                  Lanjut ke Data Tenant
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </button>
               </div>
             )}
 
@@ -1049,14 +1040,6 @@ export default function PromoUploadWizard() {
                   </div>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={goStep3}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
-                >
-                  Lanjut ke Kirim Materi
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </button>
                 <div className="ui-helper-slot mt-3">
                   {submitError && (
                     <p className="text-xs font-medium text-[color:var(--stamp-no)]" role="alert">{submitError}</p>
@@ -1078,9 +1061,8 @@ export default function PromoUploadWizard() {
                   Pilih salah satu cara: unggah berkas ke penyimpanan Mall, atau kirim tautan milik Anda.
                 </p>
 
-                {/* Tarif katalog verbatim — deck digital tidak mengatur
-                 * prorata/qty, jadi tidak ada total yang dihitung di sini. */}
-                <RingkasanBiaya media={selectedMedia} />
+                {/* Tarif katalog verbatim pindah ke kotak mengambang di atas
+                 * bar aksi - lihat `wizard-pricebox` di akhir halaman. */}
 
 
                 {/* Ringkasan sebagai tabel titik penghubung: nilainya data. */}
@@ -1311,11 +1293,65 @@ export default function PromoUploadWizard() {
                   )}
                 </div>
 
+                <p className="ui-body mt-3 flex items-center justify-center gap-1.5 text-center ui-text-muted">
+                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
+                  {sourceMode === 'upload'
+                    ? 'File tersimpan aman dan hanya dilihat tim Tenant Relations.'
+                    : 'Tautan milik Anda. Tim Tenant Relations membukanya untuk verifikasi manual; berkas tidak disalin ke server kami.'}
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ─── Kotak harga mengambang + bar aksi tetap (prototipe ajukan.html
+         *  `.pricebox` / `.actionbar`), di semua viewport. Konten di bawahnya
+         *  diberi spacer agar tidak tertutup. ─── */}
+        {!loading && !loadError && (
+          <>
+            {step === 3 && selectedMedia && (
+              <aside className="wizard-pricebox" aria-label="Ringkasan biaya">
+                <RingkasanBiaya media={selectedMedia} />
+              </aside>
+            )}
+            <div className="wizard-actionbar">
+              {step > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => (s === 3 ? 2 : 1) as Step)}
+                  className="ui-btn-secondary app-pressable inline-flex min-h-11 shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-semibold"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  Kembali
+                </button>
+              )}
+              {step === 1 && (
+                <button
+                  type="button"
+                  onClick={goStep2}
+                  disabled={!selectedSlug}
+                  className="ui-btn-primary app-pressable inline-flex min-h-11 flex-1 items-center justify-center gap-2 px-5 py-2.5 ui-dense font-semibold"
+                >
+                  Lanjut ke Data Tenant
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
+              {step === 2 && (
+                <button
+                  type="button"
+                  onClick={goStep3}
+                  className="ui-btn-primary app-pressable inline-flex min-h-11 flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                >
+                  Lanjut ke Kirim Materi
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
+              {step === 3 && (
                 <button
                   type="button"
                   onClick={handleSubmit}
                   disabled={!materialReady || !termsAccepted || submitState === 'uploading'}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
+                  className="ui-btn-primary app-pressable inline-flex min-h-11 flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold"
                 >
                   {submitState === 'uploading' ? (
                     <>
@@ -1331,15 +1367,14 @@ export default function PromoUploadWizard() {
                     </>
                   )}
                 </button>
-                <p className="ui-body mt-3 flex items-center justify-center gap-1.5 text-center ui-text-muted">
-                  <ShieldCheck className="h-3.5 w-3.5" aria-hidden="true" />
-                  {sourceMode === 'upload'
-                    ? 'File tersimpan aman dan hanya dilihat tim Tenant Relations.'
-                    : 'Tautan milik Anda. Tim Tenant Relations membukanya untuk verifikasi manual; berkas tidak disalin ke server kami.'}
-                </p>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+            <div
+              className="wizard-actionbar-spacer"
+              data-priced={step === 3 && selectedMedia ? 'true' : 'false'}
+              aria-hidden="true"
+            />
+          </>
         )}
       </div>
     </AppShell>

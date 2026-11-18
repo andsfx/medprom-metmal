@@ -132,7 +132,8 @@ describe('GET /promo/summary — ringkasan beranda', () => {
     const sql = sqlPerCall()[1];
     expect(sql).toContain("status = ANY($2::text[])");
     expect(sql).toMatch(/LIMIT 1/i);
-    expect(sql).toMatch(/ORDER BY created_at DESC/i);
+    // Alias `s` wajib karena `created_at` juga ada di tabel `users` (join actor).
+    expect(sql).toMatch(/ORDER BY s\.created_at DESC/i);
     // $2 harus diisi daftar dua status aksi (bukan status aktif).
     const bindAction = mockedQuery.mock.calls[1][1];
     expect(bindAction[0]).toBe('fp1');
@@ -164,6 +165,9 @@ describe('GET /promo/summary — ringkasan beranda', () => {
           submission_number: 'MP-261116-ABC234', status_token: 'tok-1',
           status: 'perlu_revisi', media_type_slug: 'sticker-eskalator',
           material_title: 'Sticker Eskalator', review_notes: 'Ukuran belum sesuai.',
+          created_at: '2026-11-16T14:32:00+07:00',
+          reviewed_at: '2026-11-16T14:32:00+07:00',
+          reviewed_by_name: 'Marcom',
         }],
       })
       .mockResolvedValueOnce({
@@ -183,6 +187,9 @@ describe('GET /promo/summary — ringkasan beranda', () => {
         submission_number: 'MP-261116-ABC234', status_token: 'tok-1',
         status: 'perlu_revisi', media_type_slug: 'sticker-eskalator',
         material_title: 'Sticker Eskalator', review_notes: 'Ukuran belum sesuai.',
+        created_at: '2026-11-16T14:32:00+07:00',
+        reviewed_at: '2026-11-16T14:32:00+07:00',
+        reviewed_by_name: 'Marcom',
       },
       expiring_soon: [{
         submission_number: 'MP-261101-ABC234', status_token: 'tok-2',

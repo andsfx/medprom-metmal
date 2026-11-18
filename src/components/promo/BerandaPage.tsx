@@ -21,7 +21,7 @@ import MediaPriceTag from './MediaPriceTag';
 import { fetchHomeSummary, fetchMySubmissions, normalizeMySubmissions } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
 import { STATUS_ORDER } from '../../constants/promo';
-import type { HomeSummary } from '../../utils/promoApi';
+import type { HomeSummary, ActionItem } from '../../utils/promoApi';
 import type { MySubmissionRow } from '../../types/promo';
 
 /** Ambang "hampir berakhir" (hari) - sama dengan pengingat konsol staf. */
@@ -40,6 +40,36 @@ function shortDate(iso: string): string {
 
 function daysUntil(iso: string): number {
   return Math.ceil((new Date(`${iso}T00:00:00`).getTime() - Date.now()) / 86_400_000);
+}
+
+/** Harga pengajuan: nominal rupiah bila > 0, "Gratis" bila tanpa harga. */
+function priceText(n?: number | null): string {
+  return typeof n === 'number' && n > 0 ? `Rp ${n.toLocaleString('id-ID')}` : 'Gratis';
+}
+
+/** Tanggal + jam ("16 Nov 2026, 14.32") untuk meta aksi. */
+function shortDateTime(iso?: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toLocaleString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  });
+}
+
+/** Meta kartu "Perlu tindakan": aktor + waktu, alih-alih nomor pengajuan. */
+function actionMeta(item: ActionItem): string {
+  if (item.status === 'perlu_revisi') {
+    const actor = item.reviewed_by_name || 'Marcom';
+    const when = shortDateTime(item.reviewed_at);
+    return when ? `Diminta ${actor} · ${when}` : `Diminta ${actor}`;
+  }
+  const when = shortDateTime(item.created_at);
+  return when ? `Dikirim · ${when}` : 'Dikirim';
 }
 
 export default function BerandaPage() {
@@ -185,7 +215,7 @@ export default function BerandaPage() {
                   </Link>
                   <p className="ui-meta ui-text-muted mt-2 flex items-center gap-1.5">
                     <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-                    {needingAction.submission_number}
+                    {actionMeta(needingAction)}
                   </p>
                 </div>
               </section>
@@ -241,6 +271,17 @@ export default function BerandaPage() {
                         to={r.status_token ? `/status/${r.status_token}` : `/lacak?nomor=${r.submission_number}`}
                         className="ui-card flex items-center gap-3 p-3.5 transition-colors hover:bg-[var(--surface-offset)]"
                       >
+                        {r.image_path ? (
+                          <img
+                            src={r.image_path}
+                            alt=""
+                            width={64}
+                            height={64}
+                            loading="lazy"
+                            decoding="async"
+                            className="h-14 w-14 shrink-0 rounded-[10px] object-cover bg-[var(--surface-tint)]"
+                          />
+                        ) : null}
                         <span className="min-w-0 flex-1">
                           <span className="ui-dense font-semibold ui-text-strong block truncate">
                             {r.material_title || r.media_type_slug}
@@ -252,7 +293,10 @@ export default function BerandaPage() {
                               : ''}
                           </span>
                         </span>
-                        <Stamp status={r.status} className="shrink-0" />
+                        <span className="flex shrink-0 flex-col items-end gap-1">
+                          <Stamp status={r.status} />
+                          <span className="ui-meta ui-text-muted">{priceText(r.total_amount)}</span>
+                        </span>
                       </Link>
                     </li>
                   ))}

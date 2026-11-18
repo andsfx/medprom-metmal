@@ -24,7 +24,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { AlertTriangle, ArrowRight, CheckCircle2, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, ArrowRight, CheckCircle2, Loader2, Plus, Trash2, Upload, X } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import MediaPriceTag from './MediaPriceTag';
 import { fetchMediaTypes, searchTenants, submitBatch, errorsFromApiError, uploadFile, fetchPublicSettings } from '../../utils/promoApi';
@@ -1052,15 +1052,6 @@ export default function PromoCetakWizard() {
                     />
                   </div>
                 </div>
-
-                <button
-                  type="button"
-                  onClick={goStep2}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
-                >
-                  Lanjut ke Pilih Media
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </button>
               </div>
             )}
 
@@ -1107,16 +1098,6 @@ export default function PromoCetakWizard() {
                     Batas maksimal {MAX_BATCH_ITEMS} baris media per pengajuan sudah tercapai.
                   </p>
                 )}
-
-                <button
-                  type="button"
-                  onClick={goStep3}
-                  disabled={items.length === 0}
-                  className="ui-btn-primary mt-6 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold"
-                >
-                  Lanjut ke Ringkasan
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </button>
               </div>
             )}
 
@@ -1182,31 +1163,8 @@ export default function PromoCetakWizard() {
                   </ul>
                 </div>
 
-                {/* Blok perhitungan agregat: subtotal / PPN / total. */}
-                <div className="ui-calc mt-4">
-                  <div>
-                    <div className="ui-calc-k">Subtotal</div>
-                    <div className="ui-calc-v">{rupiah(totalSubtotal)}</div>
-                  </div>
-                  <div>
-                    <div className="ui-calc-k">{labelAgregatPpn}</div>
-                    <div className="ui-calc-v">{rupiah(totalPpn)}</div>
-                  </div>
-                  <div>
-                    <div className="ui-calc-k">Total</div>
-                    <div className="ui-calc-v" data-emphasis="true">{rupiah(totalTagihan)}</div>
-                  </div>
-                </div>
-                <p className="mt-2 text-xs ui-text-muted">
-                  Perkiraan; harga final sesuai penawaran Tenant Relations. Penagihan
-                  dilakukan di luar aplikasi ini.
-                </p>
-                {adaTermasukPpn && adaBelumTermasukPpn && (
-                  <p className="mt-1 text-xs ui-text-muted">
-                    Sebagian media harganya sudah termasuk PPN dan sebagian belum; angka PPN di atas adalah
-                    porsi PPN dari seluruh baris.
-                  </p>
-                )}
+                {/* Blok perhitungan agregat pindah ke kotak harga mengambang
+                 * di atas bar aksi - lihat `wizard-pricebox` di akhir halaman. */}
 
                 {/* Bukti pembayaran pajak (opsional). Hanya bila admin menyalakan
                     fiturnya di dashboard. Satu berkas untuk seluruh batch. */}
@@ -1278,12 +1236,85 @@ export default function PromoCetakWizard() {
                 {submitError && (
                   <p className="mt-3 text-xs font-medium text-[color:var(--stamp-no)]" role="alert">{submitError}</p>
                 )}
+              </div>
+            )}
+          </div>
+        )}
 
+        {/* ─── Kotak harga mengambang + bar aksi tetap (prototipe ajukan.html
+         *  `.pricebox` / `.actionbar`), di semua viewport. Konten di bawahnya
+         *  diberi spacer agar tidak tertutup. ─── */}
+        {!loading && !loadError && (
+          <>
+            {step === 3 && (
+              <aside className="wizard-pricebox" aria-label="Ringkasan biaya">
+                <p className="ui-label">Ringkasan biaya</p>
+                {/* Blok perhitungan agregat: subtotal / PPN / total. Total =
+                 * Σ totalAmount (satu sumber kebenaran) - bukan subtotal+PPN. */}
+                <div className="ui-calc mt-2.5">
+                  <div>
+                    <div className="ui-calc-k">Subtotal</div>
+                    <div className="ui-calc-v">{rupiah(totalSubtotal)}</div>
+                  </div>
+                  <div>
+                    <div className="ui-calc-k">{labelAgregatPpn}</div>
+                    <div className="ui-calc-v">{rupiah(totalPpn)}</div>
+                  </div>
+                  <div>
+                    <div className="ui-calc-k">Total</div>
+                    <div className="ui-calc-v" data-emphasis="true">{rupiah(totalTagihan)}</div>
+                  </div>
+                </div>
+                <p className="mt-2 text-xs ui-text-muted">
+                  Perkiraan; harga final sesuai penawaran Tenant Relations. Penagihan
+                  dilakukan di luar aplikasi ini.
+                </p>
+                {adaTermasukPpn && adaBelumTermasukPpn && (
+                  <p className="mt-1 text-xs ui-text-muted">
+                    Sebagian media harganya sudah termasuk PPN dan sebagian belum; angka PPN di atas adalah
+                    porsi PPN dari seluruh baris.
+                  </p>
+                )}
+              </aside>
+            )}
+            <div className="wizard-actionbar">
+              {step > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setStep((s) => (s === 3 ? 2 : 1) as Step)}
+                  className="ui-btn-secondary app-pressable inline-flex min-h-11 shrink-0 items-center gap-1.5 px-4 py-2.5 text-sm font-semibold"
+                >
+                  <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+                  Kembali
+                </button>
+              )}
+              {step === 1 && (
+                <button
+                  type="button"
+                  onClick={goStep2}
+                  className="ui-btn-primary app-pressable inline-flex min-h-11 flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                >
+                  Lanjut ke Pilih Media
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
+              {step === 2 && (
+                <button
+                  type="button"
+                  onClick={goStep3}
+                  disabled={items.length === 0}
+                  className="ui-btn-primary app-pressable inline-flex min-h-11 flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold"
+                >
+                  Lanjut ke Ringkasan
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </button>
+              )}
+              {step === 3 && (
                 <button
                   type="button"
                   onClick={() => void handleSubmit()}
                   disabled={submitState === 'sending' || !termsAccepted}
-                  className="ui-btn-primary mt-4 inline-flex w-full items-center justify-center gap-2 px-5 py-3 text-sm font-semibold disabled:opacity-50"
+                  className="ui-btn-primary app-pressable inline-flex min-h-11 flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-semibold disabled:opacity-50"
                 >
                   {submitState === 'sending' ? (
                     <>
@@ -1294,9 +1325,14 @@ export default function PromoCetakWizard() {
                     <>Kirim Pengajuan ({dipilih} media)</>
                   )}
                 </button>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+            <div
+              className="wizard-actionbar-spacer"
+              data-priced={step === 3 ? 'true' : 'false'}
+              aria-hidden="true"
+            />
+          </>
         )}
       </div>
     </AppShell>

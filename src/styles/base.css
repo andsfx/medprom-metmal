@@ -1347,6 +1347,75 @@ html {
   background-clip: content-box;
 }
 
+/* Bar aksi tetap wizard (prototipe ajukan.html `.actionbar`): Kembali /
+ * Lanjut / Kirim selalu terjangkau jempol di semua viewport, dengan latar
+ * tembus pandang supaya isi yang menggulir di baliknya tetap terbaca.
+ * Halaman wizard memakai `hideTabBar`, jadi bar ini sendirian di dasar. */
+.wizard-actionbar {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: var(--app-content-max, 42rem);
+  padding: 0.75rem 1rem calc(0.75rem + var(--safe-bottom));
+  background: color-mix(in srgb, var(--bg) 94%, transparent);
+  backdrop-filter: blur(12px);
+  border-top: var(--rule);
+  display: flex;
+  gap: 0.625rem;
+  z-index: 30;
+}
+
+/* Tinggi bar (0.75rem + tombol 2.75rem + 0.75rem) - konstanta yang dipakai
+ * spacer konten dan posisi kotak harga agar keduanya selaras tanpa JS. */
+.wizard-actionbar,
+.wizard-actionbar-spacer,
+.wizard-pricebox {
+  --wizard-bar-h: 4.25rem;
+}
+
+/* Spacer: isi halaman diberi ruang di bawah agar tidak tertutup bar tetap.
+ * Varian `-with-price` menambah ruang kotak harga mengambang di atasnya. */
+.wizard-actionbar-spacer {
+  height: calc(var(--wizard-bar-h, 4.25rem) + var(--safe-bottom));
+}
+
+.wizard-actionbar-spacer[data-priced='true'] {
+  height: calc(var(--wizard-bar-h, 4.25rem) + 9.5rem + var(--safe-bottom));
+}
+
+/* Kotak "Ringkasan biaya" mengambang (prototipe `.pricebox`): kartu kecil
+ * melayang tepat di atas bar aksi, mengikuti pengguna sampai langkah
+ * berakhir. Muncul di langkah ringkasan kedua wizard. */
+.wizard-pricebox {
+  position: fixed;
+  bottom: calc(var(--wizard-bar-h, 4.25rem) + var(--safe-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  width: calc(100% - 2rem);
+  max-width: calc(var(--app-content-max, 42rem) - 2rem);
+  border: var(--rule);
+  border-radius: var(--radius-card);
+  padding: 0.75rem 1rem;
+  background: var(--bg);
+  box-shadow: var(--elevation-fab);
+  z-index: 25;
+}
+
+.wizard-pricebox .ui-calc {
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wizard-pricebox,
+  .wizard-actionbar {
+    backdrop-filter: none;
+  }
+}
+
 /* Tautan dalam prosa: garis bawah yang tidak menempel di descender. */
 .ui-prose a {
   color: var(--action);

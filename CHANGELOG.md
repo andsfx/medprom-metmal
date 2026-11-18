@@ -5,6 +5,16 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
 ### Ditambahkan
+- **Bar aksi tetap + kotak "Ringkasan biaya" mengambang di kedua wizard
+  (paritas prototype `ajukan.html`), semua viewport.** Tombol Kembali /
+  Lanjut / Kirim kini terdock di dasar layar (`.wizard-actionbar`, `position:
+  fixed` + blur latar), dan di langkah ringkasan kotak subtotal/PPN/total
+  melayang tepat di atasnya (`.wizard-pricebox`, hanya langkah 3). Spacer
+  (`.wizard-actionbar-spacer`, varian `data-priced`) menjaga konten tidak
+  tertutup bar. Tinggi bar dikunci via `--wizard-bar-h: 4.25rem` sehingga
+  spacer dan posisi kotak harga selaras tanpa JS. Berlaku untuk wizard digital
+  (`PromoUploadWizard`) dan cetak (`PromoCetakWizard`) di desktop sekaligus
+  mobile, sesuai keputusan pengguna.
 - **Beranda tenant baru di `/` (migrasi prototype Open Design).** Halaman utama
   tenant kini ringkasan kerja, bukan katalog langsung: empat sel status
   (Menunggu Review, Perlu Revisi, Siap Dipasang, Selesai), aksi cepat
@@ -45,7 +55,18 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
     VERBATIM (`mediaPrice`; tangga tarif ditampilkan semua barisnya), tanpa
     total hitung karena deck digital tidak mengatur prorata/qty — perhitungan
     presisi hanya sah untuk kanal cetak.
-- **Katalog & beranda: enam gap paritas prototype ditutup.** Kotak cari katalog ("Cari media, lokasi, atau ukuran"), sabuk chip filter kategori dengan jumlah (Semua/Outdoor/Indoor/Media Sosial), catatan "Menampilkan N dari N media", nama handler kanal di kartu media ("Cetak · Tenant Relations" / "Digital · Marcom"), hint "Perpanjangan diajukan paling lambat 7 hari sebelum berakhir" di blok periode hampir berakhir, dan tahun berjalan pada label sel "Selesai". Pencarian dan filter murni sisi-klien di atas katalog yang sudah termuat; tanpa perubahan server.
+- **Katalog & beranda: enam gap paritas prototype ditutup.** Kotak cari katalog ("Cari media, lokasi, atau ukuran"), sabuk chip filter kategori dengan jumlah (Semua/Outdoor/Indoor/Media Sosial), catatan "Menampilkan N dari N media", nama handler kanal di kartu media ("Cetak · Tenant Relations" / "Digital · Marcom"),   hint "Perpanjangan diajukan paling lambat 7 hari sebelum berakhir" di blok periode hampir berakhir, dan tahun berjalan pada label sel "Selesai". Pencarian dan filter murni sisi-klien di atas katalog yang sudah termuat; tanpa perubahan server.
+- **Dua gap paritas beranda terakhir ditutup (B5 + B7).** Baris "Pengajuan
+  terbaru" kini menampilkan foto contoh media (`image_path`, di-join dari
+  `promo_media_types`) dan harga (`total_amount`; nominal "Rp 4.200.000" atau
+  "Gratis" untuk media tanpa harga). Kartu "Perlu tindakan" mengganti nomor
+  pengajuan dengan aktor + waktu: "Diminta {admin} · 16 Nov 2026, 14:32"
+  untuk perlu revisi dan "Dikirim · …" untuk menunggu review. Di server,
+  `GET /promo/summary` kini ikut mengirim `created_at`, `reviewed_at`,
+  `reviewed_by_name` (LEFT JOIN `users`), dan `GET /promo/submissions/mine`
+  ikut mengirim `image_path` (LEFT JOIN `promo_media_types`). Kedua query
+  memakai alias tabel (`s`) karena `created_at` juga ada di `users`
+  (kolom ambigu bila tidak dikualifikasi).
 
 ### Diubah
 - **Dunia visual berganti ke "Akromatik Tinta".** Arah "Airbnb Rausch"
