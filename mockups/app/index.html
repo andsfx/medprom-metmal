@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metmal — Preview app mobile (tiga arah)</title>
+<style>
+  :root{--bg:#0d0d0f;--card:#17171a;--text:#f2efe9;--muted:#9a958c;--line:rgba(255,255,255,.1)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+  header{padding:26px 28px 8px}
+  h1{font-size:19px;margin:0 0 6px;letter-spacing:-.01em}
+  p{margin:0;color:var(--muted);font-size:13px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;padding:20px 28px 34px;align-items:start}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .col h2{font-size:13px;margin:0;padding:11px 13px;border-bottom:1px solid var(--line);font-weight:600}
+  .col h2 span{color:var(--muted);font-weight:400}
+  .frame{height:690px;overflow:hidden;position:relative;background:#000}
+  .frame iframe{width:390px;height:844px;border:0;transform:scale(.817);transform-origin:0 0;pointer-events:none}
+  .col a{display:block;padding:10px 13px;font-size:12.5px;color:#8fd3c9;text-decoration:none;border-top:1px solid var(--line)}
+  .col a:hover{background:rgba(255,255,255,.04)}
+  @media (max-width:1000px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Preview app mobile — tiga arah visual</h1>
+  <p>Layar katalog 390×844. Buka versi penuh untuk menggulir dan mencoba hover.</p>
+</header>
+<div class="grid">
+  <div class="col">
+    <h2>A · Papan Petunjuk <span>— signage</span></h2>
+    <div class="frame"><iframe src="a/index.html" title="App A" loading="lazy"></iframe></div>
+    <a href="a/index.html">Buka A penuh →</a>
+  </div>
+  <div class="col">
+    <h2>B · Etalase Malam <span>— foto</span></h2>
+    <div class="frame"><iframe src="b/index.html" title="App B" loading="lazy"></iframe></div>
+    <a href="b/index.html">Buka B penuh →</a>
+  </div>
+  <div class="col">
+    <h2>C · Lembar Katalog <span>— tabel</span></h2>
+    <div class="frame"><iframe src="c/index.html" title="App C" loading="lazy"></iframe></div>
+    <a href="c/index.html">Buka C penuh →</a>
+  </div>
+</div>
+</body>
+</html>

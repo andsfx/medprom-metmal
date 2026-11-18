@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A · Papan Petunjuk — app</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{--ink:#141412;--paper:#f1efea;--signal:#f5c400;--muted:#6f6a60;--line:#d5d1c6;--white:#fff}
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{background:#dcd8cf;display:grid;place-items:center;font-family:"Barlow",system-ui,sans-serif;color:var(--ink)}
+  .phone{width:390px;height:844px;background:var(--paper);position:relative;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 24px 60px rgba(0,0,0,.25)}
+  .statusbar{height:32px;display:flex;align-items:center;justify-content:space-between;padding:0 18px;font-size:12px;font-weight:600;color:var(--paper);background:var(--ink)}
+  .statusbar .icons{display:flex;gap:5px;align-items:center}
+  .appbar{background:var(--ink);color:var(--paper);padding:0 16px 12px;display:flex;align-items:center;justify-content:space-between}
+  .appbar h1{font-family:"Barlow Condensed",sans-serif;font-size:26px;text-transform:uppercase;letter-spacing:.02em;margin:0}
+  .appbar .act{width:38px;height:38px;border:2px solid color-mix(in srgb,var(--paper) 45%,transparent);display:grid;place-items:center}
+  main{flex:1;overflow:hidden;padding:14px 0 0}
+  .facts{display:grid;grid-template-columns:1fr 1fr 1fr;border-bottom:2px solid var(--ink);margin:0 16px;padding-bottom:10px}
+  .facts div{border-right:1px solid var(--line);padding-right:8px}
+  .facts div:last-child{border-right:0;padding-left:10px}
+  .facts div:nth-child(2){padding-left:10px}
+  .facts b{display:block;font-family:"Barlow Condensed",sans-serif;font-size:26px;font-weight:700;line-height:1}
+  .facts span{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600}
+  .chips{display:flex;gap:8px;padding:12px 16px;overflow:hidden}
+  .chip{border:2px solid var(--ink);padding:6px 12px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+  .chip.on{background:var(--ink);color:var(--paper)}
+  .cat{background:var(--ink);color:var(--paper);display:flex;justify-content:space-between;align-items:center;padding:7px 16px;margin-top:2px}
+  .cat h2{font-family:"Barlow Condensed",sans-serif;font-size:17px;text-transform:uppercase;letter-spacing:.08em;margin:0;display:flex;align-items:center;gap:8px}
+  .cat .idx{background:var(--signal);color:var(--ink);padding:0 6px;font-size:13px}
+  .cat span{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#bdb8ab}
+  ul{list-style:none;margin:0;padding:0 16px}
+  li{display:grid;grid-template-columns:26px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+  li .n{font-family:"Barlow Condensed",sans-serif;font-size:13px;color:var(--muted)}
+  li .name{font-family:"Barlow Condensed",sans-serif;font-size:19px;font-weight:600;text-transform:uppercase;line-height:1.05}
+  li .meta{font-size:11.5px;color:var(--muted);margin-top:2px}
+  li .price{font-family:"Barlow Condensed",sans-serif;font-size:17px;font-weight:600;text-align:right;white-space:nowrap}
+  li .price small{display:block;font-family:"Barlow",sans-serif;font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500}
+  .tabbar{position:absolute;left:0;right:0;bottom:0;height:74px;background:var(--ink);display:grid;grid-template-columns:repeat(4,1fr);padding-bottom:12px;border-top:3px solid var(--signal)}
+  .tab{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;color:#8f897c;font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+  .tab.on{color:var(--paper)}
+  .tab.on .ic{background:var(--signal);color:var(--ink)}
+  .ic{width:26px;height:24px;display:grid;place-items:center}
+  .tab.on::after{content:"";position:absolute;bottom:0}
+  .fab{position:absolute;right:16px;bottom:90px;width:52px;height:52px;background:var(--signal);color:var(--ink);display:grid;place-items:center;box-shadow:0 6px 0 var(--ink);font-size:22px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span class="icons"><svg width="15" height="10" viewBox="0 0 15 10" fill="currentColor"><rect x="0" y="6" width="2.5" height="4"/><rect x="4" y="4" width="2.5" height="6"/><rect x="8" y="2" width="2.5" height="8"/><rect x="12" y="0" width="2.5" height="10"/></svg><svg width="16" height="10" viewBox="0 0 16 10" fill="none" stroke="currentColor" stroke-width="1.2"><rect x=".6" y=".6" width="12" height="8.8" rx="2"/><rect x="2" y="2" width="9" height="6" fill="currentColor" stroke="none"/><path d="M14 3.5v3"/></svg></span></div>
+
+  <header class="appbar">
+    <h1>Katalog</h1>
+    <div class="act"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg></div>
+  </header>
+
+  <main>
+    <div class="facts">
+      <div><b>13</b><span>Media aktif</span></div>
+      <div><b>5</b><span>Gratis</span></div>
+      <div><b>7 hari</b><span>Min. cetak</span></div>
+    </div>
+
+    <div class="chips">
+      <span class="chip on">Semua</span>
+      <span class="chip">Outdoor</span>
+      <span class="chip">Indoor</span>
+      <span class="chip">Sosial</span>
+    </div>
+
+    <div class="cat"><h2><span class="idx">01</span>Outdoor</h2><span>5 media</span></div>
+    <ul>
+      <li><span class="n">01</span><span><span class="name">Spanduk</span><div class="meta">0.9 × 6 m · sisi pintu tol</div></span><span class="price">Rp 70.000<small>per hari</small></span></li>
+      <li><span class="n">02</span><span><span class="name">Big Banner</span><div class="meta">5 × 10 m · sisi pintu tol</div></span><span class="price">Rp 160.000<small>per hari</small></span></li>
+      <li><span class="n">03</span><span><span class="name">Umbul-Umbul</span><div class="meta">0.9 × 4.8 m · 16 tiang</div></span><span class="price">Rp 288.000<small>per hari</small></span></li>
+      <li><span class="n">04</span><span><span class="name">Boom Gate</span><div class="meta">45 × 100 cm · 16 unit</div></span><span class="price" style="font-size:14px">Hubungi TR<small>tarif menyusul</small></span></li>
+      <li><span class="n">05</span><span><span class="name">LED Banner</span><div class="meta">600 × 1350 px · depan mall</div></span><span class="price" style="font-size:14px">Gratis<small>tenant baru</small></span></li>
+    </ul>
+
+    <div class="cat"><h2><span class="idx">02</span>Indoor</h2><span>6 media</span></div>
+    <ul>
+      <li><span class="n">06</span><span><span class="name">Videotron</span><div class="meta">800 × 600 px · 30 detik</div></span><span class="price">Rp 600.000<small>per hari</small></span></li>
+      <li><span class="n">07</span><span><span class="name">Digital Poster</span><div class="meta">1920 × 1080 px · 7 titik</div></span><span class="price" style="font-size:14px">Gratis<small>1 materi</small></span></li>
+    </ul>
+  </main>
+
+  <a class="fab" href="#" aria-label="Ajukan">+</a>
+  <nav class="tabbar">
+    <span class="tab on"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6"/><rect x="9" y="1" width="6" height="6"/><rect x="1" y="9" width="6" height="6"/><rect x="9" y="9" width="6" height="6"/></svg></span>Katalog</span>
+    <span class="tab"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2v12M2 8h12"/></svg></span>Ajukan</span>
+    <span class="tab"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg></span>Lacak</span>
+    <span class="tab"><span class="ic"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M2.5 3h11v10h-11z"/><path d="M4.5 6h7M4.5 9h5"/></svg></span>Riwayat</span>
+  </nav>
+</div>
+</body>
+</html>

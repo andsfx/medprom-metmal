@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Metmal — Preview tiga arah visual</title>
+<style>
+  :root{--bg:#101012;--card:#17171a;--text:#f2efe9;--muted:#9a958c;--line:rgba(255,255,255,.1)}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,sans-serif}
+  header{padding:28px 28px 10px}
+  h1{font-size:20px;margin:0 0 6px;letter-spacing:-.01em}
+  p{margin:0;color:var(--muted);font-size:13.5px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;padding:22px 28px 36px;align-items:start}
+  .col{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  .col h2{font-size:13px;margin:0;padding:12px 14px;border-bottom:1px solid var(--line);font-weight:600}
+  .col h2 span{color:var(--muted);font-weight:400}
+  .frame{height:422px;overflow:hidden;position:relative;background:#fff}
+  .frame iframe{width:1280px;height:1500px;border:0;transform-origin:0 0;pointer-events:none}
+  .col a{display:block;padding:10px 14px;font-size:12.5px;color:#8fd3c9;text-decoration:none;border-top:1px solid var(--line)}
+  .col a:hover{background:rgba(255,255,255,.04)}
+  .scale-a iframe{transform:scale(.28125)}
+  .scale-b iframe{transform:scale(.28125)}
+  .scale-c iframe{transform:scale(.28125)}
+  @media (max-width:1000px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Preview tiga arah visual — landing</h1>
+  <p>Klik judul untuk membuka versi penuh (iframe non-interaktif; buka tautan untuk menggulir &amp; mencoba hover).</p>
+</header>
+<div class="grid">
+  <div class="col">
+    <h2>A · Papan Petunjuk <span>— signage</span></h2>
+    <div class="frame scale-a"><iframe src="a-papan-petunjuk/index.html" title="Arah A" loading="lazy" scrolling="no"></iframe></div>
+    <a href="a-papan-petunjuk/index.html">Buka A penuh →</a>
+  </div>
+  <div class="col">
+    <h2>B · Etalase Malam <span>— foto</span></h2>
+    <div class="frame scale-b"><iframe src="b-etalase-malam/index.html" title="Arah B" loading="lazy" scrolling="no"></iframe></div>
+    <a href="b-etalase-malam/index.html">Buka B penuh →</a>
+  </div>
+  <div class="col">
+    <h2>C · Lembar Katalog <span>— tabel</span></h2>
+    <div class="frame scale-c"><iframe src="c-lembar-katalog/index.html" title="Arah C" loading="lazy" scrolling="no"></iframe></div>
+    <a href="c-lembar-katalog/index.html">Buka C penuh →</a>
+  </div>
+</div>
+</body>
+</html>
