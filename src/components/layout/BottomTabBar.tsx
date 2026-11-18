@@ -11,27 +11,49 @@
  * bar"). Keduanya membaca `NAV_ITEMS` agar tidak pernah lepas sinkron.
  */
 import { Link, useLocation } from 'react-router-dom';
-import { NAV_ITEMS, isNavItemActive } from './navItems';
+import { NAV_ITEMS, FAB_ITEM, isNavItemActive } from './navItems';
 
+/**
+ * Tab bar tenant: empat tujuan + FAB "Ajukan" di tengah (IA prototype).
+ * Urutan NAV_ITEMS = [Beranda, Katalog, Riwayat, Lacak]; tab pertama (kiri)
+ * Beranda+Katalog, tab kedua (kanan) Riwayat+Lacak, FAB di antaranya.
+ */
 export default function BottomTabBar() {
   const { pathname } = useLocation();
+  const left = NAV_ITEMS.slice(0, 2);
+  const right = NAV_ITEMS.slice(2);
 
   return (
     <nav className="app-tabbar" aria-label="Navigasi utama">
-      {NAV_ITEMS.map(({ to, label, Icon }) => {
-        const active = isNavItemActive(to, pathname);
-        return (
-          <Link
-            key={to}
-            to={to}
-            className="app-tab app-pressable ui-focus-ring"
-            aria-current={active ? 'page' : undefined}
-          >
-            <Icon className="h-5 w-5" aria-hidden="true" strokeWidth={active ? 2.4 : 1.8} />
-            {label}
-          </Link>
-        );
-      })}
+      {left.map(({ to, label, Icon }) => (
+        <Tab key={to} to={to} label={label} Icon={Icon} pathname={pathname} />
+      ))}
+      <Link
+        to={FAB_ITEM.to}
+        className="app-fab app-pressable ui-focus-ring"
+        aria-label={`${FAB_ITEM.label} materi baru`}
+      >
+        <FAB_ITEM.Icon className="h-6 w-6" aria-hidden="true" strokeWidth={2} />
+      </Link>
+      {right.map(({ to, label, Icon }) => (
+        <Tab key={to} to={to} label={label} Icon={Icon} pathname={pathname} />
+      ))}
     </nav>
+  );
+}
+
+function Tab({ to, label, Icon, pathname }: {
+  to: string; label: string; Icon: typeof NAV_ITEMS[number]['Icon']; pathname: string;
+}) {
+  const active = isNavItemActive(to, pathname);
+  return (
+    <Link
+      to={to}
+      className="app-tab app-pressable ui-focus-ring"
+      aria-current={active ? 'page' : undefined}
+    >
+      <Icon className="h-5 w-5" aria-hidden="true" strokeWidth={active ? 2.4 : 1.8} />
+      {label}
+    </Link>
   );
 }

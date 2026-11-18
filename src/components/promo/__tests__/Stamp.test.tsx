@@ -10,12 +10,13 @@ describe('Stamp', () => {
     expect(screen.getByText('Perlu Revisi')).toBeInTheDocument();
   });
 
-  it('memberi nada warna yang membedakan hasil akhir', () => {
-    // Disetujui = hijau, perlu revisi = amber, ditolak = merah, sisanya tinta.
+  it('memberi nada warna yang membedakan tiap hasil akhir', () => {
+    // Disetujui = hijau, perlu revisi = amber, ditolak = merah, menunggu = biru;
+    // siap/terpasang/selesai punya nada sendiri (MIGRATION.md W2 opsi B).
     expect(stampTone('disetujui')).toBe('ok');
-    expect(stampTone('siap_dipasang')).toBe('ok');
-    expect(stampTone('sudah_dipasang')).toBe('ok');
-    expect(stampTone('selesai')).toBe('ok');
+    expect(stampTone('siap_dipasang')).toBe('siap');
+    expect(stampTone('sudah_dipasang')).toBe('pasang');
+    expect(stampTone('selesai')).toBe('done');
     expect(stampTone('perlu_revisi')).toBe('rev');
     expect(stampTone('ditolak')).toBe('no');
     expect(stampTone('menunggu_review')).toBe('wait');
@@ -37,7 +38,7 @@ describe('Stamp', () => {
     for (const [kode, label] of Object.entries(STATUS_LABELS)) {
       const { unmount } = render(<Stamp status={kode} />);
       expect(screen.getByText(label)).toBeInTheDocument();
-      expect(['ok', 'rev', 'no', 'wait']).toContain(stampTone(kode));
+      expect(['ok', 'rev', 'no', 'wait', 'siap', 'pasang', 'done']).toContain(stampTone(kode));
       unmount();
     }
   });

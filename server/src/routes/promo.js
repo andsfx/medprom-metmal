@@ -583,6 +583,84 @@ router.get('/submissions/mine', async (req, res, next) => {
     return next(err);
   }
 });
+// GET /promo/summary - ringkasan beranda tenant per perangkat.
+//
+// Satu panggilan untuk tiga blok beranda (`BerandaPage`): ringkasan status,
+// pengajuan yang perlu tindakan, dan periode tayang yang hampir berakhir.
+// Batas kepercayaan SAMA dengan `/submissions/mine`: akses digerbangi
+// fingerprint perangkat dan respons memuat `status_token` (kredensial tautan
+// status), jadi rate limit ikut sama (60/15 mnt/IP) dan token tidak pernah
+// dikirim pada jalur publik non-fingerprint.
+//
+// Semua angka dihitung SERVER dari baris milik perangkat ini; klien tidak
+// dipercaya. `air_end_date` dibandingkan `CURRENT_DATE` supaya hanya periode
+// yang masih berjalan atau akan datang yang muncul; ambang "14 hari" adalah
+// urusan tampilan klien, bukan filter server.
+const ACTION_STATUSES = ['menunggu_review', 'perlu_revisi'];
+const ACTIVE_STATUSES = ['disetujui', 'siap_dipasang', 'sudah_dipasang'];
+
+router.get('/summary', async (req, res, next) => {
+  if (!enforceRateLimit(req, res, 'promo-summary', 60, 15 * 60 * 1000)) return;
+
+  const fingerprint = String(req.query?.fingerprint || '').trim();
+  if (!fingerprint) {
+    return res.status(400).json({ success: false, error: 'Fingerprint perangkat wajib diisi.' });
+  }
+  try {
+    // 1) Ringkasan status: satu GROUP BY (bukan 8 COUNT) supaya query tetap
+    //    satu dan angka-angka konsisten satu sama lain.
+    const { rows: statusRows } = await db.query(
+      `SELECT status, count(*)::int AS n
+         FROM promo_submissions
+        WHERE device_fingerprint = $1
+        GROUP BY status`,
+      [fingerprint],
+    );
+    const byStatus = {};
+    let total = 0;
+    for (const r of statusRows) {
+      byStatus[r.status] = r.n;
+      total += r.n;
+    }
+
+    // 2) Perlu tindakan: pengajuan TERBARU yang menunggu review/revisi.
+    const { rows: actionRows } = await db.query(
+      `SELECT submission_number, status_token, status, media_type_slug,
+              material_title, review_notes
+         FROM promo_submissions
+        WHERE device_fingerprint = $1 AND status = ANY($2::text[])
+        ORDER BY created_at DESC
+        LIMIT 1`,
+      [fingerprint, ACTION_STATUSES],
+    );
+
+    // 3) Periode hampir berakhir: disetujui/siap/terpasang dengan tanggal
+    //    akhir masih aktif, terdekat dulu. LIMIT 6 membatasi muatan respons
+    //    tanpa menebak ambang hari di server (itu urusan tampilan).
+    const { rows: expiringRows } = await db.query(
+      `SELECT submission_number, status_token, status, media_type_slug,
+              material_title, air_end_date
+         FROM promo_submissions
+        WHERE device_fingerprint = $1 AND status = ANY($2::text[])
+          AND air_end_date IS NOT NULL AND air_end_date >= CURRENT_DATE
+        ORDER BY air_end_date ASC
+        LIMIT 6`,
+      [fingerprint, ACTIVE_STATUSES],
+    );
+
+    return res.json({
+      success: true,
+      data: {
+        by_status: byStatus,
+        total,
+        needing_action: actionRows[0] ?? null,
+        expiring_soon: expiringRows,
+      },
+    });
+  } catch (err) {
+    return next(err);
+  }
+});
 
 // GET /promo/submissions/track?number= - lacak via nomor pengajuan.
 // Jalur kedua bagi tenant tanpa tautan: cukup masukkan nomor `MP-YYMMDD-XXXXXX`

@@ -16,10 +16,11 @@
  * untuk semua rute, mengikuti pola status pemuatan yang sudah dipakai repo
  * (`role="status"` + ikon berputar + teks untuk pembaca layar).
  */
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useState } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 
+const BerandaPage = lazy(() => import('./components/promo/BerandaPage'));
 const PromoLandingPage = lazy(() => import('./components/promo/PromoLandingPage'));
 const PromoUploadWizard = lazy(() => import('./components/promo/PromoUploadWizard'));
 const PromoCetakWizard = lazy(() => import('./components/promo/PromoCetakWizard'));
@@ -27,8 +28,40 @@ const BatchStatusPage = lazy(() => import('./components/promo/BatchStatusPage'))
 const MySubmissionsPage = lazy(() => import('./components/promo/MySubmissionsPage'));
 const SubmissionStatusPage = lazy(() => import('./components/promo/SubmissionStatusPage'));
 const TrackSubmissionPage = lazy(() => import('./components/promo/TrackSubmissionPage'));
+const OnboardingPage = lazy(() => import('./components/promo/OnboardingPage'));
 const AdminLoginPage = lazy(() => import('./components/admin/AdminLoginPage'));
 const AdminDashboardPage = lazy(() => import('./components/admin/AdminDashboardPage'));
+import { ONBOARDING_KEY } from './constants/onboarding';
+
+/** Sudah melalui onboarding? Bila localStorage diblokir, anggap sudah (fallback). */
+function isOnboarded(): boolean {
+  try {
+    return localStorage.getItem(ONBOARDING_KEY) === '1';
+  } catch {
+    return true;
+  }
+}
+
+/**
+ * Gate rute `/`: kunjungan pertama menampilkan onboarding, kemudian home =
+ * Beranda (bukan katalog — IA baru; katalog pindah ke `/katalog`). State
+ * lokal (bukan navigasi) supaya perpindahan onboarding → beranda tidak
+ * menumpuk entri riwayat maupun memicu navigasi ke path yang sama.
+ */
+function HomeGate() {
+  const [onboarded, setOnboarded] = useState(() => isOnboarded());
+  if (!onboarded) {
+    return (
+      <OnboardingPage
+        onFinish={() => {
+          try { localStorage.setItem(ONBOARDING_KEY, '1'); } catch { /* abaikan */ }
+          setOnboarded(true);
+        }}
+      />
+    );
+  }
+  return <BerandaPage />;
+}
 
 /**
  * Tampilan selagi chunk rute diunduh.
@@ -52,7 +85,8 @@ export default function App() {
   return (
     <Suspense fallback={<RouteFallback />}>
       <Routes>
-        <Route path="/" element={<PromoLandingPage />} />
+        <Route path="/" element={<HomeGate />} />
+        <Route path="/katalog" element={<PromoLandingPage />} />
         <Route path="/ajukan" element={<PromoUploadWizard />} />
         <Route path="/ajukan-cetak" element={<PromoCetakWizard />} />
         <Route path="/batch/:token" element={<BatchStatusPage />} />

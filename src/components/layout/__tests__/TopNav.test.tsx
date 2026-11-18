@@ -74,7 +74,7 @@ describe('navigasi utama — desktop vs mobile', () => {
 
     const nav = screen.getByRole('navigation', { name: 'Navigasi utama' });
     expect(within(nav).getByRole('link', { name: 'Lacak' })).toHaveAttribute('href', '/lacak');
-    for (const label of ['Katalog', 'Ajukan', 'Riwayat']) {
+    for (const label of ['Beranda', 'Katalog', 'Riwayat']) {
       expect(within(nav).getByRole('link', { name: label })).toBeInTheDocument();
     }
   });

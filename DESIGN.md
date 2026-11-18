@@ -6,7 +6,8 @@
 > **kode menang** dan dokumen wajib diperbaiki.
 > **Dibuat:** 2026-09-16 · **Ditulis ulang:** 2026-09-24 (dokumen kerja) ·
 > **Ditulis ulang:** 2026-09-30 (daftar kerja seluler) ·
-> **Ditulis ulang:** 2026-11-17 (Airbnb Rausch, **diterapkan ke kode**).
+> **Ditulis ulang:** 2026-11-17 (Airbnb Rausch) ·
+> **Ditulis ulang:** 2026-11-18 (Akromatik Tinta, **diterapkan ke kode**).
 
 ## Arah Desain
 
@@ -14,42 +15,34 @@ Medprom adalah **katalog dan alur kerja**, bukan dokumen kerja. Tenant membuka
 ponsel untuk menjawab tiga hal: media apa saja yang ada, berapa harganya, dan
 sudah sampai mana pengajuannya.
 
-Arah: **Airbnb — kanvas putih bersih dengan satu tegangan warna.** Kontrak
-mengikuti DESIGN.md Airbnb (awesome-design-md): putih murni `#ffffff` sebagai
-lantai setiap halaman, tinta nyaris hitam `#222222` untuk judul dan isi, dan
-**Rausch `#ff385c`** sebagai satu-satunya warna aksen — setiap CTA primer,
-orb pencarian, hati tersimpan, dan tautan merek. Tidak ada warna aksen kedua.
-Sebagian besar halaman adalah 90% putih + tinta dengan satu-dua momen Rausch.
+Arah: **Akromatik Tinta — kertas putih, garis rambut, dan tinta sebagai aksen.**
+Kanvas putih `#ffffff`, tinta nyaris hitam `#222222` untuk judul dan isi, dan
+**tidak ada warna aksen kedua**: CTA primer adalah blok tinta (teks putih di
+atasnya), tab aktif bertinta, FAB bertinta. Satu-satunya warna di antarmuka
+datang dari **tujuh stempel keadaan pekerjaan** — kebenaran produk, bukan
+dekorasi. Sebagian besar halaman adalah putih + tinta + garis rambut.
 
-Bentuk bahasa: **lunak**. Tombol 8px, kartu ~14px, pencarian pil penuh
-(`9999px`), tanpa sudut keras di mana pun kecuali kisi isi. Elevasi hanya
-**satu tier bayangan** (`rgba(0,0,0,.02) 0 0 0 1px, rgba(0,0,0,.04) 0 2px 6px,
-rgba(0,0,0,.1) 0 4px 8px`) — kedalaman datang dari fotografi, pemisahan
-putih-di-atas-putih, dan pembulatan, bukan bayangan berlapis.
-
-**Menggantikan** arah "Daftar Kerja Seluler" (2026-09-30, akromatik, garis
-rambut, angka memimpin). Alasan penggantian: dunia akromatik tidak punya satu
-pun momen warna untuk menandai aksi — CTA hitam tidak bisa dibedakan dari teks
-tebal, dan "di mana saya menekan?" adalah pertanyaan yang harus dijawab tanpa
-membaca. Rausch menjawabnya sekali lihat.
+**Menggantikan** arah "Airbnb Rausch" (2026-11-17). Alasan penggantian:
+keputusan migrasi prototype Open Design (visual achromatic) — jawaban pengguna
+atas konflik arah Rausch vs palet tinta prototype. Prototype adalah acuan
+visual; repo tetap sumber kebenaran.
 
 **Kalimat uji dunia.** Kalau seluruh teks halaman dihapus, yang tersisa harus
-tetap terbaca sebagai **marketplace lunak**: kartu putih dengan sudut membulat,
-satu titik Rausch pada setiap tindakan utama, dan bayangan tipis pada elemen
-yang melayang. Bukan dokumen kerja, bukan kartu abu.
+tetap terbaca sebagai **daftar kerja yang tenang**: kertas putih dengan garis
+rambut, angka sebagai elemen terbesar di barisnya, blok tinta pada setiap
+tindakan utama, dan warna hanya pada stempel keadaan.
 
 ## Kata Kunci Visual
 
-- putih bersih · tinta `#222222` · **satu Rausch**
-- pil penuh untuk pencarian dan lencana
-- sudut lunak berjenjang: 8px kontrol, 14px kartu, 20px sheet
-- satu tier bayangan · tidak ada bayangan berlapis
-- momen Rausch: CTA primer, tab aktif, titik "sekarang"
+- kertas putih · tinta `#222222` · tanpa warna aksen kedua
+- garis rambut sebagai pemisah · bukan kartu berbingkai di ponsel
+- angka memimpin baris (ukuran, bukan warna)
+- momen tinta: CTA primer, tab aktif, FAB, titik "sekarang"
+- warna = stempel keadaan pekerjaan (tujuh nada terukur AA)
 
 ## Tipografi
 
-Satu rupa untuk semua peran: **Inter** (substitusi resmi Airbnb untuk
-Cereal VF yang berlisensi; fallback system stack).
+Satu rupa untuk semua peran: **Inter** (fallback system stack).
 
 ```
 Inter · wght 400;500;600;700
@@ -82,7 +75,7 @@ bukan `text-3xl` ad-hoc.
 
 ## Warna
 
-Palet **putih + tinta + Rausch**, plus stempel keadaan.
+Palet **kertas + tinta**, plus tujuh stempel keadaan.
 
 | Peran | Token | Nilai | Catatan |
 |---|---|---|---|
@@ -95,26 +88,28 @@ Palet **putih + tinta + Rausch**, plus stempel keadaan.
 | Muted | `--ink-muted` | `#6a6a6a` | label; 5,4:1 di atas putih |
 | Hairline | `--rule-color` | `#ebebeb` | pemisah editorial |
 | Tepi kontrol | `--rule-strong` | `#929292` | **3,11:1** (WCAG 1.4.11) |
-| **Aksi** | `--action` | `#e00b41` | Rausch Active; teks putih di atasnya 4,9:1 |
-| Aksi tekan | `--action-strong` | `#b30026` | hover/active |
-| Aksi lembut | `--action-soft` | `#ffd1da` | halo titik "sekarang" |
+| **Aksi** | `--action` | `#222222` | blok tinta; teks putih di atasnya 15,9:1 |
+| Aksi tekan | `--action-strong` | `#111111` | hover/active |
+| Aksi lembut | `--action-soft` | `#f2f2f2` | halo/latar tenang |
 
-**Kenapa `--action` bukan `#ff385c` persis.** Rausch asli hanya 3,5:1 di atas
-putih — gagal AA untuk teks tombol. `#e00b41` (dokumen Airbnb sendiri menyebut
-"Rausch Active") mempertahankan identitas hue yang sama pada 4,9:1. Ramp
-`--color-brand-primary-*` tetap berisi `#ff385c` pada langkah 400 (dipakai
-hanya sebagai **border hover** — 3,5:1 lolos ambang tepi 3:1).
+Ramp `--color-brand-primary-*` diremap ke ramp tinta (putih→hitam) supaya
+utilitas `text-brand-primary-*` lama otomatis mengikuti dunia akromatik
+tanpa menyentuh komponen.
 
 ### Stempel keadaan (semantik)
 
-Warna stempel adalah **kebenaran produk**, bukan dekorasi. Semua pasangan
-teks/latar terukur AA (≥4,5:1):
+Warna stempel adalah **kebenaran produk**, bukan dekorasi. Tujuh nada
+(keputusan MIGRATION.md W2 opsi B). Semua pasangan teks/latar terukur AA
+(≥4,5:1):
 
 | Keadaan | Teks | Latar | Rasio |
 |---|---|---|---|
-| Menunggu | `--stamp-wait` `#545454` | `#f2f2f2` | 6,76 |
-| Disetujui | `--stamp-ok` `#007204` | `#e8f5e9` | 5,48 |
+| Menunggu | `--stamp-wait` `#00579a` | `#e8f2fb` | 6,55 |
 | Perlu revisi | `--stamp-rev` `#92600a` | `#fef3c7` | 4,84 |
+| Disetujui | `--stamp-ok` `#007204` | `#e8f5e9` | 5,48 |
+| Siap dipasang | `--stamp-siap` `#006871` | `#e0f2f1` | 5,64 |
+| Sudah dipasang | `--stamp-pasang` `#5740a1` | `#ece9f7` | 6,62 |
+| Selesai | `--stamp-done` `#6a6a6a` | `#f2f2f2` | 4,83 |
 | Ditolak | `--stamp-no` `#b02a0c` | `#fdecea` | 5,77 |
 
 ## Bentuk & Elevasi
@@ -128,13 +123,13 @@ teks/latar terukur AA (≥4,5:1):
   memakai `#929292` (3,11:1).
 - **Fokus:** jaring pengaman global memberi outline tinta 2px pada
   `:focus-visible`. Input `.ui-control` membalik border ke tinta saat fokus
-  (pola text-input Airbnb) tanpa glow.
+  (tanpa glow).
 
 ## Komponen
 
 ### Tombol
 
-- **`.ui-btn-primary`** — isi Rausch (`--action`), teks putih, radius 8px,
+- **`.ui-btn-primary`** — isi **tinta** (`--action`), teks putih, radius 8px,
   tinggi sentuh 44px. Hover menggelap ke `--action-strong` (pointer halus);
   `:active` skala 0.97.
 - **`.ui-btn-secondary`** — isi putih, **outline tinta 1px** (bukan abu),
@@ -151,16 +146,15 @@ teks/latar terukur AA (≥4,5:1):
   dinding. Baris yang sama dipakai pemilih wizard, riwayat, dan batch.
 - **Katalog landing (`.catalog-grid`)** — di `>=640px` baris katalog berubah
   menjadi **kartu kisi** (2 kolom; 3 kolom di `>=1024px`): foto 4:3 memimpin,
-  nama → harga → spesifikasi mengalir vertikal, aksi dipatok ke dasar kartu
-  (`.catalog-actions`) sehingga tombol sebaris antar kartu. Hover memakai tier
-  `--elevation-bar`. Hanya landing yang memakai grid ini.
+  nama → harga → spesifikasi mengalir vertikal, aksi dipatok ke dasar kartu.
+  Hover memakai tier `--elevation-bar`. Hanya landing yang memakai grid ini.
 
 ### Bar & navigasi
 
 - **`.app-bar`** — putih, tier bayangan tunggal (tidak ada garis bawah).
-- **`.app-tabbar`** — putih, lift halus ke atas.
-- **Tab aktif (`aria-current`)** — teks + indikator **Rausch**. Satu-satunya
-  titik warna navigasi.
+- **`.app-tabbar`** — putih, lift halus ke atas; FAB tinta di tengah.
+- **Tab aktif (`aria-current`)** — teks tinta + indikator tinta. Satu-satunya
+  titik warna navigasi adalah FAB yang tetap tinta.
 
 ### Sheet
 
@@ -169,19 +163,18 @@ teks/latar terukur AA (≥4,5:1):
 
 ### Stempel & lencana
 
-- `.ui-stamp` + `data-tone` — empat nada semantik terukur AA di atas.
+- `.ui-stamp` + `data-tone` — tujuh nada semantik terukur AA di atas.
 - `.ui-tag` — pil `9999px` di atas `--surface-tint`; `data-tone="ink"`
   membalik menjadi tinta penuh.
 
 ### Timeline
 
-- Titik lampau: tinta; **titik "sekarang": Rausch dengan halo
-  `--action-soft`** — momen Rausch kedua di layar status.
+- Titik lampau: tinta; titik "sekarang": titik berongga dengan halo
+  `--action-soft`.
 
 ## Mode Gelap
 
-Tidak ada. Kanvas Airbnb publik juga tidak punya dark mode; keputusan produk
-baru bila diinginkan.
+Tidak ada. Keputusan produk baru bila diinginkan.
 
 ## Riwayat
 
@@ -189,7 +182,7 @@ baru bila diinginkan.
 - 2026-09-20 — direvisi untuk arah "App Produk" (Geist + Fraunces, tosca).
 - 2026-09-24 — ditulis ulang untuk arah "Lembar Spesifikasi & Tiket Pekerjaan".
 - 2026-09-30 — ditulis ulang untuk arah "Daftar Kerja Seluler" (akromatik).
-- 2026-11-17 — **ditulis ulang** untuk arah "Airbnb Rausch" (Inter, #ff385c/
-  #e00b41, satu tier bayangan, bentuk lunak). Diterapkan ke kode: `theme.css`,
-  `base.css`, `index.html`, plus remap ramp Tailwind sehingga utilitas lama
-  mengikuti tanpa menyentuh komponen.
+- 2026-11-17 — ditulis ulang untuk arah "Airbnb Rausch" (Inter, #ff385c/#e00b41).
+- 2026-11-18 — **ditulis ulang** untuk arah "Akromatik Tinta" (keputusan
+  migrasi prototype Open Design). Diterapkan ke kode: `theme.css` (token +
+  remap ramp), `DESIGN.md`, tab bar + FAB, halaman beranda baru.

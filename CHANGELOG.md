@@ -4,7 +4,49 @@ Format mengikuti [Keep a Changelog](https://keepachangelog.com/id/1.1.0/) dan
 penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 
 ## [Unreleased]
+### Ditambahkan
+- **Beranda tenant baru di `/` (migrasi prototype Open Design).** Halaman utama
+  tenant kini ringkasan kerja, bukan katalog langsung: empat sel status
+  (Menunggu Review, Perlu Revisi, Siap Dipasang, Selesai), aksi cepat
+  (Katalog/Riwayat/Lacak), blok "Perlu tindakan kamu" (pengajuan terbaru yang
+  menunggu review/revisi + tombol Kirim Revisi), blok "Periode hampir berakhir"
+  (status aktif dengan akhir tayang ≤14 hari), dan tiga pengajuan terbaru.
+  Perangkat tanpa pengajuan melihat ajakan mengajukan; gagal memuat
+  menampilkan panel galat, **bukan** angka nol. Katalog pindah ke `/katalog`;
+  tautan lama ke `/ajukan`, `/riwayat`, `/lacak`, `/status/:token` tetap.
+- **Onboarding kunjungan pertama.** `/` menampilkan layar selamat datang
+  (badge MMB, cara mengajukan 3 langkah, alur status lengkap) sekali per
+  perangkat; tombol "Buka Beranda" menyimpan kunci `mmb-onboarded` lalu
+  menampilkan beranda. Bila `localStorage` diblokir, gate gagal-aman ke
+  beranda. Alur status dirender dari `STATUS_ORDER` + `STATUS_LABELS` +
+  `Stamp` — tidak ada teks/harga hardcode.
+- **API `GET /promo/summary?fingerprint=`.** Ringkasan beranda per perangkat
+  dalam satu panggilan: `by_status` (satu `GROUP BY`, angka konsisten),
+  `total`, `needing_action` (menunggu review/perlu revisi terbaru), dan
+  `expiring_soon` (disetujui/siap/terpasang dengan `air_end_date >=
+  CURRENT_DATE`, terdekat dulu, maks 6). Batas kepercayaan sama dengan
+  `/promo/submissions/mine` (fingerprint; respons memuat `status_token`) dan
+  rate limit 60/15 mnt/IP. Semua angka dihitung server.
+- **FAB "Ajukan" di tab bar mobile** — tombol bulat tinta di tengah
+  (Beranda · Katalog · **[+] Ajukan** · Riwayat · Lacak).
+
 ### Diubah
+- **Dunia visual berganti ke "Akromatik Tinta".** Arah "Airbnb Rausch"
+  (2026-11-17) diganti sesuai keputusan migrasi prototype Open Design:
+  kanvas putih, tinta `#222222` sebagai aksen (CTA primer, tab aktif, FAB,
+  titik "sekarang"), tanpa warna aksen kedua. Ramp `brand-primary` diremap
+  ke ramp tinta sehingga utilitas lama ikut; `--action` = `#222222`,
+  `--action-strong` = `#111111`. `DESIGN.md` ditulis ulang.
+- **`Stamp` memakai tujuh nada** (keputusan MIGRATION.md W2 opsi B):
+  menunggu biru `#00579a`, perlu revisi amber, disetujui hijau, siap dipasang
+  teal `#006871`, sudah dipasang ungu `#5740a1`, selesai netral `#6a6a6a`,
+  ditolak merah. Status siap/terpasang/selesai **tidak lagi menumpang hijau**
+  (sebelumnya keempatnya `ok`). Semua pasangan teks/latar terukur AA
+  (4,83–6,62).
+- **Ikon PWA berganti ke tinta** (`public/icon.svg` + PNG 192/512/maskable/
+  apple-touch diregenerasi lewat `scripts/gen-icons.mjs`); latar maskable
+  ikut tinta (sebelumnya masih tosca lama). `CACHE_VERSION` service worker
+  `v15` → `v16` + pin hash aset shell diperbarui.
 - **Tata letak landing: katalog jadi kartu kisi di layar lebar.** Di ponsel
   katalog tetap daftar baris, tetapi mulai 640px setiap media menjadi kartu
   (2 kolom; 3 kolom dari 1024px) lewat `.catalog-grid`: foto 4:3 memimpin,
@@ -43,6 +85,17 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
     apple-touch ikut dibuat ulang lewat `scripts/gen-icons.mjs`).
   - `DESIGN.md` ditulis ulang; `CACHE_VERSION` service worker `v14` → `v15`
     dan pin hash aset shell diperbarui (`1784fe03…` — ikon berubah).
+
+### Catatan rilis (migrasi achromatic + beranda, 2026-11-18)
+- **Urutan deploy wajib: API dulu, frontend terakhir.** Beranda memanggil
+  `GET /promo/summary`; frontend baru di atas API lama menampilkan panel
+  "Gagal memuat ringkasan" pada `/`. Tidak ada perubahan skema, jadi
+  `db:migrate`/`db:seed` hanya perlu bila rilis sebelumnya belum menjalankannya.
+- Pengguna yang sudah pernah membuka prototype Open Design (kunci
+  `mmb-onboarded`) tidak melihat onboarding dua kali.
+- Bila ingin menonaktifkan onboarding untuk semua pengguna (mis. demo),
+  isi `localStorage.mmb-onboarded = '1'` lewat skrip halaman.
+
 ### Diperbaiki
 - **Aplikasi terasa lebih native di ponsel (lapisan platform, skill
   mobile-native).** Flash abu saat tap dimatikan global

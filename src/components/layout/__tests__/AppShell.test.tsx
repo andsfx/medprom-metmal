@@ -56,10 +56,12 @@ describe('AppShell', () => {
     expect(screen.getByRole('link', { name: 'Katalog' })).not.toHaveAttribute('aria-current');
   });
 
-  it('rute katalog dicocokkan persis → tidak ikut aktif di rute lain', () => {
-    renderShell('/ajukan');
-    expect(screen.getByRole('link', { name: 'Katalog' })).not.toHaveAttribute('aria-current');
-    expect(screen.getByRole('link', { name: 'Ajukan' })).toHaveAttribute('aria-current', 'page');
+  it('beranda dicocokkan persis → tidak ikut aktif di /katalog', () => {
+    renderShell('/katalog');
+    expect(screen.getByRole('link', { name: 'Beranda' })).not.toHaveAttribute('aria-current');
+    expect(screen.getByRole('link', { name: 'Katalog' })).toHaveAttribute('aria-current', 'page');
+    // FAB ajukan bukan tab: tidak pernah membawa aria-current.
+    expect(screen.getByRole('link', { name: /ajukan materi baru/i })).not.toHaveAttribute('aria-current');
   });
 
   it('onBack → tombol kembali memakai handler kustom, bukan riwayat peramban', () => {

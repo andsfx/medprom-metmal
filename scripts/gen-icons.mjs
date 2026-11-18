@@ -21,7 +21,7 @@ const svg = readFileSync(join(PUBLIC_DIR, 'icon.svg'), 'utf8');
  * Varian ikon.
  * - `padding` untuk maskable: Android memangkas ikon jadi lingkaran/squircle,
  *   jadi muatan penting harus berada di "safe zone" 80% bagian tengah.
- * - `bleed` mengisi latar penuh tosca agar tidak ada sudut transparan saat
+ * - `bleed` mengisi latar penuh tinta agar tidak ada sudut transparan saat
  *   dipangkas.
  */
 const VARIANTS = [
@@ -42,7 +42,7 @@ try {
     await page.setContent(
       `<!doctype html><html><head><style>
         html,body{margin:0;padding:0;width:${size}px;height:${size}px;overflow:hidden}
-        body{background:${bleed ? '#00918E' : 'transparent'}}
+        body{background:${bleed ? '#222222' : 'transparent'}}
         .wrap{width:${size}px;height:${size}px;display:flex;align-items:center;justify-content:center}
         svg{width:${size - inset * 2}px;height:${size - inset * 2}px;display:block}
         ${bleed ? 'svg rect:first-of-type{rx:0 !important}' : ''}

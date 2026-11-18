@@ -10,14 +10,17 @@
  * supaya simetris dengan aturan `.app-tabbar` dan bebas urutan utilitas.
  */
 import { Link, useLocation } from 'react-router-dom';
-import { NAV_ITEMS, isNavItemActive } from './navItems';
+import { NAV_ITEMS, FAB_ITEM, isNavItemActive } from './navItems';
 
 export default function TopNav() {
   const { pathname } = useLocation();
+  // Desktop tidak punya FAB (idiom sentuh), tetapi tujuan "Ajukan" tidak boleh
+  // hilang dari navigasi: ia dirender sebagai tautan biasa di app bar.
+  const items = [...NAV_ITEMS, FAB_ITEM];
 
   return (
     <nav className="app-nav" aria-label="Navigasi utama">
-      {NAV_ITEMS.map(({ to, label, Icon }) => {
+      {items.map(({ to, label, Icon }) => {
         const active = isNavItemActive(to, pathname);
         return (
           <Link

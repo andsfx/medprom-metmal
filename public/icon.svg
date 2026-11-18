@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Media Promosi Metropolitan Mall Bekasi">
-  <rect width="512" height="512" rx="24" fill="#ff385c"/>
+  <rect width="512" height="512" rx="24" fill="#222222"/>
   <!-- Siluet atap mall: dua bentang, mengacu inisial "M" Metropolitan Mall -->
   <path d="M104 372V208l76-64 76 64 76-64 76 64v164z" fill="#ffffff" opacity=".96"/>
   <!-- Bidang materi promosi yang diajukan -->

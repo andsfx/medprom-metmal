@@ -299,6 +299,52 @@ export async function fetchMySubmissions(
   return normalizeMySubmissions(body);
 }
 
+// ─── Ringkasan beranda (publik, digerbangi fingerprint) ────────────
+
+/** Satu pengajuan yang perlu tindakan (menunggu review / perlu revisi). */
+export interface ActionItem {
+  submission_number: string;
+  status_token: string;
+  status: string;
+  media_type_slug: string;
+  material_title: string;
+  review_notes: string;
+}
+
+/** Satu periode tayang aktif yang segera berakhir. */
+export interface ExpiringItem {
+  submission_number: string;
+  status_token: string;
+  status: string;
+  media_type_slug: string;
+  material_title: string;
+  air_end_date: string;
+}
+
+/** Bentuk data `GET /promo/summary` (semua angka dihitung server). */
+export interface HomeSummary {
+  by_status: Record<string, number>;
+  total: number;
+  needing_action: ActionItem | null;
+  expiring_soon: ExpiringItem[];
+}
+
+interface SummaryRaw {
+  success?: boolean;
+  error?: string;
+  data?: HomeSummary;
+}
+
+export async function fetchHomeSummary(fingerprint: string): Promise<HomeSummary> {
+  const body = await apiGetRaw<SummaryRaw>(
+    `/promo/summary?fingerprint=${encodeURIComponent(fingerprint)}`,
+  );
+  if (!body?.success || !body.data) {
+    throw new ApiError(body?.error || 'Gagal memuat ringkasan', 'APP');
+  }
+  return body.data;
+}
+
 // ─── Status via token (publik, FR-019..FR-022) ───────────────────
 
 export async function fetchStatusByToken(token: string): Promise<StatusPageData> {

@@ -653,11 +653,26 @@ summary:focus-visible,
 }
 
 .app-tab[aria-current='page'] {
-  /* Tab aktif = momen Rausch: satu-satunya titik warna navigasi. */
+  /* Tab aktif = momen tinta: satu-satunya titik warna navigasi adalah FAB. */
   color: var(--action);
   border-top-color: var(--action);
 }
 
+/* FAB tengah tab bar: blok tinta bulat, ikon putih. Selalu terlihat (bukan
+ * hanya "ajukan") karena ia momen tinta satu-satunya di navigasi. */
+.app-fab {
+  align-self: center;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  margin-top: calc(var(--safe-bottom) * -0.5 - 0.25rem);
+  border-radius: 9999px;
+  background: var(--action);
+  color: var(--ink-invert);
+  box-shadow: var(--elevation-fab);
+}
 /* Navigasi utama versi desktop: di dalam app bar. Hanya ≥640px; di bawah itu
  * tab bar bawah yang bertugas. `AppShell` sudah memilih satu berdasarkan
  * viewport, aturan ini menjaga tampilan tetap benar bila JS/CSS sempat tidak
@@ -1110,9 +1125,11 @@ summary:focus-visible,
 }
 
 /* Lencana status (komponen `Stamp`). Nada ditentukan oleh `data-tone`, sama
- * seperti lampu lalu lintas pekerjaan: menunggu = netral, disetujui = setuju,
- * perlu revisi = revisi, ditolak = tolak. Latar lembut + teks sewarna; tanpa
- * bingkai dan tanpa miring, supaya tidak berteriak di dalam daftar.
+ * seperti lampu lalu lintas pekerjaan: menunggu = biru, perlu revisi = amber,
+ * disetujui = hijau, siap dipasang = teal, sudah dipasang = ungu, selesai =
+ * netral, ditolak = merah (tujuh nada, semua terukur AA). Latar lembut + teks
+ * sewarna; tanpa bingkai dan tanpa miring, supaya tidak berteriak di dalam
+ * daftar.
  *
  * `.ui-stamp` selalu dipasang bersama `.ui-tag` (lihat `Stamp.tsx`); aturan di
  * bawah menambahkan bobot dan warna teks yang membedakannya dari tag kanal. */
@@ -1140,6 +1157,20 @@ summary:focus-visible,
   color: var(--stamp-no);
 }
 
+.ui-stamp[data-tone='siap'] {
+  background: var(--stamp-siap-soft);
+  color: var(--stamp-siap);
+}
+
+.ui-stamp[data-tone='pasang'] {
+  background: var(--stamp-pasang-soft);
+  color: var(--stamp-pasang);
+}
+
+.ui-stamp[data-tone='done'] {
+  background: var(--stamp-done-soft);
+  color: var(--stamp-done);
+}
 /* Blok perhitungan: subtotal / PPN / total pada satu bidang tenang dengan
  * sudut lunak — Airbnb tidak memakai side-tab berwarna. */
 .ui-calc {

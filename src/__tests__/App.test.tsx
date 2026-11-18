@@ -2,23 +2,26 @@
  * Test registrasi rute aplikasi.
  *
  * Kontrak rapuh yang dikunci: `/lacak` benar-benar terdaftar di `App` (bukan
- * hanya komponennya ada) dan tab bar sisi tenant memuat keempat tujuan utama.
- * Kalau rutenya lupa didaftarkan, halaman pelacakan jatuh ke redirect `*`.
+ * hanya komponennya ada), beranda + katalog punya rutenya sendiri, dan tab
+ * bar sisi tenant memuat empat tujuan + FAB ajukan. Kalau rutenya lupa
+ * didaftarkan, halaman jatuh ke redirect `*`.
  */
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { MemoryRouter } from 'react-router-dom';
 import App from '../App';
+import { ONBOARDING_KEY } from '../constants/onboarding';
 
-// Halaman status memanggil API saat mount — tidak diuji di sini, cukup dicegah
-// agar tidak menyentuh jaringan nyata.
+// Halaman status/beranda memanggil API saat mount — tidak diuji di sini, cukup
+// dicegah agar tidak menyentuh jaringan nyata.
 vi.mock('../utils/promoApi', async (importOriginal) => {
   const actual = await importOriginal<typeof import('../utils/promoApi')>();
   return {
     ...actual,
     fetchMediaTypes: vi.fn(async () => []),
     fetchMySubmissions: vi.fn(async () => []),
+    fetchHomeSummary: vi.fn(async () => ({ by_status: {}, total: 0, needing_action: null, expiring_soon: [] })),
     fetchStatusByToken: vi.fn(async () => { throw new Error('tidak dipakai'); }),
   };
 });
@@ -32,6 +35,20 @@ function renderAt(path: string) {
 }
 
 describe('App — registrasi rute', () => {
+  it('/ → beranda tenant, bukan onboarding (sudah pernah dikunjungi)', async () => {
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    renderAt('/');
+
+    expect(await screen.findByRole('heading', { name: /Selamat datang/i })).toBeInTheDocument();
+  });
+
+  it('/katalog → halaman katalog media (bukan beranda)', async () => {
+    localStorage.setItem(ONBOARDING_KEY, '1');
+    renderAt('/katalog');
+
+    expect(await screen.findByRole('heading', { name: 'Ajukan Materi Promosi Tenant Anda' })).toBeInTheDocument();
+  });
+
   it('/lacak → halaman pelacakan nomor, bukan redirect ke beranda', async () => {
     renderAt('/lacak');
 
@@ -59,15 +76,15 @@ describe('App — registrasi rute', () => {
     expect(await screen.findByRole('heading', { name: /Status Pengajuan Cetak/i })).toBeInTheDocument();
   });
 
-  it('tab bar memuat Lacak menuju /lacak', async () => {
+  it('tab bar memuat Beranda, Katalog, Riwayat, Lacak + FAB ajukan', async () => {
     renderAt('/lacak');
 
     // Tab bar berada di dalam halaman rute, yang kini dimuat malas.
     const nav = await screen.findByRole('navigation', { name: 'Navigasi utama' });
-    expect(within(nav).getByRole('link', { name: 'Lacak' })).toHaveAttribute('href', '/lacak');
-    // Tiga tujuan lain tetap ada — jangan sampai tab ke-4 menggusur yang lama.
-    for (const label of ['Katalog', 'Ajukan', 'Riwayat']) {
+    for (const label of ['Beranda', 'Katalog', 'Riwayat']) {
       expect(within(nav).getByRole('link', { name: label })).toBeInTheDocument();
     }
+    expect(within(nav).getByRole('link', { name: 'Lacak' })).toHaveAttribute('href', '/lacak');
+    expect(within(nav).getByRole('link', { name: /ajukan materi baru/i })).toHaveAttribute('href', '/ajukan');
   });
 });
