@@ -59,7 +59,9 @@ describe('MySubmissionsPage', () => {
 
     expect(await screen.findByText('MP-260918-A7K2QX')).toBeInTheDocument();
     expect(screen.getByText('Spanduk Diskon 50%')).toBeInTheDocument();
-    expect(screen.getByText('Perlu Revisi')).toBeInTheDocument();
+    // "Perlu Revisi" kini juga muncul sebagai chip filter, jadi status baris
+    // dikunci ke stempel (`.ui-stamp`) supaya asersi tidak ambigu.
+    expect(screen.getByText('Perlu Revisi', { selector: '.ui-stamp' })).toBeInTheDocument();
     expect(screen.getByText('Perbaiki resolusi.')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /Lihat status & kirim revisi/i }))
       .toHaveAttribute('href', '/status/tok-1');

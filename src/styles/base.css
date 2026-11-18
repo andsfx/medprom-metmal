@@ -164,9 +164,8 @@ textarea:disabled {
   /* Radius dari token, bukan utilitas: tombol yang lupa membawa kelas radius
    * tetap seragam dengan kontrol lain. */
   border-radius: var(--radius-control);
-  /* Aksi = Rausch (kontrak Airbnb): CTA primer adalah momen warna tunggal
-   * di atas kanvas putih. `--action` sudah digelapkan ke #e00b41 supaya
-   * teks putih di atasnya lolos AA. */
+  /* Aksi = tinta (dunia akromatik): CTA primer adalah blok tinta, bukan
+   * warna tegangan. Teks putih di atasnya 15,9:1 (AA). */
   background: var(--action);
   color: var(--ink-invert);
   /* Target sentuh 44px (DESIGN.md). */

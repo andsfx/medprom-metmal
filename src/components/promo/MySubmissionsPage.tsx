@@ -10,15 +10,20 @@
  * mengenali bahwa tiket-tiket itu satu kiriman, dan tetap punya jalan kembali
  * ke `/batch/<batch_token>` setelah meninggalkan layar sukses wizard.
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { ExternalLink, Info, Layers, Loader2 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import Stamp from './Stamp';
 import { fetchMySubmissions, normalizeMySubmissions } from '../../utils/promoApi';
 import { getDeviceFingerprint } from '../../utils/fingerprint';
-import { MY_SUBMISSIONS_PAGE_SIZE } from '../../constants/promo';
+import { MY_SUBMISSIONS_PAGE_SIZE, STATUS_LABELS, STATUS_ORDER } from '../../constants/promo';
 import type { MySubmissionRow } from '../../types/promo';
+
+// Nilai filter "tampilkan semua baris". Bukan `null` supaya tidak ambigu dengan
+// "belum memilih", dan bukan string kosong yang mudah tertukar dengan `falsy`
+// saat dipakai di atribut tombol/aria.
+const FILTER_SEMUA = 'all';
 
 export default function MySubmissionsPage() {
   const [rows, setRows] = useState<MySubmissionRow[]>([]);
@@ -27,6 +32,17 @@ export default function MySubmissionsPage() {
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadError, setLoadError] = useState(false);
   const [moreError, setMoreError] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>(FILTER_SEMUA);
+
+  // Filter murni sisi-klien: server tetap halaman penuh `ORDER BY created_at
+  // DESC LIMIT 50 OFFSET n`, jadi memfilter di server justru merusak paginasi
+  // offset. `rows` tetap utuh untuk paginasi/muat-lagi; yang dipersempit hanya
+  // daftar yang TEREKA. `''`/status tak dikenal tidak pernah jadi kunci filter
+  // (chip dibangun dari STATUS_ORDER), jadi pemetaan langsung aman.
+  const filteredRows = useMemo(
+    () => (statusFilter === FILTER_SEMUA ? rows : rows.filter((r) => r.status === statusFilter)),
+    [rows, statusFilter],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -86,6 +102,40 @@ export default function MySubmissionsPage() {
           browser akan menghilangkan akses ke riwayat.
         </p>
 
+        {!loading && !loadError && rows.length > 0 && (
+          <div
+            role="group"
+            aria-label="Filter status"
+            className="mb-4 flex gap-2 overflow-x-auto pb-1"
+            // Tailwind v4 tidak memberi `scrollbar-width: none`; hilangkan bilah
+            // gulir chip supaya baris chip terbaca sebagai satu sabuk, bukan
+            // kotak dengan bilah abu (pola sabuk filter prototype).
+            style={{ scrollbarWidth: 'none' }}
+          >
+            <button
+              type="button"
+              aria-pressed={statusFilter === FILTER_SEMUA}
+              onClick={() => setStatusFilter(FILTER_SEMUA)}
+              className="ui-tag min-h-11 px-3 py-2 text-sm"
+              data-tone={statusFilter === FILTER_SEMUA ? 'ink' : undefined}
+            >
+              Semua
+            </button>
+            {STATUS_ORDER.map((status) => (
+              <button
+                key={status}
+                type="button"
+                aria-pressed={statusFilter === status}
+                onClick={() => setStatusFilter(status)}
+                className="ui-tag min-h-11 px-3 py-2 text-sm"
+                data-tone={statusFilter === status ? 'ink' : undefined}
+              >
+                {STATUS_LABELS[status]}
+              </button>
+            ))}
+          </div>
+        )}
+
         <div>
             {loading && (
               <div className="ui-card flex items-center justify-center gap-3 py-10" role="status">
@@ -124,7 +174,7 @@ export default function MySubmissionsPage() {
               </div>
             )}
 
-            {!loading && rows.length > 0 && (
+            {!loading && !loadError && rows.length > 0 && (
               <>
               {adaSisa && (
                 <p className="mb-3 text-xs ui-text-muted" role="status">
@@ -133,8 +183,17 @@ export default function MySubmissionsPage() {
                     : `Menampilkan ${rows.length} pengajuan terbaru.`}
                 </p>
               )}
+              {/* Filter mempersempit yang tampil saja; bila hasil saringan kosong
+               * jangan jatuh ke panel ajakan (panel itu khusus daftar total
+               * kosong), cukup beri tahu bahwa status yang dipilih tidak ada. */}
+              {filteredRows.length === 0 && (
+                <p className="ui-card px-6 py-10 text-sm font-semibold text-slate-700">
+                  Tidak ada pengajuan dengan status ini.
+                </p>
+              )}
+              {filteredRows.length > 0 && (
               <ul className="space-y-4">
-                {rows.map((r) => (
+                {filteredRows.map((r) => (
                   <li key={r.id} className="ui-card overflow-hidden">
                     {/* Kepala tiket: nomor job monospace + stempel status. */}
                     <div className="px-7 pt-7 pb-4">
@@ -211,6 +270,7 @@ export default function MySubmissionsPage() {
                   </li>
                 ))}
               </ul>
+              )}
               {adaSisa && (
                 <div className="mt-4 flex flex-col items-center gap-2">
                   <button

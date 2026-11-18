@@ -7,10 +7,11 @@
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Share2 } from 'lucide-react';
 import AppShell from '../layout/AppShell';
 import SubmissionDetail from './SubmissionDetail';
 import { fetchStatusByToken, isNotFoundError } from '../../utils/promoApi';
+import { STATUS_LABELS } from '../../constants/promo';
 import type { StatusPageData } from '../../types/promo';
 
 export default function SubmissionStatusPage() {
@@ -19,6 +20,36 @@ export default function SubmissionStatusPage() {
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
   const [loadError, setLoadError] = useState(false);
+
+  // Umpan balik tombol bagikan. State lokal deterministik (bukan timeout):
+  // pesan tetap tampil sampai unmount atau klik bagikan berikutnya.
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [shareError, setShareError] = useState<string | null>(null);
+
+  const handleShare = useCallback(async () => {
+    if (!data) return;
+    setShareMessage(null);
+    setShareError(null);
+    const url = window.location.href;
+    const title = `Pengajuan ${data.submission.submission_number}`;
+    const text = `Status pengajuan ${data.submission.submission_number}: ${STATUS_LABELS[data.submission.status] ?? data.submission.status}`;
+
+    if (typeof navigator.share === 'function') {
+      try {
+        await navigator.share({ title, text, url });
+      } catch {
+        // Pengguna membatalkan dialog berbagi bukan galat yang perlu diumbar.
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareMessage('Tautan disalin');
+    } catch {
+      setShareError('Gagal menyalin tautan');
+    }
+  }, [data]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -49,7 +80,23 @@ export default function SubmissionStatusPage() {
     // langkah untuk dimundurkan saat tautan dibuka LANGSUNG (kasus utama
     // perangkat lain), sedangkan beranda selalu ada dan memberi jalan lanjut.
     // Lihat `StatusPageTombolKembali.test.tsx`.
-    <AppShell title="Status Pengajuan" back backTo="/">
+    <AppShell
+      title="Status Pengajuan"
+      back
+      backTo="/"
+      actions={
+        data ? (
+          <button
+            type="button"
+            onClick={() => { void handleShare(); }}
+            className="app-pressable ui-focus-ring inline-flex min-h-11 w-11 items-center justify-center rounded-full ui-text-strong hover:bg-[var(--surface-hover)]"
+            aria-label="Bagikan status pengajuan"
+          >
+            <Share2 className="h-5 w-5" aria-hidden="true" />
+          </button>
+        ) : undefined
+      }
+    >
       <div className="mx-auto max-w-2xl px-4 py-5">
         {loading && (
           <div className="ui-card flex items-center justify-center gap-3 p-10" role="status">
@@ -94,6 +141,12 @@ export default function SubmissionStatusPage() {
               </Link>
             </div>
           </div>
+        )}
+
+        {!loading && data && (shareMessage || shareError) && (
+          <p className="ui-dense ui-text-muted mt-4" role="status">
+            {shareMessage ?? shareError}
+          </p>
         )}
 
         {!loading && data && <SubmissionDetail data={data} onReload={load} />}

@@ -23,6 +23,7 @@ import { checkInstallationDate, toIsoDate, describeLeadTime, parseLeadTime, pars
 import { TenantSearchSelect } from './TenantSearchSelect';
 import AppShell from '../layout/AppShell';
 import MediaPriceTag from './MediaPriceTag';
+import { mediaPrice, pecahBarisTarif } from '../../utils/mediaPrice';
 import type { PromoMediaType, TenantOption } from '../../types/promo';
 
 type Step = 1 | 2 | 3;
@@ -105,6 +106,48 @@ function FileIcon({ mime }: { mime: string }) {
   if (mime === 'video/mp4') return <Film className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
   if (mime === 'application/pdf') return <FileText className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
   return <ImageIcon className="h-8 w-8 text-[color:var(--ink-secondary)]" aria-hidden="true" />;
+}
+
+/**
+ * Blok "Ringkasan biaya" langkah 3 wizard digital.
+ *
+ * Menampilkan TARIF KATALOG VERBATIM, bukan total hitungan: deck digital
+ * tidak mengatur prorata/qty, jadi menghitung harga × qty × hari + PPN di sini
+ * sama dengan mengarang kebijakan harga. Perhitungan presisi hanya sah untuk
+ * kanal cetak (PromoCetakWizard + pricing.ts).
+ *
+ * Bentuk mengikuti `mediaPrice`:
+ *  - single: satu baris "Tarif" = nilai tarif (nilai `price_note` verbatim,
+ *    atau "Hubungi Marcom" bila deck tidak menyatakan tarif).
+ *  - ladder: SEMUA baris tangga tarif ditampilkan (label = unit/barisnya,
+ *    nilai = rupiah verbatim) — jangan dipilih satu saja.
+ */
+function RingkasanBiaya({ media }: { media: PromoMediaType }) {
+  const price = mediaPrice(media);
+
+  return (
+    <div className="mt-4">
+      <p className="ui-label">Ringkasan biaya</p>
+      <div className="ui-calc mt-2.5">
+        {price.mode === 'ladder' ? (
+          price.lines.map((line, i) => {
+            const { label, nominal } = pecahBarisTarif(line);
+            return (
+              <div key={i}>
+                <div className="ui-calc-k">{label ?? 'Tarif'}</div>
+                <div className="ui-calc-v">{nominal}</div>
+              </div>
+            );
+          })
+        ) : (
+          <div>
+            <div className="ui-calc-k">Tarif</div>
+            <div className="ui-calc-v">{price.text}</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function PromoUploadWizard() {
@@ -1034,6 +1077,11 @@ export default function PromoUploadWizard() {
                   {formatsLabel && <> (format {formatsLabel}{selectedMedia.size_spec ? ` · ukuran ${selectedMedia.size_spec}` : ''})</>}.
                   Pilih salah satu cara: unggah berkas ke penyimpanan Mall, atau kirim tautan milik Anda.
                 </p>
+
+                {/* Tarif katalog verbatim — deck digital tidak mengatur
+                 * prorata/qty, jadi tidak ada total yang dihitung di sini. */}
+                <RingkasanBiaya media={selectedMedia} />
+
 
                 {/* Ringkasan sebagai tabel titik penghubung: nilainya data. */}
                 <div className="mt-4 border border-[color:var(--rule-color)] bg-[var(--surface-offset)] p-4">
