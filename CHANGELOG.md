@@ -32,6 +32,20 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
 - **FAB "Ajukan" di tab bar mobile** — tombol bulat tinta di tengah
   (Beranda · Katalog · **[+] Ajukan** · Riwayat · Lacak).
 
+- **Tiga gap parity prototype ditutup**:
+  - **Riwayat: chip filter status** — sabuk chip "Semua" + 7 status
+    (`STATUS_ORDER`/`STATUS_LABELS`), saringan sisi-klien atas baris yang
+    termuat (paginasi offset server tidak berubah); hasil saringan kosong
+    menampilkan pesan khusus, bukan panel ajakan yang hanya untuk daftar
+    total kosong.
+  - **Halaman status: tombol Bagikan** di app bar (`/status/:token`) — Web
+    Share API bila tersedia, fallback salin tautan + umpan balik "Tautan
+    disalin"; hanya dirender saat data termuat.
+  - **Wizard digital langkah 3: blok "Ringkasan biaya"** — tarif katalog
+    VERBATIM (`mediaPrice`; tangga tarif ditampilkan semua barisnya), tanpa
+    total hitung karena deck digital tidak mengatur prorata/qty — perhitungan
+    presisi hanya sah untuk kanal cetak.
+
 ### Diubah
 - **Dunia visual berganti ke "Akromatik Tinta".** Arah "Airbnb Rausch"
   (2026-11-17) diganti sesuai keputusan migrasi prototype Open Design:
