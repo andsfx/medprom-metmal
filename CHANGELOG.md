@@ -99,6 +99,15 @@ penomoran versi mengikuti [Semantic Versioning](https://semver.org/lang/id/).
   isi `localStorage.mmb-onboarded = '1'` lewat skrip halaman.
 
 ### Diperbaiki
+- **`/promo/summary` membalas 500 di produksi.** `air_end_date` bertipe TEXT
+  di `schema.sql`, sehingga perbandingan langsung `air_end_date >=
+  CURRENT_DATE` melempar `operator does not exist: text >= date` begitu
+  endpoint dijalankan pada DB nyata (lolos test karena mock). Kini
+  dibandingkan leksikografis terhadap `to_char(CURRENT_DATE, 'YYYY-MM-DD')`
+  (aman untuk format ISO, tetap memakai index `idx_ps_status_airend`) dan
+  nilai kosong dibuang lewat `air_end_date <> ''`. Terdeteksi lewat smoke
+  pasca-deploy; test seam diperbarui mengunci bentuk perbandingan.
+
 - **Aplikasi terasa lebih native di ponsel (lapisan platform, skill
   mobile-native).** Flash abu saat tap dimatikan global
   (`-webkit-tap-highlight-color` + umpan balik `:active` skala 0.97 pada
